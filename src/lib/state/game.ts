@@ -4,12 +4,13 @@
  * time/clock.ts), so the game catches up by itself when it is opened again.
  */
 import { get, writable } from 'svelte/store';
-import { GameClock, MINUTE, type ClockState } from '../time/clock';
-import { createLives, settleLives, spendLife, type LivesState } from '../time/lives';
+import { GameClock, HOUR, MINUTE, type ClockState } from '../time/clock';
+import { createLives, fullAt, settleLives, spendLife, type LivesState } from '../time/lives';
 import { collectDue, finishNow, remaining, startTimer, type GameTimer, type TimerKind } from '../time/timers';
 import { load, randomId, save } from './storage';
 import { log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
+import { AWAY_ATTACK_AFTER, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
 import { BUILDINGS, START_VILLAGE, buildBlock, buildCost, buildTime, goldMultiplier, skipGems, topUpGems, type BuildingId, type VillageState } from '../economy/village';
@@ -30,6 +31,8 @@ export interface Settings {
   hooks: Record<HookId, boolean>;
   /** The uncle's letters. Paused by default in dev builds while Jonas tests (2026-11-17). */
   letters: boolean;
+  /** Day hooks: from the second day ('auto'), always or never. */
+  dayMode: DayMode;
 }
 
 const ALL_HOOKS_ON = Object.fromEntries(HOOKS.map((h) => [h.id, true])) as Record<HookId, boolean>;
@@ -45,11 +48,12 @@ export const settings = writable<Settings>({
   notifications: storedSettings.notifications ?? false,
   hooks: { ...ALL_HOOKS_ON, ...(storedSettings.hooks ?? {}) },
   letters: storedSettings.letters ?? false,
+  dayMode: storedSettings.dayMode ?? 'auto',
 });
 settings.subscribe((s) => save('settings', s));
 
 // A build without the dev menu always runs in real time with every hook on.
-if (!DEV_MENU) settings.update((s) => ({ ...s, speed: 1, hooks: { ...ALL_HOOKS_ON }, letters: true }));
+if (!DEV_MENU) settings.update((s) => ({ ...s, speed: 1, hooks: { ...ALL_HOOKS_ON }, letters: true, dayMode: 'auto' }));
 if (clock.speed !== get(settings).speed) clock.setSpeed(get(settings).speed);
 
 export const hookOn = (id: HookId): boolean => get(settings).hooks[id] !== false;
@@ -222,13 +226,26 @@ export function buyLives(full: boolean): boolean {
 // ------------------------------------------------------------------ levels
 
 export function levelWon(levelId: number, extra: Record<string, unknown>): number {
-  const gold = levelReward(levelId, goldMultiplier(effectiveVillage()));
+  let gold = levelReward(levelId, goldMultiplier(effectiveVillage()));
+  const weekend = dayOn('weekend') && weekendEvent(clock.now()).on;
+  if (weekend) gold *= WEEKEND_GOLD;
   addGold(gold);
+  let streakBonus = 0;
+  if (dayOn('streak')) {
+    const r = recordWin(get(daily), clock.now());
+    daily.set(r.state);
+    if (r.bonus > 0) {
+      streakBonus = r.bonus;
+      addGold(r.bonus);
+      toast(`Svit ${r.state.streak} dagar i rad: +${r.bonus} guld`);
+      logHook('streak', { streak: r.state.streak, bonus: r.bonus }, 'shown');
+    }
+  }
   let gems = 0;
   if (Math.random() < 0.15) { gems = 5; purse.update((p) => ({ ...p, gems: p.gems + gems })); }
   levelStats.update((s) => ({ ...s, [levelId]: { wins: (s[levelId]?.wins ?? 0) + 1, losses: s[levelId]?.losses ?? 0 } }));
-  log('level_won', { level: levelId, gold, gems, minutesIn: minutesIn(), ...extra });
-  return gold;
+  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, minutesIn: minutesIn(), ...extra });
+  return gold + streakBonus;
 }
 
 export function levelLost(levelId: number, extra: Record<string, unknown>): void {
@@ -351,6 +368,8 @@ export function resetAll(): void {
   timers.set([]);
   levelStats.set({});
   freeBoosters.set({ hammer: 1, shuffle: 1 });
+  daily.set(startDaily(clock.now()));
+  awayReport.set(null);
   startedAt = clock.now();
   save('startedAt', startedAt);
   save('welcomed', false);
@@ -506,6 +525,22 @@ export function trainSoldier(): boolean {
   return true;
 }
 
+/** A lost attack: some gold goes and one building needs repair. */
+function applyAttackLoss(): { goldLost: number; damaged: string | null } {
+  const p = get(purse);
+  const goldLost = Math.round(p.gold * ATTACK.goldLoss);
+  purse.set({ ...p, gold: p.gold - goldLost });
+  const v = get(village);
+  const built = BUILDINGS.filter((b) => v.levels[b.id] > 0 && b.id !== 'stugan');
+  const target = (built.length ? built : BUILDINGS.filter((b) => v.levels[b.id] > 0))[0];
+  const st = get(stairs);
+  if (target && !st.damaged) {
+    const t = addTimer('other', `${target.name} lagas`, ATTACK.repairMs);
+    stairs.set({ ...get(stairs), damaged: { id: target.id, timerId: t.id } });
+  }
+  return { goldLost, damaged: target?.name ?? null };
+}
+
 function hitAttack(): void {
   const st = get(stairs);
   if (!st.attack) return;
@@ -513,16 +548,9 @@ function hitAttack(): void {
   const result = resolveAttack(st.attack.strength, def, st.shieldUntil > clock.now());
   let damaged = st.damaged;
   if (result === 'lost') {
-    const p = get(purse);
-    const lost = Math.round(p.gold * ATTACK.goldLoss);
-    purse.set({ ...p, gold: p.gold - lost });
-    const v = get(village);
-    const built = BUILDINGS.filter((b) => v.levels[b.id] > 0 && b.id !== 'stugan');
-    const target = (built.length ? built : BUILDINGS.filter((b) => v.levels[b.id] > 0))[0];
-    if (target && !damaged) {
-      const t = addTimer('other', `${target.name} lagas`, ATTACK.repairMs);
-      damaged = { id: target.id, timerId: t.id };
-    }
+    const loss = applyAttackLoss();
+    const lost = loss.goldLost;
+    damaged = get(stairs).damaged;
     changeMood(-25);
     writeLetter('attackLost');
     say(pickLine(BUBBLES.lost));
@@ -550,6 +578,7 @@ export function skipRepair(): boolean {
 export function welcomeBack(): void {
   const st = get(stairs);
   const away = clock.now() - st.lastSeen;
+  awayAttack(away);
   if (away > 60 * MINUTE) {
     changeMood(-Math.min(30, Math.floor(away / (60 * MINUTE)) * 5));
     say(pickLine(BUBBLES.sad));
@@ -559,6 +588,95 @@ export function welcomeBack(): void {
 
 export function markSeen(): void {
   stairs.update((s) => ({ ...s, lastSeen: clock.now() }));
+}
+
+// ------------------------------------------------------------------ day hooks (the week at home)
+
+export const daily = writable<DailyState>(load('daily', startDaily(clock.now())));
+daily.subscribe((d) => save('daily', d));
+export const calendarOpen = writable(false);
+/** What happened while the player was away, shown once on return. */
+export const awayReport = writable<null | { result: 'shielded' | 'defended' | 'lost'; goldLost: number; damaged: string | null; hours: number }>(null);
+
+export function dayHooksOn(): boolean {
+  return dayHooksActive(get(daily), clock.now(), get(settings).dayMode);
+}
+export function dayOn(id: HookId): boolean {
+  return dayHooksOn() && hookOn(id);
+}
+
+/** Opens the calendar when today's gift is waiting (not during the introduction). */
+export function offerCalendar(): void {
+  if (tutorialActive() || get(calendarOpen)) return;
+  if (dayOn('calendar') && canClaim(get(daily), clock.now())) {
+    calendarOpen.set(true);
+    logHook('calendar', { day: get(daily).claimed + 1 }, 'shown');
+  }
+}
+
+export function claimGift(): Gift | null {
+  const r = claim(get(daily), clock.now());
+  if (!r) return null;
+  daily.set(r.state);
+  const g = r.gift;
+  purse.update((p) => ({ ...p, gold: p.gold + (g.gold ?? 0), gems: p.gems + (g.gems ?? 0) }));
+  if (g.shieldHours) stairs.update((s) => ({ ...s, shieldUntil: Math.max(s.shieldUntil, clock.now()) + g.shieldHours! * HOUR }));
+  logHook('calendar', { day: r.state.claimed, gift: g }, 'yes');
+  return g;
+}
+
+/** On return: if the player was away long enough, the neighbours attacked meanwhile. */
+function awayAttack(away: number): void {
+  if (away < AWAY_ATTACK_AFTER || !dayOn('awayAttack') || tutorialActive()) return;
+  const v = get(village);
+  if (!BUILDINGS.some((b) => v.levels[b.id] > 0)) return;
+  const st = get(stairs);
+  const def = currentDefence();
+  const result = resolveAttack(attackStrength(def), def, st.shieldUntil > clock.now());
+  let goldLost = 0;
+  let damaged: string | null = null;
+  if (result === 'lost') {
+    const loss = applyAttackLoss();
+    goldLost = loss.goldLost;
+    damaged = loss.damaged;
+    changeMood(-20);
+  }
+  awayReport.set({ result, goldLost, damaged, hours: Math.round(away / HOUR) });
+  logHook('awayAttack', { result, goldLost, damaged, hoursAway: Math.round(away / HOUR) }, 'shown');
+}
+
+const AWAY_PUSH_IDS = ['lives-full', 'calendar', 'threat'];
+
+/** When the game goes to the background: the notifications that pull the player back. */
+export function scheduleAwayPushes(): void {
+  if (!get(settings).notifications || !dayOn('dayPush')) return;
+  const now = clock.now();
+  const full = fullAt(settleLives(get(lives), now), now);
+  if (full !== null) void schedulePush(playerId, 'lives-full', clock.realMsUntil(full), 'Liven är fulla igen', 'Fem nya försök väntar på dig.');
+  if (dayOn('calendar') && get(daily).claimed < 7) {
+    void schedulePush(playerId, 'calendar', Math.max(60_000, nextReminder(Date.now()) - Date.now()), 'Dagens gåva väntar', 'Hämta den innan dagen är slut.');
+  }
+  if (dayOn('awayAttack')) void schedulePush(playerId, 'threat', THREAT_PUSH_AFTER, 'Grannbyn närmar sig', 'Byborna undrar var du är.');
+  log('push_scheduled', { lives: full !== null, day: dayKey(now) });
+}
+
+/** Dev menu: pretend the player was away for 24 hours (attack, sad villagers). */
+export function devAway(): void {
+  stairs.update((s) => ({ ...s, lastSeen: clock.now() - 24 * HOUR }));
+  welcomeBack();
+}
+
+/** Dev menu: pretend a new day began (the calendar gift is waiting again, day hooks on). */
+export function devNewDay(): void {
+  daily.update((d) => {
+    const y = dayKey(clock.now() - 24 * HOUR);
+    return { ...d, firstDay: d.firstDay === dayKey(clock.now()) ? y : d.firstDay, lastClaimDay: null, lastWinDay: d.lastWinDay ? y : null };
+  });
+  offerCalendar();
+}
+
+export function cancelAwayPushes(): void {
+  for (const id of AWAY_PUSH_IDS) void cancelPush(playerId, id);
 }
 
 // ------------------------------------------------------------------ quitting and the survey

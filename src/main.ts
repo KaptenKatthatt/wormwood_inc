@@ -3,7 +3,9 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App.svelte';
 import { testCode } from './lib/testCode';
 import './app.css';
-import { clock, firstLetter, markSeen, minutesIn, playerId, restartHookClock, settings, tick, welcomeBack } from './lib/state/game';
+import { cancelAwayPushes, clock, daily, firstLetter, markSeen, minutesIn, offerCalendar, playerId, restartHookClock, scheduleAwayPushes, settings, tick, welcomeBack } from './lib/state/game';
+import { dayKey, daysBetween } from './lib/daily';
+
 import { onTutorialFinish, startTutorial, tutorialDone } from './lib/tutorial';
 import { initLogger, log } from './lib/log/logger';
 import { listenForInstall, isStandalone } from './lib/pwa/install';
@@ -20,14 +22,32 @@ welcomeBack();
 tick();
 setInterval(tick, 1000);
 // The hook staircase starts counting when the introduction is over.
-onTutorialFinish(() => { restartHookClock(); firstLetter(); });
+onTutorialFinish(() => { restartHookClock(); firstLetter(); offerCalendar(); });
 if (get(settings).logging !== null) {
   if (!tutorialDone()) startTutorial();
-  else firstLetter();
+  else { firstLetter(); offerCalendar(); }
 }
+/** Which day of the test this is: 1 on the first day the game was opened. */
+const dayIndex = () => daysBetween(get(daily).firstDay, dayKey(clock.now())) + 1;
+
+// Every visit is logged with its date and length (the week at home).
+let visitStart = Date.now();
+const visitInfo = () => ({ date: dayKey(Date.now()), day: dayIndex(), minutesIn: minutesIn() });
+log('visit_start', visitInfo());
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') { welcomeBack(); tick(); log('resume', { minutesIn: minutesIn() }); }
-  else { clock.persist(); markSeen(); log('pause', { minutesIn: minutesIn() }); }
+  if (document.visibilityState === 'visible') {
+    visitStart = Date.now();
+    cancelAwayPushes();
+    welcomeBack();
+    tick();
+    offerCalendar();
+    log('visit_start', visitInfo());
+  } else {
+    clock.persist();
+    markSeen();
+    scheduleAwayPushes();
+    log('visit_end', { ...visitInfo(), seconds: Math.round((Date.now() - visitStart) / 1000) });
+  }
 });
 
 log('open', { standalone: isStandalone(), version: __APP_VERSION__, code: testCode(playerId) });

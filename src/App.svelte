@@ -4,13 +4,15 @@
   import VillageView from './ui/VillageView.svelte';
   import SettingsView from './ui/SettingsView.svelte';
   import Consent from './ui/Consent.svelte';
-  import { offerOpen, quitFlow, settings, shopOpen, toasts } from './lib/state/game';
+  import { awayReport, calendarOpen, offerOpen, quitFlow, settings, shopOpen, toasts } from './lib/state/game';
   import Letter from './ui/Letter.svelte';
   import Offer from './ui/Offer.svelte';
   import Banners from './ui/Banners.svelte';
   import QuitFlow from './ui/QuitFlow.svelte';
   import Shop from './ui/Shop.svelte';
   import Coach from './ui/Coach.svelte';
+  import Calendar from './ui/Calendar.svelte';
+  import AwayReport from './ui/AwayReport.svelte';
   import { log } from './lib/log/logger';
   import { TUT_STEPS, tutorial } from './lib/tutorial';
 
@@ -58,6 +60,7 @@
     {#each $toasts as t (t.id)}<div class="toast">{t.text}</div>{/each}
   </div>
   {#if $offerOpen && !tutStep}<Offer />{/if}
+  {#if $awayReport && !tutStep}<AwayReport />{:else if $calendarOpen && !tutStep}<Calendar />{/if}
   {#if $shopOpen}<Shop />{/if}
   <Coach />
   {#if !tutStep}<Letter />{/if}
