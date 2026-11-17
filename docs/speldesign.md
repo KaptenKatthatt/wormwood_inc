@@ -109,7 +109,7 @@ Priser i ädelstenar visas utan kronor bredvid, eftersom det otydliga priset är
 - Banorna 3–4 blir märkbart svårare, så att livet tar slut för de flesta inom ett pass.
 
 ### Dev-menyn
-Växla verklig och snabbad tid, slå krokar av och på, nollställa sparad data. Nedräkningarna för anfallet och Startpaketet går i verkliga sekunder även med snabbad klocka. Menyn stängs av helt i versionen som går till testpersoner (byggflagga).
+Växla verklig och snabbad tid, slå krokar av och på, nollställa sparad data, pausa rådgivarens brev (pausade som standard i utvecklarbygget, alltid på i testpersonernas version). Nedräkningarna för anfallet och Startpaketet går i verkliga sekunder även med snabbad klocka. Menyn stängs av helt i versionen som går till testpersoner (byggflagga).
 
 ## Längd och utveckling
 
@@ -127,9 +127,11 @@ Fem steg med ökande press. Varje steg startas av en händelse i spelet, och klo
 |---|---|---|---|
 | 1. Mild | min 0–3 | Starthjälp: startbidrag i guld och ädelstenar, de första byggena gratis och klara på sekunder | Spelstart |
 | 2. Lockande | min 3–6 | Nära vinst ("bara 2 drag kvar!"), betala för 5 extra drag | Första förlusten eller nära förlusten |
-| 3. Begränsande | min 6–9 | Väntetid som går att köpa bort (byggen 5–30 min), liv tar slut | Första långa bygget, första gången liven är slut |
+| 3. Begränsande | min 6–9 | Väntetid som går att köpa bort (byggen 5–30 min), liv tar slut, fyll på guld med ädelstenar | Första långa bygget, första gången liven är slut |
 | 4. Stressande | min 9–12 | Tidsbegränsat erbjudande med nedräkning, impulsköp mellan banorna | Första förlusten efter minut 9 |
 | 5. Skuldbeläggande | min 12–15 | Byn anfalls och skölden kostar ädelstenar (ägande), byborna blir ledsna och tjatar när spelaren vill sluta (skuld) | Minut 12, eller när spelaren försöker sluta |
+
+**Fyll på guld (steg 3):** när guldet inte räcker till ett bygge visas "Fyll på X guld för Y ädelstenar" (10 guld per ädelsten, avrundat uppåt), och bygget startar direkt. Egen brytare i dev-menyn. Loggas som krokögonblick (visad, ja, räcker inte).
 
 Hela tiden: butiken finns tillgänglig. Från steg 2: nästa bana startar av sig själv (inga naturliga stopp).
 
