@@ -10,6 +10,12 @@
  * goal tile ("cool"); behind it, they favour both ("warm"). The result is that
  * most games end close to the goal, won or lost by a hair. With rigging off,
  * every new tile is uniformly random.
+ *
+ * Special tiles (Jonas, 2026-11-17), free and earned by skill: four in a row
+ * leaves a tile that clears its row or column when it goes, an L or T shape
+ * leaves one that clears the 3x3 around it, and five in a row leaves a
+ * compass (BOMB) that, swapped with a neighbour, clears every tile of that
+ * kind. A special that is cleared by anything sets off its own effect.
  */
 import type { Goal, Level } from './levels';
 import { pick, type Rng } from './rng';
@@ -17,16 +23,31 @@ import { pick, type Rng } from './rng';
 export interface Cell { r: number; c: number }
 export interface Fall { from: Cell; to: Cell }
 export interface Spawn { cell: Cell; kind: number; /** rows above the board it falls from */ dropFrom: number }
-export interface Step { cleared: Cell[]; iceBroken: Cell[]; falls: Fall[]; spawns: Spawn[]; score: number; }
+export type Special = 'row' | 'col' | 'area' | null;
+export interface Made { cell: Cell; kind: number; special: Special }
+export interface Step {
+  cleared: Cell[];
+  iceBroken: Cell[];
+  falls: Fall[];
+  spawns: Spawn[];
+  score: number;
+  /** Special tiles made in this step (they stay on the board). */
+  made: Made[];
+  /** Specials that went off, for the effects. */
+  blasts: { cell: Cell; special: Special | 'bomb' }[];
+}
 export interface SwapResult { valid: boolean; steps: Step[]; shuffled: boolean }
 export type Status = 'playing' | 'won' | 'out-of-moves';
 export type Mood = 'warm' | 'cool' | 'neutral';
 
 const EMPTY = -1;
+/** The compass from five in a row. It has no kind of its own and never matches. */
+export const BOMB = 99;
 
 export class Match3 {
   readonly level: Level;
   board: number[][];
+  special: Special[][];
   ice: boolean[][];
   movesLeft: number;
   movesUsed = 0;
@@ -45,6 +66,7 @@ export class Match3 {
     this.ice = Array.from({ length: level.rows }, () => Array(level.cols).fill(false));
     for (const [r, c] of level.ice ?? []) this.ice[r][c] = true;
     this.iceTotal = (level.ice ?? []).length;
+    this.special = Array.from({ length: level.rows }, () => Array(level.cols).fill(null));
     this.board = board ?? this.freshBoard();
   }
 
@@ -107,7 +129,8 @@ export class Match3 {
       return { valid: false, steps: [], shuffled: false };
     }
     this.swapCells(a, b);
-    if (this.findMatches().length === 0) {
+    const bombAt = this.board[a.r][a.c] === BOMB ? a : this.board[b.r][b.c] === BOMB ? b : null;
+    if (!bombAt && this.findMatches().length === 0) {
       this.swapCells(a, b);
       return { valid: false, steps: [], shuffled: false };
     }
@@ -115,12 +138,18 @@ export class Match3 {
     this.movesUsed++;
     const steps: Step[] = [];
     let chain = 1;
-    for (;;) {
-      const matched = this.findMatches();
-      if (matched.length === 0) break;
-      steps.push(this.resolve(matched, chain));
+    if (bombAt) {
+      const other = bombAt === a ? b : a;
+      const kind = this.board[other.r][other.c];
+      const hit = kind === BOMB ? this.allCells() : [bombAt, ...this.cellsOf(kind)];
+      steps.push(this.resolve(hit, chain++, [], [{ cell: bombAt, special: 'bomb' }]));
+    }
+    while (this.status() !== 'won') {
+      const groups = this.findGroups();
+      if (groups.length === 0) break;
+      // a special from the player's own swap lands where the tile was moved to
+      steps.push(this.resolveGroups(groups, chain, chain === 1 ? [b, a] : []));
       chain++;
-      if (this.status() === 'won') break;
     }
     let shuffled = false;
     if (this.status() === 'playing' && !this.hasMove()) {
@@ -136,6 +165,16 @@ export class Match3 {
     return this.settle([cell]);
   }
 
+  private allCells(): Cell[] {
+    const out: Cell[] = [];
+    for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) out.push({ r, c });
+    return out;
+  }
+
+  private cellsOf(kind: number): Cell[] {
+    return this.allCells().filter(({ r, c }) => this.board[r][c] === kind);
+  }
+
   /** The shuffler: mixes the tiles without using a move. */
   mix(): void {
     if (this.status() === 'playing') this.shuffle();
@@ -145,9 +184,9 @@ export class Match3 {
     const steps: Step[] = [this.resolve(first, 1)];
     let chain = 2;
     while (this.status() !== 'won') {
-      const matched = this.findMatches();
-      if (matched.length === 0) break;
-      steps.push(this.resolve(matched, chain++));
+      const groups = this.findGroups();
+      if (groups.length === 0) break;
+      steps.push(this.resolveGroups(groups, chain++, []));
     }
     let shuffled = false;
     if (this.status() === 'playing' && !this.hasMove()) {
@@ -165,6 +204,7 @@ export class Match3 {
           const a = { r, c };
           const b = { r: r + dr, c: c + dc };
           if (!this.inside(b)) continue;
+          if (this.board[a.r][a.c] === BOMB || this.board[b.r][b.c] === BOMB) return [a, b];
           this.swapCells(a, b);
           const ok = this.findMatches().length > 0;
           this.swapCells(a, b);
@@ -187,6 +227,81 @@ export class Match3 {
     const t = this.board[a.r][a.c];
     this.board[a.r][a.c] = this.board[b.r][b.c];
     this.board[b.r][b.c] = t;
+    const s = this.special[a.r][a.c];
+    this.special[a.r][a.c] = this.special[b.r][b.c];
+    this.special[b.r][b.c] = s;
+  }
+
+  /**
+   * The lines of 3+ on the board, joined into groups where lines of the same
+   * kind cross or touch (an L or T shape is one group).
+   */
+  findGroups(): { cells: Cell[]; longest: number; across: boolean; down: boolean }[] {
+    const runs: { cells: Cell[]; dir: 'h' | 'v' }[] = [];
+    const real = (k: number) => k !== EMPTY && k !== BOMB;
+    for (let r = 0; r < this.rows; r++) {
+      let start = 0;
+      for (let c = 1; c <= this.cols; c++) {
+        if (c < this.cols && real(this.board[r][c]) && this.board[r][c] === this.board[r][start]) continue;
+        if (c - start >= 3 && real(this.board[r][start])) runs.push({ dir: 'h', cells: Array.from({ length: c - start }, (_, i) => ({ r, c: start + i })) });
+        start = c;
+      }
+    }
+    for (let c = 0; c < this.cols; c++) {
+      let start = 0;
+      for (let r = 1; r <= this.rows; r++) {
+        if (r < this.rows && real(this.board[r][c]) && this.board[r][c] === this.board[start][c]) continue;
+        if (r - start >= 3 && real(this.board[start][c])) runs.push({ dir: 'v', cells: Array.from({ length: r - start }, (_, i) => ({ r: start + i, c })) });
+        start = r;
+      }
+    }
+    // union runs that share a cell
+    const parent = runs.map((_, i) => i);
+    const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+    const owner = new Map<number, number>();
+    runs.forEach((run, i) => {
+      for (const { r, c } of run.cells) {
+        const key = r * this.cols + c;
+        const j = owner.get(key);
+        if (j === undefined) owner.set(key, i);
+        else parent[find(i)] = find(j);
+      }
+    });
+    const groups = new Map<number, { cells: Map<number, Cell>; longest: number; across: boolean; down: boolean }>();
+    runs.forEach((run, i) => {
+      const root = find(i);
+      const g = groups.get(root) ?? { cells: new Map(), longest: 0, across: false, down: false };
+      for (const cell of run.cells) g.cells.set(cell.r * this.cols + cell.c, cell);
+      g.longest = Math.max(g.longest, run.cells.length);
+      if (run.dir === 'h') g.across = true; else g.down = true;
+      groups.set(root, g);
+    });
+    return [...groups.values()].map((g) => ({ ...g, cells: [...g.cells.values()] }));
+  }
+
+  /** Clears the groups and leaves a special tile where a group earned one. */
+  private resolveGroups(groups: ReturnType<Match3['findGroups']>, chain: number, focus: Cell[]): Step {
+    const made: Made[] = [];
+    const cleared: Cell[] = [];
+    for (const g of groups) {
+      let special: Special | 'bomb' = null;
+      if (g.longest >= 5) special = 'bomb';
+      else if (g.across && g.down) special = 'area';
+      else if (g.longest === 4) special = g.across ? 'row' : 'col';
+      if (!special) { cleared.push(...g.cells); continue; }
+      const at = g.cells.find((x) => focus.some((f) => f.r === x.r && f.c === x.c)) ?? g.cells[Math.floor(g.cells.length / 2)];
+      for (const x of g.cells) if (x !== at) cleared.push(x);
+      const kind = this.board[at.r][at.c];
+      // The tile that becomes special counts as collected now.
+      const wasSpecial = this.special[at.r][at.c];
+      if (wasSpecial) cleared.push({ ...at }); // an old special in the group goes off, and is counted there
+      else {
+        const goal = this.level.goal;
+        if (goal.type === 'collect' && kind === goal.kind) this.collected++;
+      }
+      made.push({ cell: at, kind: special === 'bomb' ? BOMB : kind, special: special === 'bomb' ? null : special });
+    }
+    return this.resolve(cleared, chain, made);
   }
 
   /** All cells that are part of a horizontal or vertical line of 3+. */
@@ -196,7 +311,7 @@ export class Match3 {
       for (let j = 0; j < other; j++) {
         let run = 1;
         for (let i = 1; i <= len; i++) {
-          const same = i < len && get(i, j) !== EMPTY && get(i, j) === get(i - 1, j);
+          const same = i < len && get(i, j) !== EMPTY && get(i, j) !== BOMB && get(i, j) === get(i - 1, j);
           if (same) { run++; continue; }
           if (run >= 3) for (let k = i - run; k < i; k++) mark(k, j);
           run = 1;
@@ -210,15 +325,47 @@ export class Match3 {
     return out;
   }
 
-  private resolve(matched: Cell[], chain: number): Step {
+  private resolve(first: Cell[], chain: number, made: Made[] = [], blasts: Step['blasts'] = []): Step {
     const goal = this.level.goal;
     const iceBroken: Cell[] = [];
+    // Cleared specials set off their effect, which can set off others.
+    const seen = new Set<number>();
+    const keep = new Set(made.filter((m) => !first.some((f) => f.r === m.cell.r && f.c === m.cell.c)).map((m) => m.cell.r * this.cols + m.cell.c));
+    const matched: Cell[] = [];
+    const queue = [...first];
+    while (queue.length) {
+      const { r, c } = queue.shift()!;
+      const key = r * this.cols + c;
+      if (seen.has(key) || keep.has(key) || !this.inside({ r, c })) continue;
+      seen.add(key);
+      matched.push({ r, c });
+      const sp = this.special[r][c];
+      if (sp === 'row') for (let cc = 0; cc < this.cols; cc++) queue.push({ r, c: cc });
+      if (sp === 'col') for (let rr = 0; rr < this.rows; rr++) queue.push({ r: rr, c });
+      if (sp === 'area') for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) queue.push({ r: r + dr, c: c + dc });
+      if (sp) blasts.push({ cell: { r, c }, special: sp });
+      if (this.board[r][c] === BOMB && !blasts.some((b) => b.cell.r === r && b.cell.c === c)) {
+        // a compass hit by a blast takes the most common kind with it
+        const counts = new Map<number, number>();
+        for (const x of this.allCells()) { const k = this.board[x.r][x.c]; if (k >= 0 && k !== BOMB) counts.set(k, (counts.get(k) ?? 0) + 1); }
+        const top = [...counts.entries()].sort((p, q) => q[1] - p[1])[0]?.[0];
+        if (top !== undefined) queue.push(...this.cellsOf(top));
+        blasts.push({ cell: { r, c }, special: 'bomb' });
+      }
+    }
     for (const { r, c } of matched) {
       if (goal.type === 'collect' && this.board[r][c] === goal.kind) this.collected++;
       if (this.ice[r][c]) { this.ice[r][c] = false; iceBroken.push({ r, c }); }
       this.board[r][c] = EMPTY;
+      this.special[r][c] = null;
     }
-    const score = matched.length * 20 * chain + Math.max(0, matched.length - 3) * 30;
+    for (const m of made) {
+      const { r, c } = m.cell;
+      if (this.ice[r][c]) { this.ice[r][c] = false; iceBroken.push({ r, c }); }
+      this.board[m.cell.r][m.cell.c] = m.kind;
+      this.special[m.cell.r][m.cell.c] = m.special;
+    }
+    const score = matched.length * 20 * chain + Math.max(0, matched.length - 3) * 30 + made.length * 60;
     this.score += score;
 
     // gravity
@@ -230,6 +377,8 @@ export class Match3 {
         if (r !== write) {
           this.board[write][c] = this.board[r][c];
           this.board[r][c] = EMPTY;
+          this.special[write][c] = this.special[r][c];
+          this.special[r][c] = null;
           falls.push({ from: { r, c }, to: { r: write, c } });
         }
         write--;
@@ -248,7 +397,7 @@ export class Match3 {
         spawns.push({ cell: { r, c }, kind, dropFrom: empties });
       }
     }
-    return { cleared: matched, iceBroken, falls, spawns, score };
+    return { cleared: matched, iceBroken, falls, spawns, score, made, blasts };
   }
 
   /** Would `kind` at (r, c) complete a line of three with tiles already placed? */
@@ -288,15 +437,19 @@ export class Match3 {
   }
 
   private shuffle(): void {
-    const tiles = this.board.flat();
+    const tiles = this.board.flat().map((k, i) => ({ k, s: this.special[Math.floor(i / this.cols)][i % this.cols] }));
     for (let attempt = 0; attempt < 100; attempt++) {
       for (let i = tiles.length - 1; i > 0; i--) {
         const j = Math.floor(this.rng() * (i + 1));
         [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
       }
-      for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) this.board[r][c] = tiles[r * this.cols + c];
+      for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) {
+        this.board[r][c] = tiles[r * this.cols + c].k;
+        this.special[r][c] = tiles[r * this.cols + c].s;
+      }
       if (this.findMatches().length === 0 && this.hasMove()) return;
     }
     this.board = this.freshBoard();
+    this.special = Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
   }
 }

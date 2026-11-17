@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Cell, Match3, Step } from '../lib/match3/engine';
+import { BOMB, type Cell, type Match3, type Special, type Step } from '../lib/match3/engine';
 import { TILES } from '../lib/match3/levels';
 import { DEEP, FRAME } from './palette';
 
@@ -124,7 +124,7 @@ export class Match3Scene extends Phaser.Scene {
     g.lineStyle(k, 0x5a4632, 0.18);
     for (let i = 1; i < e.cols; i++) g.lineBetween(ox + i * this.cell, oy, ox + i * this.cell, oy + bh);
     for (let i = 1; i < e.rows; i++) g.lineBetween(ox, oy + i * this.cell, ox + bw, oy + i * this.cell);
-    this.tiles = e.board.map((row, r) => row.map((kind, c) => this.makeTile(kind, this.pos({ r, c }))));
+    this.tiles = e.board.map((row, r) => row.map((kind, c) => this.makeTile(kind, this.pos({ r, c }), e.special[r][c])));
     // Ice is a pale blue see-through layer over the tile.
     this.iceGfx = e.ice.map((row, r) =>
       row.map((has, c) => {
@@ -190,11 +190,87 @@ export class Match3Scene extends Phaser.Scene {
     this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3 * this.k, DEEP, 1).setDepth(3);
   }
 
-  private makeTile(kind: number, at: { x: number; y: number }): Tile {
+  private makeTile(kind: number, at: { x: number; y: number }, special: Special = null): Tile {
     const size = this.cell * 0.86;
+    if (kind === BOMB) return this.add.container(at.x, at.y, [this.compass(size)]).setDepth(1);
+    const parts: Phaser.GameObjects.GameObject[] = [];
+    if (special) parts.push(this.specialMark(special, size));
     const shadow = this.add.image(0, 2 * this.k, `tile-${TILES[kind]}`).setDisplaySize(size, size).setTint(0x000000).setAlpha(0.25);
     const img = this.add.image(0, 0, `tile-${TILES[kind]}`).setDisplaySize(size, size);
-    return this.add.container(at.x, at.y, [shadow, img]).setDepth(1);
+    parts.push(shadow, img);
+    if (special === 'row' || special === 'col') parts.push(this.arrows(special, size));
+    return this.add.container(at.x, at.y, parts).setDepth(1);
+  }
+
+  /** Behind a special tile: a warm glow, and a lifebuoy ring for the area tile. */
+  private specialMark(special: Special, size: number): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics();
+    g.fillStyle(0xffe7a3, 0.85).fillCircle(0, 0, size * 0.5);
+    if (special === 'area') {
+      const w = size * 0.11;
+      for (let i = 0; i < 8; i++) {
+        g.lineStyle(w, i % 2 ? 0xffffff : 0xc0392b, 1);
+        g.beginPath();
+        g.arc(0, 0, size * 0.47, (i * Math.PI) / 4, ((i + 1) * Math.PI) / 4);
+        g.strokePath();
+      }
+    }
+    return g;
+  }
+
+  /** Over a row or column tile: two white arrows pointing the way it clears. */
+  private arrows(special: 'row' | 'col', size: number): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics();
+    const d = size * 0.54;
+    const a = size * 0.2;
+    g.fillStyle(0xffffff, 1).lineStyle(this.k * 2, DEEP, 1);
+    for (const sgn of [-1, 1]) {
+      const pts = special === 'row'
+        ? [sgn * d, 0, sgn * (d - a * 1.3), -a, sgn * (d - a * 1.3), a]
+        : [0, sgn * d, -a, sgn * (d - a * 1.3), a, sgn * (d - a * 1.3)];
+      g.fillTriangle(pts[0], pts[1], pts[2], pts[3], pts[4], pts[5]);
+      g.strokeTriangle(pts[0], pts[1], pts[2], pts[3], pts[4], pts[5]);
+    }
+    return g;
+  }
+
+  /** The compass from five in a row: a gold rim and an eight-pointed star. */
+  private compass(size: number): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics();
+    const R = size * 0.46;
+    g.fillStyle(0x000000, 0.25).fillCircle(0, 2 * this.k, R);
+    g.fillStyle(0xd9a441, 1).fillCircle(0, 0, R);
+    g.fillStyle(0xfff8ec, 1).fillCircle(0, 0, R * 0.84);
+    const star = (len: number, color: number, offset: number) => {
+      for (let i = 0; i < 4; i++) {
+        const t = offset + (i * Math.PI) / 2;
+        const tip = { x: Math.cos(t) * len, y: Math.sin(t) * len };
+        const l = { x: Math.cos(t + Math.PI / 2) * len * 0.22, y: Math.sin(t + Math.PI / 2) * len * 0.22 };
+        g.fillStyle(color, 1).fillTriangle(tip.x, tip.y, l.x, l.y, -l.x, -l.y);
+      }
+    };
+    star(R * 0.62, 0x2c5d7c, Math.PI / 4);
+    star(R * 0.8, 0xb8382a, -Math.PI / 2);
+    g.fillStyle(0xd9a441, 1).fillCircle(0, 0, R * 0.12);
+    return g;
+  }
+
+  /** A quick flash where a special went off. */
+  private flash(step: Step): void {
+    const e = this.engine;
+    if (!e) return;
+    for (const b of step.blasts) {
+      const p = this.pos(b.cell);
+      let rect: Phaser.GameObjects.Rectangle;
+      const bw = this.cell * e.cols;
+      const bh = this.cell * e.rows;
+      if (b.special === 'row') rect = this.add.rectangle(this.origin.x + bw / 2, p.y, bw, this.cell * 0.7, 0xfff3c4, 0.9);
+      else if (b.special === 'col') rect = this.add.rectangle(p.x, this.origin.y + bh / 2, this.cell * 0.7, bh, 0xfff3c4, 0.9);
+      else if (b.special === 'area') rect = this.add.rectangle(p.x, p.y, this.cell * 3, this.cell * 3, 0xfff3c4, 0.85);
+      else rect = this.add.rectangle(this.origin.x + bw / 2, this.origin.y + bh / 2, bw, bh, 0xffffff, 0.45);
+      rect.setDepth(4);
+      void this.tween(rect, { alpha: 0 }, 380).then(() => rect.destroy());
+    }
   }
 
   private select(cell: Cell | null): void {
@@ -295,6 +371,7 @@ export class Match3Scene extends Phaser.Scene {
   }
 
   private async play(step: Step): Promise<void> {
+    this.flash(step);
     const cleared = step.cleared.map(({ r, c }) => this.tiles[r][c]!).filter(Boolean);
     for (const { r, c } of step.iceBroken) {
       const ice = this.iceGfx[r]?.[c];
@@ -303,6 +380,13 @@ export class Match3Scene extends Phaser.Scene {
     await this.tween(cleared, { scale: 0, alpha: 0 }, 160);
     cleared.forEach((t) => t.destroy());
     for (const { r, c } of step.cleared) this.tiles[r][c] = null;
+    // new special tiles pop up where the line was made
+    for (const m of step.made) {
+      this.tiles[m.cell.r][m.cell.c]?.destroy();
+      const t = this.makeTile(m.kind, this.pos(m.cell), m.special).setScale(0.3);
+      this.tiles[m.cell.r][m.cell.c] = t;
+      void this.tween(t, { scale: 1 }, 220);
+    }
 
     // falls: process from the bottom so moved tiles do not overwrite each other
     const moves: Promise<void>[] = [];

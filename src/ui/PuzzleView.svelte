@@ -1,6 +1,7 @@
 <script lang="ts">
   import { millMoves } from '../lib/economy/village';
-  import { effectiveVillage } from '../lib/state/game';
+  import { effectiveVillage, toast } from '../lib/state/game';
+  import { load, save } from '../lib/state/storage';
   import GameCanvas from '../game/GameCanvas.svelte';
   import Modal from './Modal.svelte';
   import MapView from './MapView.svelte';
@@ -72,7 +73,26 @@
     };
   }
 
-  function onMoved(_r: SwapResult) {
+  /** The first time each special tile is made, a short tip says what it does. */
+  const SPECIAL_TIPS: Record<string, string> = {
+    row: 'Fyra i rad gav en pilbricka. Den rensar hela raden när den försvinner.',
+    col: 'Fyra i rad gav en pilbricka. Den rensar hela kolumnen när den försvinner.',
+    area: 'Ett L eller T gav en livboj. Den rensar allt runt sig.',
+    bomb: 'Fem i rad gav en kompass. Byt den med en bricka så försvinner alla av den sorten.',
+  };
+  function noteSpecials(r: SwapResult) {
+    const made = r.steps.flatMap((s) => s.made.map((m) => m.special ?? 'bomb'));
+    if (made.length) log('specials_made', { level: game?.level.id, made });
+    const seen = load<string[]>('specialTips', []);
+    const fresh = made.find((m) => !seen.includes(m));
+    if (fresh) {
+      toast(SPECIAL_TIPS[fresh]);
+      save('specialTips', [...seen, fresh]);
+    }
+  }
+
+  function onMoved(r: SwapResult) {
+    noteSpecials(r);
     rev++;
     tutEvent('moved');
     const g = game;
@@ -92,12 +112,12 @@
     }
   }
 
-  function onSmashed(_r: SwapResult) {
+  function onSmashed(r: SwapResult) {
     const g = game;
     tool = null;
     if (!g) return;
     payBooster('hammer', g.level.id);
-    onMoved(_r);
+    onMoved(r);
   }
 
   /** The hammer waits for a tap on a tile; tapping the button again puts it away. */
