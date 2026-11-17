@@ -5,7 +5,7 @@
   import Modal from './Modal.svelte';
   import MapView from './MapView.svelte';
   import { Match3Scene } from '../game/Match3Scene';
-  import { Match3, type SwapResult } from '../lib/match3/engine';
+  import { Match3, isRocket, type SwapResult } from '../lib/match3/engine';
   import { KIND_NAMES, LEVELS, TILES, goalText, type Level } from '../lib/match3/levels';
   import { makeRng } from '../lib/match3/rng';
   import { PRICE } from '../lib/economy/shop';
@@ -79,15 +79,14 @@
 
   /** The first time each special tile is made, a short tip says what it does. */
   const SPECIAL_TIPS: Record<string, string> = {
-    row: 'Fyra i rad gav en raket. Tryck på den eller byt den med en granne, så flyger den genom hela raden.',
-    col: 'Fyra i rad gav en raket. Tryck på den eller byt den med en granne, så flyger den genom hela kolumnen.',
+    rocket: 'Fyra i rad gav en raket. Tryck på den eller byt den med en granne, så tar den allt åt det håll nosen pekar.',
     area: 'Ett L eller T gav fyrverkerier. Tryck på dem eller byt dem med en granne, så smäller allt runt omkring.',
     all: 'Fem i rad gav en lysande bricka. Tryck på den, så försvinner alla brickor av samma sort.',
   };
   function noteSpecials(r: SwapResult) {
     const made = r.steps.flatMap((s) => s.made.map((m) => m.special ?? 'bomb'));
     if (made.length) log('specials_made', { level: game?.level.id, made });
-    for (const m of new Set(made)) tipOnce(`special-${m}`, SPECIAL_TIPS[m]);
+    for (const m of new Set(made.map((m) => (isRocket(m) ? 'rocket' : m)))) if (SPECIAL_TIPS[m]) tipOnce(`special-${m}`, SPECIAL_TIPS[m]);
   }
 
   function onMoved(r: SwapResult) {

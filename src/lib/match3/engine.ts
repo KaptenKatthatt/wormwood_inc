@@ -14,7 +14,8 @@
  * every new tile is uniformly random.
  *
  * Special tiles (Jonas, 2026-11-17, option A), free and earned by skill. Four
- * in a row leaves a rocket that clears its row or column, an L or T shape
+ * in a row leaves a rocket that clears its row or column from itself the
+ * way its nose points, an L or T shape
  * leaves fireworks that clear the 3x3 around them; both have no kind (POWER)
  * and never match. Five in a row leaves a shining tile that keeps its kind
  * and clears every tile of that kind. A special goes off when it is tapped
@@ -26,7 +27,10 @@ import { pick, type Rng } from './rng';
 export interface Cell { r: number; c: number }
 export interface Fall { from: Cell; to: Cell }
 export interface Spawn { cell: Cell; kind: number; /** rows above the board it falls from */ dropFrom: number }
-export type Special = 'row' | 'col' | 'area' | 'all' | null;
+/** A rocket clears from itself the way its nose points (Jonas, 2026-11-17). */
+export type Rocket = 'left' | 'right' | 'up' | 'down';
+export type Special = Rocket | 'area' | 'all' | null;
+export const isRocket = (s: Special | 'bomb'): s is Rocket => s === 'left' || s === 'right' || s === 'up' || s === 'down';
 export interface Made { cell: Cell; kind: number; special: Special }
 export interface Step {
   cleared: Cell[];
@@ -330,9 +334,12 @@ export class Match3 {
       let special: Special | 'bomb' = null;
       if (g.longest >= 5) special = 'bomb';
       else if (g.across && g.down) special = 'area';
-      else if (g.longest === 4) special = g.across ? 'row' : 'col';
+      else if (g.longest === 4) special = g.across ? 'right' : 'down'; // turned toward the bigger side below
       if (!special) { cleared.push(...g.cells); continue; }
       const at = g.cells.find((x) => focus.some((f) => f.r === x.r && f.c === x.c)) ?? g.cells[Math.floor(g.cells.length / 2)];
+      // a rocket's nose points to the side of the board with more tiles to take
+      if (special === 'right' && at.c > this.cols - 1 - at.c) special = 'left';
+      if (special === 'down' && at.r > this.rows - 1 - at.r) special = 'up';
       for (const x of g.cells) if (x !== at) cleared.push(x);
       const kind = this.board[at.r][at.c];
       // The tile that becomes special counts as collected now.
@@ -385,8 +392,10 @@ export class Match3 {
       seen.add(key);
       matched.push({ r, c });
       const sp = this.special[r][c];
-      if (sp === 'row') for (let cc = 0; cc < this.cols; cc++) queue.push({ r, c: cc });
-      if (sp === 'col') for (let rr = 0; rr < this.rows; rr++) queue.push({ r: rr, c });
+      if (sp === 'right') for (let cc = c + 1; cc < this.cols; cc++) queue.push({ r, c: cc });
+      if (sp === 'left') for (let cc = c - 1; cc >= 0; cc--) queue.push({ r, c: cc });
+      if (sp === 'down') for (let rr = r + 1; rr < this.rows; rr++) queue.push({ r: rr, c });
+      if (sp === 'up') for (let rr = r - 1; rr >= 0; rr--) queue.push({ r: rr, c });
       if (sp === 'area') for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) queue.push({ r: r + dr, c: c + dc });
       if (sp === 'all') {
         queue.push(...this.cellsOf(this.board[r][c]));

@@ -1,6 +1,6 @@
 import { play as playSound, playMatch } from '../lib/audio/sound';
 import Phaser from 'phaser';
-import { BOMB, isFree, type Cell, type Match3, type Special, type Step } from '../lib/match3/engine';
+import { BOMB, isFree, isRocket, type Cell, type Match3, type Special, type Step } from '../lib/match3/engine';
 import { TILES } from '../lib/match3/levels';
 import { DEEP, FRAME } from './palette';
 
@@ -251,7 +251,8 @@ export class Match3Scene extends Phaser.Scene {
     const big = kind === BOMB ? size * 1.1 : special === 'area' ? size * 0.98 : size * 1.15;
     const shadow = this.add.image(0, 2 * this.k, `sp-${name}`).setDisplaySize(big, big).setTint(0x000000).setAlpha(0.25);
     const img = this.add.image(0, 0, `sp-${name}`).setDisplaySize(big, big);
-    if (special === 'col') { shadow.setAngle(-90); img.setAngle(-90); }
+    const turn = { right: 0, down: 90, left: 180, up: -90 }[special as string] ?? 0;
+    shadow.setAngle(turn); img.setAngle(turn);
     const t = this.add.container(at.x, at.y, [glow, shadow, img]).setDepth(1);
     // a slow breath so the player sees it can be used
     this.tweens.add({ targets: glow, alpha: 0.35, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -290,15 +291,15 @@ export class Match3Scene extends Phaser.Scene {
     const ms = 260 / Math.max(this.speed, 0.6);
     for (const b of step.blasts) {
       const p = this.pos(b.cell);
-      if (b.special === 'row' || b.special === 'col') {
-        const across = b.special === 'row';
-        for (const dir of [-1, 1]) {
-          const beam = this.add.rectangle(p.x, p.y, across ? 1 : this.cell * 0.55, across ? this.cell * 0.55 : 1, 0xffe58a, 0.95)
-            .setOrigin(across ? (dir < 0 ? 1 : 0) : 0.5, across ? 0.5 : dir < 0 ? 1 : 0).setDepth(4);
-          const reach = across ? (dir < 0 ? p.x - this.origin.x : this.origin.x + bw - p.x) : dir < 0 ? p.y - this.origin.y : this.origin.y + bh - p.y;
-          void this.tween(beam, across ? { width: reach } : { height: reach }, ms)
-            .then(() => this.tween(beam, { alpha: 0 }, 160)).then(() => beam.destroy());
-        }
+      if (isRocket(b.special)) {
+        // one beam from the rocket the way its nose points
+        const across = b.special === 'left' || b.special === 'right';
+        const dir = b.special === 'left' || b.special === 'up' ? -1 : 1;
+        const beam = this.add.rectangle(p.x, p.y, across ? 1 : this.cell * 0.55, across ? this.cell * 0.55 : 1, 0xffe58a, 0.95)
+          .setOrigin(across ? (dir < 0 ? 1 : 0) : 0.5, across ? 0.5 : dir < 0 ? 1 : 0).setDepth(4);
+        const reach = across ? (dir < 0 ? p.x - this.origin.x : this.origin.x + bw - p.x) : dir < 0 ? p.y - this.origin.y : this.origin.y + bh - p.y;
+        void this.tween(beam, across ? { width: reach } : { height: reach }, ms)
+          .then(() => this.tween(beam, { alpha: 0 }, 160)).then(() => beam.destroy());
       } else if (b.special === 'area') {
         const ring = this.add.circle(p.x, p.y, this.cell * 0.4).setStrokeStyle(this.cell * 0.18, 0xffffff, 0.95).setDepth(4);
         void this.tween(ring, { radius: this.cell * 1.6, alpha: 0 }, ms + 120).then(() => ring.destroy());

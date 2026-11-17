@@ -23,7 +23,7 @@ describe('special tiles', () => {
     const r = g.trySwap({ r: 1, c: 2 }, { r: 0, c: 2 });
     expect(r.valid).toBe(true);
     // 0,0,0,0 across row 0 -> a row tile at (0,2)
-    expect(r.steps[0].made[0]).toMatchObject({ cell: { r: 0, c: 2 }, special: 'row', kind: POWER });
+    expect(r.steps[0].made[0]).toMatchObject({ cell: { r: 0, c: 2 }, special: 'right', kind: POWER });
   });
 
   it('an L shape leaves an area tile, five in a row a compass', () => {
@@ -39,10 +39,10 @@ describe('special tiles', () => {
 
   it('a row tile clears its whole row when it goes', () => {
     const g = new Match3(level, rng, false, base());
-    g.special[3][0] = 'row';
+    g.special[3][0] = 'right';
     const step = g.smash({ r: 3, c: 0 }).steps[0];
     expect(step.cleared.filter((x) => x.r === 3)).toHaveLength(6);
-    expect(step.blasts[0].special).toBe('row');
+    expect(step.blasts[0].special).toBe('right');
   });
 
   it('a compass swapped with a tile clears every tile of that kind', () => {
@@ -59,12 +59,12 @@ describe('special tiles', () => {
     const b = base();
     b[2][0] = POWER; b[2][1] = POWER; b[2][2] = POWER;
     const g = new Match3(level, rng, false, b);
-    g.special[2][0] = 'row'; g.special[2][1] = 'row'; g.special[2][2] = 'row';
+    g.special[2][0] = 'right'; g.special[2][1] = 'right'; g.special[2][2] = 'right';
     expect(g.findMatches()).toHaveLength(0);
     const r = g.fire({ r: 2, c: 1 });
     expect(r.valid).toBe(true);
     expect(g.movesLeft).toBe(level.moves - 1);
-    expect(r.steps[0].cleared.filter((x) => x.r === 2)).toHaveLength(6);
+    expect(r.steps[0].cleared.filter((x) => x.r === 2)).toHaveLength(5); // from the rocket at c=1 to the right edge
   });
 
   it('swapping fireworks with any neighbour sets them off where they land', () => {
@@ -116,5 +116,22 @@ describe('special tiles', () => {
     const fired = g.fire({ r: 2, c: 2 });
     expect(fired.valid).toBe(true);
     expect(fired.steps[0].cleared).toHaveLength(6); // every kind-4 tile on the base board
+  });
+
+  it('a rocket clears only the way its nose points', () => {
+    const g = new Match3(level, rng, false, base());
+    g.board[2][3] = POWER; g.special[2][3] = 'up';
+    const step = g.fire({ r: 2, c: 3 }).steps[0];
+    const col = step.cleared.filter((x) => x.c === 3).map((x) => x.r).sort();
+    expect(col).toEqual([0, 1, 2]);
+  });
+
+  it('a rocket points toward the side of the board with more tiles', () => {
+    const b = base();
+    b[0] = [0, 0, 5, 0, 4, 5];
+    b[1][2] = 0;
+    const g = new Match3(level, rng, false, b);
+    const r = g.trySwap({ r: 1, c: 2 }, { r: 0, c: 2 });
+    expect(r.steps[0].made[0].special).toBe('right'); // c=2 of 6: more room to the right
   });
 });
