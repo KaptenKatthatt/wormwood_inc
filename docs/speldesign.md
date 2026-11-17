@@ -44,6 +44,8 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 
 **Hjälpmedel (beslut):** hammaren tar bort en bricka, blandaren blandar om brädet. En gratis av varje i introduktionen, sedan köps de med ädelstenar.
 
+**Specialbrickor i brädet (beslut):** fyra i rad ger en bricka som spränger raden eller kolumnen, L- eller T-form ger en som spränger runt sig (3x3), och fem i rad ger en bomb som tar bort alla brickor av en sort. Gratis, kommer av skicklighet, motiv i skärgårdsstil. Hammaren och blandaren ligger kvar som köpknappar utanför brädet (köpkrok).
+
 ### Byggnaderna
 Stil: en gammal svensk by på fastlandet, med åkrar och skog runt om (inte en ö eller udde, som blir för begränsad i yta). Byggnaderna ska passa i sina rutor.
 
@@ -54,6 +56,11 @@ Stil: en gammal svensk by på fastlandet, med åkrar och skog runt om (inte en �
 | Kasernen | Tränar soldater för guld. |
 | Vakttornet | Försvarar byn vid anfall. |
 | Kapellet | Bybornas humör. Härifrån kommer tjatet och skulden i steg 5. |
+| Kvarnen | Röjs vid Stugan nivå 3. +1 drag per utmaning per 2 nivåer. |
+| Smedjan | Röjs vid Stugan nivå 5. +5 försvar per soldat och nivå. |
+| Marknaden | Röjs vid Stugan nivå 7. −5 % byggpris per nivå. |
+
+Alla 8 byggnader har 10 nivåer (spelet 0.8.0).
 
 ### Anfallet (steg 5)
 - En påhittad grannby anfaller runt minut 12. Varning med nedräkning på 60 sekunder.
@@ -73,6 +80,7 @@ Kostnaden växer ungefär i kvadrat med antalet byggen. En vunnen bana ger cirka
 | 4 | 400 | 5 min |
 | 5 | 900 | 30 min |
 | 6 | 1 600 | 2 h |
+| 7 och framåt | 1 600 + 300 per bygge efter det sjätte | 2 h |
 
 Runt minut 6 behövs fyra banor per bygge, och där börjar grindingen.
 
