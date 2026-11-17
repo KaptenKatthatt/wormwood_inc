@@ -29,12 +29,12 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 
 ### Banorna
 - Tre olika banor med olika mål: samla ett visst antal brickor av en sort, rensa is, nå en poänggräns.
-- Banorna kan spelas om för guld. Ett pass blir 8–10 banor.
+- Banorna kan spelas om för guld. Ett första pass blir 8–10 banor.
 - Bana 3 är svår, så att liven tar slut för de flesta.
 - **Beslut:** nära vinst är riggad. Spelet väljer nya brickor så att en förlust oftast slutar 1–3 drag eller några brickor från målet. Brytare i dev-menyn slår av riggningen (ärlig slump).
 
 ### Byggnaderna
-Stil: "rödfärg och skärgård", byn ligger på en udde (se moodboarden).
+Stil: en gammal svensk by på fastlandet, med åkrar och skog runt om (inte en ö eller udde, som blir för begränsad i yta). Byggnaderna ska passa i sina rutor.
 
 | Byggnad | Funktion |
 |---|---|
@@ -103,6 +103,14 @@ Priser i ädelstenar visas utan kronor bredvid, eftersom det otydliga priset är
 ### Dev-menyn
 Växla verklig och snabbad tid, slå krokar av och på, nollställa sparad data. Nedräkningarna för anfallet och Startpaketet går i verkliga sekunder även med snabbad klocka. Menyn stängs av helt i versionen som går till testpersoner (byggflagga).
 
+## Längd och utveckling
+
+Spelet ska räcka i några timmar, så att testare kan spela på egen hand längre än ett pass, och spelaren ska hela tiden se mer som väntar. Det ryms i sprint 3 (12 h fler banor och balansering, 12 h fler byggnader och nivåer).
+
+1. **Byn växer utåt.** Marken utanför byn ligger under skog eller dimma och röjs i flera omgångar när Stugan går upp i nivå, så att nya tomter blir lediga.
+2. **Fler nivåer och byggnader.** 8 byggnader med 10 nivåer var. Samma modell per byggnad med små tillägg per nivå. Nya byggnader (till exempel kvarn, smedja, marknad) låses upp med Stugans nivå.
+3. **Banakarta med cirka 40 banor**, byggda av inställningar (mål, drag, brickor) i samma pusselmotor.
+
 ## 4. Kroktrappan
 
 Fem steg med ökande press. Varje steg startas av en händelse i spelet, och klockan är reserv om händelsen dröjer.
@@ -116,6 +124,20 @@ Fem steg med ökande press. Varje steg startas av en händelse i spelet, och klo
 | 5. Skuldbeläggande | min 12–15 | Byn anfalls och skölden kostar ädelstenar (ägande), byborna blir ledsna och tjatar när spelaren vill sluta (skuld) | Minut 12, eller när spelaren försöker sluta |
 
 Hela tiden: butiken finns tillgänglig. Från steg 2: nästa bana startar av sig själv (inga naturliga stopp).
+
+### Testupplägg: första pass plus en fri vecka
+
+Varje testperson spelar först ett pass på cirka 15 minuter med trappan, och behåller sedan spelet en vecka hemma. Under veckan slås krokarna som verkar över dagar på. Jonas intervjuar efter veckan.
+
+| Dagskrok | Så blir det |
+|---|---|
+| Dagliga belöningar | En kalender på 7 dagar med guld, ädelstenar och sköld |
+| Streak | Dagar i rad med minst en vunnen bana ger bonus |
+| Notiser (Web Push) | Liven är fulla, bygget är klart, byn hotas |
+| Anfall när spelaren är borta | Förlusten visas vid nästa besök |
+| Tidsbegränsad händelse | En helghändelse med egna banor och en byggnad som bara finns då |
+
+Brytpunkten mäts två gånger: steget i första passet där personen slutar, och dagen då personen slutar komma tillbaka. Spelet loggar varje besök med datum och längd.
 
 ### Rösterna i spelet
 **Ton (beslut):** spelet har ingen märkbar mörk underton. Spelaren ska invaggas i en falsk trygghet: allt känns gulligt, vänligt och ofarligt. Screwtape-temat finns i titeln och i analysen, inte i det spelaren ser.
@@ -154,5 +176,4 @@ Per bana loggas: tid på banan, antal drag (även extra drag), vinst eller förl
 ## 6. Backlogg och senare
 - Testplånbok som betalas ut på riktigt efter testet (Jonas funderar).
 - Spelaren anfaller och tar över andra byar.
-- Krokar när spelaren är borta (Web Push-notiser, byn anfallen under natten), sprint 3.
-- Ett andra testpass en dag senare med samma person.
+- Säsonger och en samling att fylla.
