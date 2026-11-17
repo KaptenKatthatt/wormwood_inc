@@ -4,3 +4,4 @@ dist-test/
 data/
 *.log
 .env
+__pycache__/
