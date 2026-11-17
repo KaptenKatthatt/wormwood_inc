@@ -82,7 +82,7 @@
     row: 'Fyra i rad gav en raket. Tryck på den eller byt den med en granne, så flyger den genom hela raden.',
     col: 'Fyra i rad gav en raket. Tryck på den eller byt den med en granne, så flyger den genom hela kolumnen.',
     area: 'Ett L eller T gav fyrverkerier. Tryck på dem eller byt dem med en granne, så smäller allt runt omkring.',
-    bomb: 'Fem i rad gav en pärla. Byt den med en bricka, så försvinner alla brickor av den sorten.',
+    all: 'Fem i rad gav en lysande bricka. Tryck på den, så försvinner alla brickor av samma sort.',
   };
   function noteSpecials(r: SwapResult) {
     const made = r.steps.flatMap((s) => s.made.map((m) => m.special ?? 'bomb'));

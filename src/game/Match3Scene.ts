@@ -237,6 +237,7 @@ export class Match3Scene extends Phaser.Scene {
 
   private makeTile(kind: number, at: { x: number; y: number }, special: Special = null): Tile {
     const size = this.cell * 0.86;
+    if (!isFree(kind) && special === 'all') return this.shining(kind, at, size);
     if (!isFree(kind)) {
       const shadow = this.add.image(0, 2 * this.k, `tile-${TILES[kind]}`).setDisplaySize(size, size).setTint(0x000000).setAlpha(0.25);
       const img = this.add.image(0, 0, `tile-${TILES[kind]}`).setDisplaySize(size, size);
@@ -255,6 +256,28 @@ export class Match3Scene extends Phaser.Scene {
     // a slow breath so the player sees it can be used
     this.tweens.add({ targets: glow, alpha: 0.35, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     return t;
+  }
+
+  /**
+   * Five in a row: the tile keeps its picture inside a gold ring with turning
+   * rays, so the player sees which kind it will take (Jonas found the pearl unclear).
+   */
+  private shining(kind: number, at: { x: number; y: number }, size: number): Tile {
+    const R = size * 0.5;
+    const rays = this.add.graphics();
+    for (let i = 0; i < 16; i++) {
+      const a0 = (i * Math.PI) / 8 - 0.1;
+      const a1 = (i * Math.PI) / 8 + 0.1;
+      rays.fillStyle(i % 2 ? 0xffeb8c : 0xffc832, 1)
+        .fillTriangle(0, 0, Math.cos(a0) * R * 1.12, Math.sin(a0) * R * 1.12, Math.cos(a1) * R * 1.12, Math.sin(a1) * R * 1.12);
+    }
+    const ring = this.add.graphics();
+    ring.fillStyle(DEEP, 1).fillCircle(0, 0, R * 0.9);
+    ring.fillStyle(0xffce46, 1).fillCircle(0, 0, R * 0.85);
+    ring.fillStyle(0xfff8e1, 1).fillCircle(0, 0, R * 0.78);
+    const img = this.add.image(0, 0, `tile-${TILES[kind]}`).setDisplaySize(size * 0.74, size * 0.74);
+    this.tweens.add({ targets: rays, angle: 360, duration: 9000, repeat: -1 });
+    return this.add.container(at.x, at.y, [rays, ring, img]).setDepth(1);
   }
 
   /** A quick flash where a special went off. */

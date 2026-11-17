@@ -13,11 +13,11 @@
  * most games end close to the goal, won or lost by a hair. With rigging off,
  * every new tile is uniformly random.
  *
- * Special tiles (Jonas, 2026-11-17, option A), free and earned by skill. They
- * have no kind of their own and never match: four in a row leaves a rocket
- * that clears its row or column, an L or T shape leaves fireworks that clear
- * the 3x3 around them (both POWER), and five in a row leaves a pearl (BOMB)
- * that clears every tile of one kind. A special goes off when it is tapped
+ * Special tiles (Jonas, 2026-11-17, option A), free and earned by skill. Four
+ * in a row leaves a rocket that clears its row or column, an L or T shape
+ * leaves fireworks that clear the 3x3 around them; both have no kind (POWER)
+ * and never match. Five in a row leaves a shining tile that keeps its kind
+ * and clears every tile of that kind. A special goes off when it is tapped
  * (one move), swapped with any neighbour, or cleared by anything else.
  */
 import type { Goal, Level } from './levels';
@@ -26,7 +26,7 @@ import { pick, type Rng } from './rng';
 export interface Cell { r: number; c: number }
 export interface Fall { from: Cell; to: Cell }
 export interface Spawn { cell: Cell; kind: number; /** rows above the board it falls from */ dropFrom: number }
-export type Special = 'row' | 'col' | 'area' | null;
+export type Special = 'row' | 'col' | 'area' | 'all' | null;
 export interface Made { cell: Cell; kind: number; special: Special }
 export interface Step {
   cleared: Cell[];
@@ -138,7 +138,7 @@ export class Match3 {
     this.swapCells(a, b);
     const ka = this.board[a.r][a.c];
     const kb = this.board[b.r][b.c];
-    const free = isFree(ka) || isFree(kb);
+    const free = this.fires(a) || this.fires(b);
     if (!free && this.findMatches().length === 0) {
       this.swapCells(a, b);
       return { valid: false, steps: [], shuffled: false };
@@ -148,8 +148,15 @@ export class Match3 {
     const steps: Step[] = [];
     let chain = 1;
     if (free) {
+      const allAt = this.special[a.r][a.c] === 'all' ? a : this.special[b.r][b.c] === 'all' ? b : null;
       const bombAt = ka === BOMB ? a : kb === BOMB ? b : null;
-      if (bombAt) {
+      if (allAt) {
+        // a shining tile takes every tile of its own kind; a special next to it goes off too
+        const other = allAt === a ? b : a;
+        const hit = [allAt, ...this.cellsOf(this.board[allAt.r][allAt.c])];
+        if (this.fires(other)) hit.push(other);
+        steps.push(this.resolve(hit, chain++, [], [{ cell: allAt, special: 'bomb' }]));
+      } else if (bombAt) {
         const other = bombAt === a ? b : a;
         const kind = this.board[other.r][other.c];
         // two pearls clear the board; a pearl and a rocket or fireworks take
@@ -157,7 +164,7 @@ export class Match3 {
         const hit = kind === BOMB ? this.allCells() : kind === POWER ? [bombAt, other, ...this.cellsOf(this.commonKind())] : [bombAt, ...this.cellsOf(kind)];
         steps.push(this.resolve(hit, chain++, [], [{ cell: bombAt, special: 'bomb' }]));
       } else {
-        steps.push(this.resolve([a, b].filter((x) => isFree(this.board[x.r][x.c])), chain++));
+        steps.push(this.resolve([a, b].filter((x) => this.fires(x)), chain++));
       }
     }
     while (this.status() !== 'won') {
@@ -177,7 +184,7 @@ export class Match3 {
 
   /** Tapping a special sets it off where it stands, for one move. */
   fire(cell: Cell): SwapResult {
-    if (this.status() !== 'playing' || !this.inside(cell) || this.ice[cell.r][cell.c] || !isFree(this.board[cell.r][cell.c])) return { valid: false, steps: [], shuffled: false };
+    if (this.status() !== 'playing' || !this.inside(cell) || this.ice[cell.r][cell.c] || !this.fires(cell)) return { valid: false, steps: [], shuffled: false };
     this.movesLeft--;
     this.movesUsed++;
     return this.settle([cell]);
@@ -193,6 +200,11 @@ export class Match3 {
     const out: Cell[] = [];
     for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) out.push({ r, c });
     return out;
+  }
+
+  /** A tile that goes off when tapped or swapped: a rocket, fireworks, the pearl or a shining tile. */
+  fires(p: Cell): boolean {
+    return isFree(this.board[p.r][p.c]) || this.special[p.r][p.c] === 'all';
   }
 
   /** The kind with the most tiles on the board. */
@@ -235,7 +247,7 @@ export class Match3 {
           const a = { r, c };
           const b = { r: r + dr, c: c + dc };
           if (!this.inside(b) || this.ice[a.r][a.c] || this.ice[b.r][b.c]) continue;
-          if (isFree(this.board[a.r][a.c]) || isFree(this.board[b.r][b.c])) return [a, b];
+          if (this.fires(a) || this.fires(b)) return [a, b];
           this.swapCells(a, b);
           const ok = this.findMatches().length > 0;
           this.swapCells(a, b);
@@ -326,11 +338,13 @@ export class Match3 {
       // The tile that becomes special counts as collected now.
       const wasSpecial = this.special[at.r][at.c];
       if (wasSpecial) cleared.push({ ...at }); // an old special in the group goes off, and is counted there
-      else {
+      else if (special !== 'bomb') {
+        // (a shining tile keeps its kind and is counted when it goes)
         const goal = this.level.goal;
         if (goal.type === 'collect' && kind === goal.kind) this.collected++;
       }
-      made.push({ cell: at, kind: special === 'bomb' ? BOMB : POWER, special: special === 'bomb' ? null : special });
+      // five in a row: the tile keeps its kind and shines (Jonas 2026-11-17, the pearl was unclear)
+      made.push({ cell: at, kind: special === 'bomb' ? kind : POWER, special: special === 'bomb' ? 'all' : special });
     }
     return this.resolve(cleared, chain, made);
   }
@@ -374,7 +388,10 @@ export class Match3 {
       if (sp === 'row') for (let cc = 0; cc < this.cols; cc++) queue.push({ r, c: cc });
       if (sp === 'col') for (let rr = 0; rr < this.rows; rr++) queue.push({ r: rr, c });
       if (sp === 'area') for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) queue.push({ r: r + dr, c: c + dc });
-      if (sp) blasts.push({ cell: { r, c }, special: sp });
+      if (sp === 'all') {
+        queue.push(...this.cellsOf(this.board[r][c]));
+        blasts.push({ cell: { r, c }, special: 'bomb' });
+      } else if (sp) blasts.push({ cell: { r, c }, special: sp });
       if (this.board[r][c] === BOMB && !blasts.some((b) => b.cell.r === r && b.cell.c === c)) {
         // a pearl tapped or hit by a blast takes the most common kind with it
         queue.push(...this.cellsOf(this.commonKind()));

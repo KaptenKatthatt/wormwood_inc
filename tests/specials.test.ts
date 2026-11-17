@@ -103,4 +103,18 @@ describe('special tiles', () => {
     expect(step.falls.every((f) => !(f.from.r < 3 && f.to.r > 3))).toBe(true);
     expect(g.board.flat().every((k) => k >= 0)).toBe(true);
   });
+
+  it('five in a row leaves a shining tile of its own kind that takes every tile of that kind', () => {
+    const b = base();
+    b[0] = [0, 0, 5, 0, 0, 4];
+    b[1][2] = 0;
+    const g = new Match3(level, rng, false, b);
+    const r = g.trySwap({ r: 1, c: 2 }, { r: 0, c: 2 });
+    expect(r.steps[0].made[0]).toMatchObject({ cell: { r: 0, c: 2 }, kind: 0, special: 'all' });
+    g.board = base(); g.special = base().map((row) => row.map(() => null));
+    g.special[2][2] = 'all'; // a shining kind-4 tile
+    const fired = g.fire({ r: 2, c: 2 });
+    expect(fired.valid).toBe(true);
+    expect(fired.steps[0].cleared).toHaveLength(6); // every kind-4 tile on the base board
+  });
 });
