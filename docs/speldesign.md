@@ -44,6 +44,8 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 
 **Hjälpmedel (beslut):** hammaren tar bort en bricka, blandaren blandar om brädet. En gratis av varje i introduktionen, sedan köps de med ädelstenar.
 
+**Hjälp på traven (beslut, som Candy Crush):** efter 5 sekunder utan drag börjar de två brickorna i ett bra drag gunga försiktigt. Det slutar så fort spelaren rör brädet, trycker en tangent eller gör ett drag, och väntan börjar om (spelet 0.14.0).
+
 **Samla-målen** börjar på 8 brickor efter utmaning 1 och stiger långsamt mot cirka 20 (spelet 0.10.0).
 
 **Specialbrickor i brädet (beslut):** fyra i rad ger en bricka som spränger raden eller kolumnen, L- eller T-form ger en som spränger runt sig (3x3), och fem i rad ger en bomb som tar bort alla brickor av en sort. Gratis, kommer av skicklighet, motiv i skärgårdsstil. Hammaren och blandaren ligger kvar som köpknappar utanför brädet (köpkrok).
