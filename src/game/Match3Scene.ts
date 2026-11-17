@@ -1,3 +1,4 @@
+import { play as playSound, playMatch } from '../lib/audio/sound';
 import Phaser from 'phaser';
 import { BOMB, type Cell, type Match3, type Special, type Step } from '../lib/match3/engine';
 import { TILES } from '../lib/match3/levels';
@@ -323,16 +324,18 @@ export class Match3Scene extends Phaser.Scene {
     const pa = this.pos(a);
     const pb = this.pos(b);
     const result = e.trySwap(a, b);
+    playSound('swap');
     await Promise.all([this.tween(ta, { x: pb.x, y: pb.y }, 130), this.tween(tb, { x: pa.x, y: pa.y }, 130)]);
     if (!result.valid) {
       await Promise.all([this.tween(ta, { x: pa.x, y: pa.y }, 130), this.tween(tb, { x: pb.x, y: pb.y }, 130)]);
       this.busy = false;
+      playSound('invalid');
       this.game.events.emit('match3:invalid');
       return;
     }
     this.tiles[a.r][a.c] = tb;
     this.tiles[b.r][b.c] = ta;
-    for (const step of result.steps) await this.play(step);
+    for (const [i, step] of result.steps.entries()) await this.play(step, i);
     if (result.shuffled) this.build();
     this.busy = false;
     this.drawHint();
@@ -351,7 +354,7 @@ export class Match3Scene extends Phaser.Scene {
     const t = this.tiles[cell.r][cell.c];
     if (t) await this.tween(t, { angle: 25, scale: 1.2 }, 90);
     const result = e.smash(cell);
-    for (const step of result.steps) await this.play(step);
+    for (const [i, step] of result.steps.entries()) await this.play(step, i);
     if (result.shuffled) this.build();
     this.busy = false;
     this.drawCursor();
@@ -375,7 +378,10 @@ export class Match3Scene extends Phaser.Scene {
     this.drawCursor();
   }
 
-  private async play(step: Step): Promise<void> {
+  /** cascade: 0 for the player's own move, then 1, 2 … for each chain reaction (each a note higher). */
+  private async play(step: Step, cascade = 0): Promise<void> {
+    // A special tile made or set off counts as two steps up: it should sound bigger.
+    playMatch(cascade + (step.made.length || step.blasts.length ? 2 : 0));
     this.flash(step);
     const cleared = step.cleared.map(({ r, c }) => this.tiles[r][c]!).filter(Boolean);
     for (const { r, c } of step.iceBroken) {

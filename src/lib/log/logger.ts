@@ -26,7 +26,17 @@ export function initLogger(opts: { consent: () => boolean; playerId: () => strin
   window.addEventListener('pagehide', () => flush(true));
 }
 
+type LogListener = (name: string, data: Record<string, unknown>) => void;
+const listeners: LogListener[] = [];
+/** Lets other parts of the game react to logged events (the sound, for one). */
+export function onLog(fn: LogListener): void {
+  listeners.push(fn);
+}
+
 export function log(name: string, data?: Record<string, unknown>): void {
+  for (const fn of listeners) {
+    try { fn(name, data ?? {}); } catch { /* a listener must never stop the log */ }
+  }
   if (import.meta.env.DEV) console.debug('[log]', name, data ?? '');
   // Events from the playtest build are marked, since both builds log to the same place.
   if (!DEV_MENU) data = { ...data, build: 'test' };

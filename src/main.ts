@@ -8,6 +8,7 @@ import { dayKey, daysBetween } from './lib/daily';
 
 import { onTutorialFinish, startTutorial, tutorialDone } from './lib/tutorial';
 import { initLogger, log } from './lib/log/logger';
+import { initSoundDirector } from './lib/audio/director';
 import { listenForInstall, isStandalone } from './lib/pwa/install';
 import { get } from 'svelte/store';
 import { permissionNow, subscribe } from './lib/push/push';
@@ -15,6 +16,8 @@ import { rescheduleAll, toast } from './lib/state/game';
 
 // Registered before the logger's own pagehide flush, so this event goes out with it.
 window.addEventListener('pagehide', () => log('pagehide', { minutesIn: minutesIn() }));
+// Sound first, so it hears the events below. It stays silent until the first touch.
+initSoundDirector(location.hash.slice(1) || 'pussel');
 initLogger({ consent: () => get(settings).logging === true, playerId: () => playerId, gameTime: () => clock.now() });
 listenForInstall();
 

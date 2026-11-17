@@ -15,6 +15,20 @@ void self.skipWaiting();
 clientsClaim();
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
+// Music and sound effects are not precached (several MB); each file is kept
+// the first time it is played, so sound works offline after that. Rename the
+// cache (audio-v2 …) if a file is replaced under the same name.
+registerRoute(
+  ({ url }) => url.origin === self.location.origin && url.pathname.startsWith('/audio/'),
+  async ({ request }) => {
+    const cache = await caches.open('audio-v1');
+    const hit = await cache.match(request);
+    if (hit) return hit;
+    const res = await fetch(request);
+    if (res.ok) void cache.put(request, res.clone());
+    return res;
+  },
+);
 registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/api\//] }));
 
 self.addEventListener('message', (e) => {

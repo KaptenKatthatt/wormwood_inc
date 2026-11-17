@@ -8,6 +8,7 @@
   import { log } from '../lib/log/logger';
   import { flush } from '../lib/log/logger';
   import InstallGuide from './InstallGuide.svelte';
+  import { audioSettings } from '../lib/audio/sound';
 
   let pushStatus = $state('');
 
@@ -36,6 +37,21 @@
 </script>
 
 <section class="settings">
+  <h2>Ljud</h2>
+  <label class="row">
+    <input type="checkbox" checked={$audioSettings.music} onchange={(e) => audioSettings.update((a) => ({ ...a, music: e.currentTarget.checked }))} />
+    <span><strong>Musik</strong></span>
+  </label>
+  <label class="row">
+    <input type="checkbox" checked={$audioSettings.ambience} onchange={(e) => audioSettings.update((a) => ({ ...a, ambience: e.currentTarget.checked }))} />
+    <span><strong>Havsljud</strong> i byn</span>
+  </label>
+  <label class="row">
+    <input type="checkbox" checked={$audioSettings.sfx} onchange={(e) => audioSettings.update((a) => ({ ...a, sfx: e.currentTarget.checked }))} />
+    <span><strong>Ljudeffekter</strong></span>
+  </label>
+  <p class="credits">Musiken "Udden" och "Brickor" och de flesta ljuden är gjorda för spelet. "Gem Waltz" av Haley Halcyon, CC BY 4.0. Övriga ljud från Kenney, bart, rubberduck, RandomMind, jasinski och Rango Mango (CC0), via OpenGameArt.</p>
+
   <h2>Hjälp</h2>
   <button class="ghost" onclick={() => startTutorial(true)}>Visa introduktionen igen</button>
 
@@ -71,6 +87,7 @@
   .row { display: flex; gap: 10px; align-items: flex-start; min-height: 48px; }
   .row input { width: 24px; height: 24px; margin-top: 2px; accent-color: var(--falu); flex: none; }
   .status { color: var(--muted); }
+  .credits { font-size: .85rem; color: var(--muted); }
   .version { margin: 16px 0 0; font-size: .85rem; opacity: .7; text-align: center; }
   .code { font-family: ui-monospace, monospace; font-size: 1.1rem; letter-spacing: .08em; }
 </style>
