@@ -64,6 +64,12 @@ export function buildBlock(v: VillageState, id: BuildingId, gold: number): Build
   return null;
 }
 
+/** Gems that buy the missing gold for a build: 10 gold per gem, rounded up (Jonas, 2026-11-17). */
+export const GOLD_PER_GEM = 10;
+export function topUpGems(missingGold: number): number {
+  return Math.max(1, Math.ceil(missingGold / GOLD_PER_GEM));
+}
+
 export function goldMultiplier(v: VillageState): number {
   return 1 + 0.1 * v.levels.sjoboden;
 }

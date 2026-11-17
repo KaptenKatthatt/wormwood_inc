@@ -1,10 +1,10 @@
 <script lang="ts">
   import GameCanvas from '../game/GameCanvas.svelte';
   import { VillageScene, type PlotView } from '../game/VillageScene';
-  import { bubble, hookOn, now, pressQuit, purse, skipBuild, skipRepair, stairs, startBuild, timers, village } from '../lib/state/game';
+  import { bubble, hookOn, now, pressQuit, purse, skipBuild, skipRepair, stairs, startBuild, timers, topUpAndBuild, topUpOffered, village } from '../lib/state/game';
   import { tutEvent } from '../lib/tutorial';
   import { onMount } from 'svelte';
-  import { BUILDINGS, buildBlock, buildCost, buildTime, skipGems } from '../lib/economy/village';
+  import { BUILDINGS, buildBlock, buildCost, buildTime, skipGems, topUpGems } from '../lib/economy/village';
   import { formatDuration } from '../lib/time/clock';
   import { progress, remaining } from '../lib/time/timers';
 
@@ -66,10 +66,18 @@
             <strong>{b.name}</strong> <span class="lvl">{$village.levels[b.id] === 0 ? 'ej byggd' : `nivå ${$village.levels[b.id]}`}</span>
             <span class="fine">{b.effect}</span>
           </div>
-          <button data-tut={`build-${b.id}`} class={block ? 'ghost' : 'primary'} disabled={block !== null} onclick={() => startBuild(b.id)} aria-describedby={block ? `why-${b.id}` : undefined}>
-            {$village.levels[b.id] === 0 ? 'Bygg' : 'Bygg ut'}
-          </button>
-          {#if block}<span class="why" id={`why-${b.id}`}>{blockText[block]}</span>{/if}
+          {#if block === 'gold' && hookOn('topUpGold')}
+            {@const missing = buildCost(nextNo) - $purse.gold}
+            {topUpOffered(b.id, missing)}
+            <button data-tut={`build-${b.id}`} class="primary topup" onclick={() => topUpAndBuild(b.id)}>
+              Fyll på {missing} guld för 💎 {topUpGems(missing)}
+            </button>
+          {:else}
+            <button data-tut={`build-${b.id}`} class={block ? 'ghost' : 'primary'} disabled={block !== null} onclick={() => startBuild(b.id)} aria-describedby={block ? `why-${b.id}` : undefined}>
+              {$village.levels[b.id] === 0 ? 'Bygg' : 'Bygg ut'}
+            </button>
+            {#if block}<span class="why" id={`why-${b.id}`}>{blockText[block]}</span>{/if}
+          {/if}
         </li>
       {/each}
     </ul>

@@ -29,3 +29,12 @@ describe('village', () => {
     expect(goldMultiplier({ ...START_VILLAGE, levels: { ...START_VILLAGE.levels, sjoboden: 2 } })).toBeCloseTo(1.2);
   });
 });
+
+import { topUpGems } from '../src/lib/economy/village';
+describe('topUpGems', () => {
+  it('charges one gem per 10 gold, rounded up', () => {
+    expect(topUpGems(150)).toBe(15);
+    expect(topUpGems(151)).toBe(16);
+    expect(topUpGems(3)).toBe(1);
+  });
+});

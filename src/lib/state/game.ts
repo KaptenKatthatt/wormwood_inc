@@ -12,7 +12,7 @@ import { log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
-import { BUILDINGS, START_VILLAGE, buildBlock, buildCost, buildTime, goldMultiplier, skipGems, type BuildingId, type VillageState } from '../economy/village';
+import { BUILDINGS, START_VILLAGE, buildBlock, buildCost, buildTime, goldMultiplier, skipGems, topUpGems, type BuildingId, type VillageState } from '../economy/village';
 import { DEV_MENU } from '../config/flags';
 import { HOOKS, type HookId, type HookResponse } from '../hooks';
 import { ATTACK, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
@@ -258,6 +258,25 @@ export function startBuild(id: BuildingId): boolean {
   if (buildTime(n) >= 5 * MINUTE) stairEvent('longBuild');
   log('build_start', { building: id, toLevel: v.levels[id] + 1, buildNo: n, gold: cost, timeMs: buildTime(n), minutesIn: minutesIn() });
   return true;
+}
+
+const topUpShown = new Set<string>();
+/** Logs once per building and price that the top-up button was offered. */
+export function topUpOffered(id: BuildingId, missing: number): void {
+  const key = `${id}:${missing}`;
+  if (topUpShown.has(key)) return;
+  topUpShown.add(key);
+  logHook('topUpGold', { building: id, missing, gems: topUpGems(missing) }, 'shown');
+}
+
+/** Pays gems for the missing gold and starts the build. */
+export function topUpAndBuild(id: BuildingId): boolean {
+  const v = get(village);
+  const missing = buildCost(v.builds + 1) - get(purse).gold;
+  if (missing <= 0) return startBuild(id);
+  if (!payGems(topUpGems(missing), 'topUpGold', { building: id, missing })) return false;
+  addGold(missing);
+  return startBuild(id);
 }
 
 export function skipBuild(): boolean {
