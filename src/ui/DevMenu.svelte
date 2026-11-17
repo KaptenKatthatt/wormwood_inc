@@ -4,6 +4,19 @@
   import { STEP_NAMES, type Step } from '../lib/staircase';
   import { HOOKS } from '../lib/hooks';
   import { formatKr } from '../lib/economy/wallet';
+  import { EXPANSION } from '../lib/config/flags';
+  import { challengeNo } from '../lib/state/game';
+  import { WORLDS } from '../lib/match3/levels';
+  import { WEEK_STEPS, type WeekStep } from '../lib/expansion/week';
+  import { devWeekStep, exp, recordWorld, testDay } from '../lib/state/expansion';
+  import { EXPANSION_HOOKS } from '../lib/hooks';
+  const tday = $derived.by(() => { void $now; void $daily; return testDay(); });
+  function jumpWorld(w: number) {
+    const n = WORLDS[w - 1].from;
+    challengeNo.set(n);
+    recordWorld(n);
+    toast(`Hoppade till utmaning ${n}`);
+  }
 
   const mins = $derived.by(() => { void $now; return minutesIn(); });
   const dayOn = $derived.by(() => { void $now; void $daily; void $settings; return dayHooksOn(); });
@@ -54,9 +67,26 @@
     </div>
   </fieldset>
 
+  {#if EXPANSION}
+    <fieldset>
+      <legend>Veckotrappan (utbyggnaden)</legend>
+      <p>Nu: steg {$exp.step}{$exp.step > 5 ? ` (${WEEK_STEPS.find((d) => d.step === $exp.step)?.name})` : ''}, testdag {tday}, värld {$exp.maxWorld}, utmaning {$challengeNo}.</p>
+      <div class="buttons">
+        {#each WEEK_STEPS as d}
+          <button class="ghost" disabled={$exp.step >= d.step} onclick={() => devWeekStep(d.step as WeekStep)}>Till steg {d.step}</button>
+        {/each}
+      </div>
+      <div class="buttons">
+        {#each WORLDS as w}
+          <button class="ghost" onclick={() => jumpWorld(w.id)}>Värld {w.id}</button>
+        {/each}
+      </div>
+    </fieldset>
+  {/if}
+
   <fieldset>
     <legend>Krokar</legend>
-    {#each HOOKS as h (h.id)}
+    {#each HOOKS.filter((h) => EXPANSION || !EXPANSION_HOOKS.includes(h.id)) as h (h.id)}
       <label class="row">
         <input type="checkbox" checked={$settings.hooks[h.id]} onchange={(e) => setHook(h.id, e.currentTarget.checked)} />
         <span><strong>{h.name}</strong>{h.step ? ` (steg ${h.step})` : ''}: {h.what}</span>

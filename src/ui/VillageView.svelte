@@ -4,7 +4,11 @@
   import { bubble, hookOn, now, pressQuit, purse, skipBuild, skipRepair, stairs, startBuild, timers, topUpAndBuild, topUpOffered, village } from '../lib/state/game';
   import { tutEvent } from '../lib/tutorial';
   import { onMount } from 'svelte';
-  import { BUILDINGS, MAX_LEVEL, buildBlock, buildTime, priceFor, skipGems, topUpGems } from '../lib/economy/village';
+  import { BASE_BUILDINGS, BUILDINGS as ALL_BUILDINGS, MAX_LEVEL, buildBlock, buildTime, cleared, priceFor, skipGems, topUpGems } from '../lib/economy/village';
+  import { EXPANSION } from '../lib/config/flags';
+  import { WORLDS } from '../lib/match3/levels';
+  // The expansion's four buildings only exist with the expansion (the pilot has eight).
+  const BUILDINGS = EXPANSION ? ALL_BUILDINGS : BASE_BUILDINGS;
   import { formatDuration } from '../lib/time/clock';
   import { progress, remaining } from '../lib/time/timers';
 
@@ -18,7 +22,7 @@
 
   const plots = $derived<PlotView[]>(
     BUILDINGS.map((b) => ({
-      id: b.id, name: b.short ?? b.name, level: $village.levels[b.id], locked: $village.levels.stugan < b.unlock,
+      id: b.id, name: b.short ?? b.name, level: $village.levels[b.id], locked: !cleared($village, b.id),
       building: constr?.id === b.id, progress: constr?.id === b.id && timer ? progress(timer, $now) : 0,
     })),
   );
@@ -66,7 +70,7 @@
         <li class="locked">
           <div>
             <strong>{b.name}</strong> <span class="lvl">skog</span>
-            <span class="fine">Marken röjs när Stugan når nivå {b.unlock}.</span>
+            <span class="fine">{b.world ? `Marken röjs när du når ${WORLDS[b.world - 1].name}.` : `Marken röjs när Stugan når nivå ${b.unlock}.`}</span>
           </div>
           <span class="lock" aria-hidden="true">🌲</span>
         </li>

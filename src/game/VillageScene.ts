@@ -37,6 +37,8 @@ export class VillageScene extends Phaser.Scene {
       stugan: [0, -0.12], sjoboden: [-0.48, 0.04], kasernen: [0.48, 0.04], kapellet: [-0.24, 0.44], marknaden: [0.24, 0.44],
       kvarnen: [-0.36, -0.44], smedjan: [0.36, -0.44],
       vakttornet: [0, -0.7], tornet_o: [0.82, -0.12], tornet_s: [0, 0.7], tornet_v: [-0.82, -0.12],
+      // the expansion's plots, on the edge of the land (one per new world)
+      ladan: [-0.64, 0.42], skolan: [0.64, 0.42], hamnen: [-0.62, -0.5], gastgiveriet: [0.62, -0.5],
     };
     const s = Math.min(rx * 0.2, ry * 0.36);
     const k = this.registry.get('dpr') ?? 1;

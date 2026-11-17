@@ -7,15 +7,34 @@
    * be played; after challenge 40 the road starts over at 1.
    */
   import { tick } from 'svelte';
-  import { LEVELS, goalText } from '../lib/match3/levels';
+  import { ALL_LEVELS, LEVELS, WORLDS, goalText, levelAt, worldOf } from '../lib/match3/levels';
   import NODES from '../lib/match3/mapNodes.json';
+  import { EXPANSION } from '../lib/config/flags';
+  import { exp } from '../lib/state/expansion';
+  import { hookOn } from '../lib/state/game';
+  import WeekStrip from './WeekStrip.svelte';
 
   let { current, countdown = 0, onPlay }: { current: number; countdown?: number; onPlay: () => void } = $props();
 
   // The image is 1024 x 5632 px; the nodes are in its pixels.
   const W = 1024;
   const H = 5632;
-  const pts = (NODES as number[][]).map(([x, y]) => [x, y] as const);
+  /** World 1 follows the painted road; worlds 2-5 get a winding road drawn in code until their maps are approved. */
+  function roadFor(world: number): (readonly [number, number])[] {
+    if (world === 1) return (NODES as number[][]).map(([x, y]) => [x, y] as const);
+    return Array.from({ length: 40 }, (_, i) => {
+      const y = H - 260 - i * ((H - 520) / 39);
+      const x = 512 + Math.sin(i * 0.55 + world) * 300 + Math.sin(i * 1.7) * 40;
+      return [Math.round(x), Math.round(y)] as const;
+    });
+  }
+  let viewWorld = $state(1);
+  $effect(() => { viewWorld = EXPANSION ? worldOf(current).id : 1; });
+  const world = $derived(WORLDS[viewWorld - 1]);
+  const pts = $derived(roadFor(viewWorld));
+  const worldLevels = $derived(EXPANSION ? ALL_LEVELS.slice(world.from - 1, world.to) : LEVELS);
+  const maxWorld = $derived(EXPANSION ? Math.min(WORLDS.length, Math.max($exp.maxWorld, worldOf(current).id) + 1) : 1);
+  const starsShown = (id: number) => (EXPANSION && hookOn('stars') ? ($exp.stars[id] ?? 3) : 3);
   const BOAT_TO = 11;
 
   /** A smooth Catmull-Rom curve through the points. */
@@ -29,31 +48,63 @@
     }
     return d;
   }
-  const boat = curve(pts.slice(0, BOAT_TO));
+  const boat = $derived(viewWorld === 1 ? curve(pts.slice(0, BOAT_TO)) : '');
+  const road = $derived(viewWorld === 1 ? '' : curve(pts));
   const zone = (n: number) => (n <= 13 ? 'Skärgården' : n <= 27 ? 'Skogen' : 'Fjällen');
 
   let scroller: HTMLDivElement;
   $effect(() => {
     void current;
+    void viewWorld;
     void tick().then(() => {
       const wrap = scroller?.querySelector('.wrap') as HTMLElement | null;
       if (!wrap) return;
-      const y = pts[current - 1][1] * (wrap.clientWidth / W); // the map is scaled to the width
+      const i = Math.min(39, Math.max(0, current - world.from));
+      const y = (current >= world.from && current <= world.to ? pts[i][1] : current < world.from ? 0 : H) * (wrap.clientWidth / W); // the map is scaled to the width
       scroller.scrollTo({ top: Math.max(0, y - scroller.clientHeight * 0.6), behavior: 'auto' });
     });
   });
 
-  const level = $derived(LEVELS[current - 1]);
+  const level = $derived(levelAt(current));
+  const WORLD_ART: Record<number, { sky: string; land: string; deco: string }> = {
+    2: { sky: '#cfe3a0', land: '#e9d36a', deco: '#9cbf5a' },
+    3: { sky: '#b88a5a', land: '#8a6a4a', deco: '#3f5a2f' },
+    4: { sky: '#6f9ab8', land: '#8b8f86', deco: '#3f6d8a' },
+    5: { sky: '#e8f0f7', land: '#ffffff', deco: '#9fb8cc' },
+  };
 </script>
 
 <section class="map" aria-label="Kartan">
+  {#if EXPANSION}
+    <div class="worldbar">
+      <button class="ghost arrow" disabled={viewWorld <= 1} aria-label="Föregående värld" onclick={() => (viewWorld = Math.max(1, viewWorld - 1))}>‹</button>
+      <div class="wname"><strong>{world.name}</strong><span>Värld {viewWorld} av {WORLDS.length} · utmaning {world.from}–{world.to}</span></div>
+      <button class="ghost arrow" disabled={viewWorld >= maxWorld} aria-label="Nästa värld" onclick={() => (viewWorld = Math.min(maxWorld, viewWorld + 1))}>›</button>
+    </div>
+    <WeekStrip />
+  {/if}
   <div class="scroll" bind:this={scroller}>
     <div class="wrap">
-      <img src="/art/map/karta.webp" width={W} height={H} alt="" decoding="async" />
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Vägen genom ${LEVELS.length} utmaningar. Du är på ${level.name}, i ${zone(current).toLowerCase()}.`}>
-        <path d={boat} fill="none" stroke="#2f6f8a55" stroke-width="26" stroke-linecap="round" />
-        <path d={boat} fill="none" stroke="#fff" stroke-width="10" stroke-dasharray="5 24" stroke-linecap="round" />
-        {#each LEVELS as l, i (l.id)}
+      {#if viewWorld === 1}
+        <img src="/art/map/karta.webp" width={W} height={H} alt="" decoding="async" />
+      {:else}
+        {@const art = WORLD_ART[viewWorld]}
+        <img class="worldmap" src={`/art/worlds/${viewWorld}/karta.webp`} width={W} height={H} alt="" decoding="async" onerror={(e) => ((e.currentTarget as HTMLImageElement).style.visibility = 'hidden')} />
+        <div class="placeholder" style:background={`linear-gradient(${art.sky}, ${art.land})`} aria-hidden="true">
+          {#each Array.from({ length: 26 }, (_, k) => k) as k}
+            <span style:left={`${(k * 37) % 92}%`} style:top={`${(k * 53) % 96}%`} style:background={art.deco}></span>
+          {/each}
+        </div>
+      {/if}
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${world.name}: vägen genom utmaning ${world.from} till ${world.to}. Du är på ${level.name}${viewWorld === 1 ? `, i ${zone(current).toLowerCase()}` : ''}.`}>
+        {#if viewWorld === 1}
+          <path d={boat} fill="none" stroke="#2f6f8a55" stroke-width="26" stroke-linecap="round" />
+          <path d={boat} fill="none" stroke="#fff" stroke-width="10" stroke-dasharray="5 24" stroke-linecap="round" />
+        {:else}
+          <path d={road} fill="none" stroke="#7a5a3a" stroke-width="44" stroke-linecap="round" opacity=".55" />
+          <path d={road} fill="none" stroke="#f4e3c0" stroke-width="30" stroke-linecap="round" />
+        {/if}
+        {#each worldLevels as l, i (l.id)}
           {@const p = pts[i]}
           {@const done = l.id < current}
           {@const now = l.id === current}
@@ -64,7 +115,7 @@
               <circle {r} fill={done ? '#e0b04a' : now ? '#b8382a' : '#f4ead8'} stroke={now ? '#fff' : '#7a2418'} stroke-width={now ? 10 : 6.5} />
               <text y={now ? 18 : 14} text-anchor="middle" class="num" class:light={now}>{l.id}</text>
             </g>
-            {#if done}<text y={-r - 6} text-anchor="middle" class="stars">★★★</text>{/if}
+            {#if done}<text y={-r - 6} text-anchor="middle" class="stars">{'★'.repeat(starsShown(l.id))}<tspan class="dimstar">{'★'.repeat(3 - starsShown(l.id))}</tspan></text>{/if}
           </g>
         {/each}
       </svg>
@@ -89,6 +140,15 @@
   .num { font: 800 40px 'Baloo 2', system-ui, sans-serif; fill: #5a1d14; }
   .num.light { fill: #fff; font-size: 52px; }
   .stars { font-size: 30px; fill: #f2c230; stroke: #7a2418; stroke-width: 2; }
+  .dimstar { fill: #e6dccd; }
+  .worldmap { position: relative; z-index: 1; }
+  .placeholder { position: absolute; inset: 0; overflow: hidden; }
+  .placeholder span { position: absolute; width: 14%; aspect-ratio: 1; border-radius: 50%; opacity: .45; }
+  svg { z-index: 2; }
+  .worldbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #fff8ec; border-bottom: 3px solid #7a2418; color: var(--deep); }
+  .wname { flex: 1; display: grid; text-align: center; line-height: 1.2; }
+  .wname span { font-size: .8rem; color: var(--muted); }
+  .arrow { min-width: 44px; min-height: 44px; font-size: 1.6rem; padding: 0; }
   g.now { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
   @keyframes pulse { 50% { transform: scale(1.12); } }
   .next { display: flex; align-items: center; gap: 12px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: #fff8ec; border-top: 3px solid #7a2418; color: var(--deep); }

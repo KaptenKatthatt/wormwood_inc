@@ -15,14 +15,26 @@
   import AwayReport from './ui/AwayReport.svelte';
   import { log } from './lib/log/logger';
   import { TUT_STEPS, tutorial } from './lib/tutorial';
+  import { EXPANSION } from './lib/config/flags';
+  import { adOpen, exp, friendNote, hubOpen, offerShown } from './lib/state/expansion';
+  import { hookOn } from './lib/state/game';
+  import NeighboursView from './ui/NeighboursView.svelte';
+  import WeekHub from './ui/WeekHub.svelte';
+  import AdOverlay from './ui/AdOverlay.svelte';
+  import PersonalOffer from './ui/PersonalOffer.svelte';
+  import FriendNote from './ui/FriendNote.svelte';
 
-  type Tab = 'pussel' | 'byn' | 'installningar';
-  const TABS: { id: Tab; label: string }[] = [
+  type Tab = 'pussel' | 'byn' | 'grannar' | 'installningar';
+  const ALL_TABS: { id: Tab; label: string }[] = [
     { id: 'pussel', label: 'Kartan' },
     { id: 'byn', label: 'Byn' },
+    { id: 'grannar', label: 'Grannar' },
     { id: 'installningar', label: 'Inställningar' },
   ];
-  const fromHash = (): Tab => (TABS.find((t) => `#${t.id}` === location.hash)?.id ?? 'pussel');
+  // The neighbours tab comes with step 8 of the week staircase (the expansion).
+  const showNeighbours = $derived(EXPANSION && $exp.step >= 8 && hookOn('conquest'));
+  const TABS = $derived(ALL_TABS.filter((t) => t.id !== 'grannar' || showNeighbours));
+  const fromHash = (): Tab => (ALL_TABS.find((t) => `#${t.id}` === location.hash)?.id ?? 'pussel');
   let tab = $state<Tab>(fromHash());
   // The settings' "show the introduction again" switches tab through the hash.
   $effect(() => {
@@ -49,7 +61,7 @@
 <div class="app">
   <div class="top"><Hud />{#if !tutStep}<Banners />{/if}</div>
   <main>
-    {#if tab === 'pussel'}<PuzzleView onVillage={() => go('byn')} />{:else if tab === 'byn'}<VillageView onPlay={() => go('pussel')} />{:else}<SettingsView />{/if}
+    {#if tab === 'pussel'}<PuzzleView onVillage={() => go('byn')} />{:else if tab === 'byn'}<VillageView onPlay={() => go('pussel')} />{:else if tab === 'grannar' && showNeighbours}<NeighboursView />{:else}<SettingsView />{/if}
   </main>
   <nav aria-label="Huvudmeny">
     {#each TABS as t}
@@ -66,12 +78,18 @@
   {#if !tutStep}<Letter />{/if}
   {#if $quitFlow}<QuitFlow />{/if}
   {#if $settings.logging === null}<Consent />{/if}
+  {#if EXPANSION && !tutStep}
+    {#if $hubOpen}<WeekHub />{/if}
+    {#if $offerShown && !$offerOpen}<PersonalOffer />{/if}
+    {#if $friendNote && !$hubOpen}<FriendNote />{/if}
+    {#if $adOpen}<AdOverlay />{/if}
+  {/if}
 </div>
 
 <style>
   .app { height: 100dvh; width: 100%; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; padding-top: env(safe-area-inset-top); }
   main { min-height: 0; overflow: hidden; }
-  nav { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
+  nav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 1px solid var(--line); background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
   .tab { background: none; border: 0; border-radius: 0; min-height: 56px; font-weight: 600; color: var(--muted); }
   .tab[aria-current='page'] { color: var(--falu); box-shadow: inset 0 3px 0 var(--falu); }
   .toasts { position: fixed; bottom: calc(72px + env(safe-area-inset-bottom)); left: 0; right: 0; display: grid; justify-items: center; gap: 6px; pointer-events: none; z-index: 5; }

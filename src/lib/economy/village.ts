@@ -8,7 +8,8 @@
  */
 import { HOUR, MINUTE } from '../time/clock';
 
-export type BuildingId = 'stugan' | 'sjoboden' | 'kasernen' | 'vakttornet' | 'kapellet' | 'kvarnen' | 'smedjan' | 'marknaden' | 'tornet_o' | 'tornet_s' | 'tornet_v';
+export type BuildingId = 'stugan' | 'sjoboden' | 'kasernen' | 'vakttornet' | 'kapellet' | 'kvarnen' | 'smedjan' | 'marknaden' | 'tornet_o' | 'tornet_s' | 'tornet_v'
+  | 'ladan' | 'skolan' | 'hamnen' | 'gastgiveriet';
 
 export interface BuildingDef {
   id: BuildingId;
@@ -18,6 +19,8 @@ export interface BuildingDef {
   unlock: number;
   /** Short label in the village picture. */
   short?: string;
+  /** The expansion's buildings: the land is cleared when the player reaches this world. */
+  world?: number;
 }
 
 /**
@@ -43,7 +46,15 @@ export const BUILDINGS: BuildingDef[] = [
   { id: 'tornet_o', name: 'Vakttornet i öster', short: 'Torn Ö', unlock: 2, effect: '+30 i försvar mot anfall österifrån för varje nivå, +15 från andra håll.' },
   { id: 'tornet_s', name: 'Vakttornet i söder', short: 'Torn S', unlock: 4, effect: '+30 i försvar mot anfall söderifrån för varje nivå, +15 från andra håll.' },
   { id: 'tornet_v', name: 'Vakttornet i väster', short: 'Torn V', unlock: 6, effect: '+30 i försvar mot anfall västerifrån för varje nivå, +15 från andra håll.' },
+  // The expansion (Jonas, 2026-11-17: 12 buildings): one new plot for each new world.
+  { id: 'ladan', name: 'Ladan', unlock: 0, world: 2, effect: 'Guldet i erövrade byar ruttnar en timme senare för varje nivå.' },
+  { id: 'skolan', name: 'Skolan', unlock: 0, world: 3, effect: '+3 % chans till en kista efter varje klarad utmaning för varje nivå.' },
+  { id: 'hamnen', name: 'Hamnen', unlock: 0, world: 4, effect: '+10 % guld från erövrade byar för varje nivå.' },
+  { id: 'gastgiveriet', name: 'Gästgiveriet', short: 'Gästgiv.', unlock: 0, world: 5, effect: '+5 % guld per klarad utmaning för varje nivå.' },
 ];
+
+/** The buildings without the expansion's four (the pilot's village). */
+export const BASE_BUILDINGS: BuildingDef[] = BUILDINGS.filter((b) => !b.world);
 
 const COSTS = [0, 0, 150, 400, 900, 1600];
 const TIMES = [5_000, 5_000, MINUTE, 5 * MINUTE, 30 * MINUTE, 2 * HOUR];
@@ -82,10 +93,12 @@ export interface VillageState {
   /** Builds started so far (sets the price of the next one). */
   builds: number;
   construction: Construction | null;
+  /** The highest world reached (clears the expansion's plots). */
+  world?: number;
 }
 
 export const START_VILLAGE: VillageState = {
-  levels: { stugan: 0, sjoboden: 0, kasernen: 0, vakttornet: 0, kapellet: 0, kvarnen: 0, smedjan: 0, marknaden: 0, tornet_o: 0, tornet_s: 0, tornet_v: 0 },
+  levels: { stugan: 0, sjoboden: 0, kasernen: 0, vakttornet: 0, kapellet: 0, kvarnen: 0, smedjan: 0, marknaden: 0, tornet_o: 0, tornet_s: 0, tornet_v: 0, ladan: 0, skolan: 0, hamnen: 0, gastgiveriet: 0 },
   builds: 0,
   construction: null,
 };
@@ -97,7 +110,9 @@ export function withAllBuildings(v: VillageState): VillageState {
 
 /** Is the land for this building cleared yet? */
 export function cleared(v: VillageState, id: BuildingId): boolean {
-  return v.levels.stugan >= (BUILDINGS.find((b) => b.id === id)?.unlock ?? 0);
+  const b = BUILDINGS.find((x) => x.id === id);
+  if (b?.world && (v.world ?? 1) < b.world) return false;
+  return v.levels.stugan >= (b?.unlock ?? 0);
 }
 
 export type BuildBlock = 'busy' | 'locked' | 'max' | 'cap' | 'gold' | null;
@@ -124,5 +139,5 @@ export function topUpGems(missingGold: number): number {
 }
 
 export function goldMultiplier(v: VillageState): number {
-  return 1 + 0.1 * v.levels.sjoboden;
+  return 1 + 0.1 * v.levels.sjoboden + 0.05 * (v.levels.gastgiveriet ?? 0);
 }

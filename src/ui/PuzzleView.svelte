@@ -6,7 +6,10 @@
   import MapView from './MapView.svelte';
   import { Match3Scene } from '../game/Match3Scene';
   import { Match3, isRocket, type SwapResult } from '../lib/match3/engine';
-  import { KIND_NAMES, LEVELS, TILES, goalText, type Level } from '../lib/match3/levels';
+  import { KIND_NAMES, TILES, goalText, levelAt, worldOf, type Level } from '../lib/match3/levels';
+  import { EXPANSION } from '../lib/config/flags';
+  import { adsLeft, askHelp, canAskHelp, computeStars, gateBlocks, gateOpenDialog, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
+  import { GATE_SKIP_GEMS, HELPERS_NEEDED } from '../lib/expansion/conquest';
   import { makeRng } from '../lib/match3/rng';
   import { PRICE } from '../lib/economy/shop';
   import { formatDuration } from '../lib/time/clock';
@@ -27,6 +30,10 @@
   let startedReal = 0;
   let tool = $state<null | 'hammer'>(null);
   let mixed = $state(0);
+  let stars = $state(3);
+  /** Placeholder colours for each world until its painted background is approved. */
+  const WORLD_SKY = ['', '', '#e9d77a, #9cbf5a', '#c47a3a, #6b5a4a', '#8ab0c0, #4a6f8a', '#f4f7fb, #b9cfe0'];
+  let doubled = $state(false);
   const hint = $derived($tutorial.index !== null && TUT_STEPS[$tutorial.index]?.hint === true);
 
   const level = $derived(game?.level);
@@ -38,7 +45,7 @@
   const next = $derived(nextLifeIn($lives, $now));
 
   // No free level select (Jonas, 2026-11-17): the map shows the road, only the next challenge can be played.
-  const current = $derived(LEVELS[Math.min(LEVELS.length, Math.max(1, $challengeNo)) - 1]);
+  const current = $derived(levelAt($challengeNo));
 
   // The first challenge starts by itself for a new player: no map, no menu first.
   $effect(() => {
@@ -46,6 +53,7 @@
   });
 
   function start(l: Level) {
+    if (gateBlocks(l.id)) { gateOpenDialog.set(true); return; }
     if (!canPlay()) {
       dialog = 'noLives';
       if (hookOn('buyLives')) logHook('buyLives', { price: PRICE.oneLife, full: PRICE.fullLives }, 'shown');
@@ -97,7 +105,9 @@
     if (!g) return;
     const s = g.status();
     if (s === 'won') {
-      reward = levelWon(g.level.id, endInfo());
+      const info = endInfo();
+      stars = computeStars(g.movesLeft, g.level.moves + g.extraMoves);
+      reward = levelWon(g.level.id, info, stars);
       dialog = 'won';
       tutEvent('levelEnded');
       
@@ -191,6 +201,7 @@
 
   /** Back to the map after a win; from step 2 the next challenge starts by itself after 3 s. */
   function toMap(afterWin = false) {
+    doubled = false;
     game = null;
     dialog = null;
     if (afterWin && hookOn('autoNext') && $stairs.step >= 2 && $tutorial.index === null) startCountdown();
@@ -209,7 +220,7 @@
 </script>
 
 {#if game && level && info}
-  <section class="view">
+  <section class="view" style:background-image={EXPANSION && worldOf(level.id).id > 1 ? `url('/art/worlds/${worldOf(level.id).id}/bakgrund.jpg'), linear-gradient(${WORLD_SKY[worldOf(level.id).id]})` : undefined}>
     <div class="bar top">
       <div class="goal" data-tut="goal">
         <strong class="name">{level.name}</strong>
@@ -270,7 +281,11 @@
   </Modal>
 {:else if dialog === 'won' && game}
   <Modal title="Utmaningen klarad!">
+    {#if EXPANSION && hookOn('stars')}<p class="stars" aria-label={`${stars} av 3 stjärnor`}>{'★'.repeat(stars)}<span class="dim">{'★'.repeat(3 - stars)}</span></p>{/if}
     <p class="big">+{reward} guld 🪙</p>
+    {#if weekOn('ads') && adsLeft() > 0 && !doubled}
+      <button class="ghost" onclick={() => { doubled = true; offerAd('double', reward); }}>▶ Titta på en kort film: dubbelt guld</button>
+    {/if}
     <div class="buttons">
       <button class="primary" onclick={() => toMap(true)}>Vidare</button>
       <button class="ghost" data-tut="to-village" onclick={onVillage}>Till byn</button>
@@ -294,13 +309,32 @@
         <button class="primary" onclick={() => buyLife(true)}>Fulla liv för 💎 {PRICE.fullLives}</button>
       </div>
     {/if}
+    {#if weekOn('ads') && adsLeft() > 0}
+      <button class="ghost" onclick={() => { dialog = null; offerAd('life'); }}>▶ Titta på en kort film: ett liv</button>
+    {/if}
+    {#if canAskHelp()}
+      <button class="ghost" onclick={() => { askHelp(); dialog = null; }}>Be grannarna om liv</button>
+    {/if}
     <div class="buttons"><button class="ghost" onclick={closeNoLives}>Vänta</button></div>
+  </Modal>
+{/if}
+
+{#if $gateOpenDialog}
+  <Modal title="Vintermarknaden är stängd">
+    <p>Marknaden öppnar när du har {HELPERS_NEEDED} grannar som hjälper till. Nu har du {helpersNow().length}.</p>
+    <div class="buttons">
+      <button class="primary" onclick={() => { invite(); }}>Bjud in en granne</button>
+      <button class="primary" onclick={() => { if (skipGate()) start(current); }}>Öppna nu för 💎 {GATE_SKIP_GEMS}</button>
+    </div>
+    <div class="buttons"><button class="ghost" onclick={() => gateOpenDialog.set(false)}>Stäng</button></div>
   </Modal>
 {/if}
 
 <style>
   /* The approved puzzle look ("Rödfärg och skärgård", mock in pussel-stil/stil1-v1). */
-  .view { display: flex; flex-direction: column; height: 100%; background: #7fb6dc url('/art/bakgrund.jpg') center / cover no-repeat; }
+  .view { display: flex; flex-direction: column; height: 100%; background-color: #7fb6dc; background-image: url('/art/bakgrund.jpg'); background-position: center; background-size: cover; background-repeat: no-repeat; }
+  .stars { margin: 0; font-size: 2.2rem; color: #f2c230; text-shadow: 0 2px 0 #7a2418; letter-spacing: 4px; text-align: center; }
+  .stars .dim { color: #d8ccc0; }
   .canvas { position: relative; flex: 1; min-height: 0; }
   .bar.top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
   .goal { flex: 1; min-width: 0; display: grid; gap: 0; background: #fff8ec; border: 3px solid #7a2418; border-radius: 14px; padding: 4px 10px 6px; box-shadow: 0 3px 0 var(--deep); color: var(--deep); }

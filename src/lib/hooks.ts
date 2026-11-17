@@ -6,7 +6,13 @@
 export type HookId =
   | 'starterHelp' | 'nearWin' | 'extraMoves' | 'autoNext' | 'buyLives' | 'skipWait' | 'topUpGold' | 'boosters'
   | 'calendar' | 'streak' | 'dayPush' | 'awayAttack' | 'weekend'
-  | 'timedOffer' | 'gemPacks' | 'attack' | 'guilt' | 'figures';
+  | 'timedOffer' | 'gemPacks' | 'attack' | 'guilt' | 'figures'
+  // The expansion (Jonas, 2026-11-17): stars, and the week staircase, steps 6-9.
+  | 'stars'
+  | 'league' | 'askHelp' | 'album' | 'ads' | 'pass'
+  | 'chests' | 'wheel' | 'heroes'
+  | 'conquest' | 'troops' | 'powerCreep' | 'personalOffer' | 'vip'
+  | 'neighboursNeeded' | 'fakeGifts';
 
 export const HOOKS: { id: HookId; step: number; name: string; what: string }[] = [
   { id: 'starterHelp', step: 1, name: 'Starthjälp', what: 'Startbidrag i guld och ädelstenar, de två första byggena gratis och klara på sekunder. Gäller från nästa nollställning.' },
@@ -27,6 +33,26 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'attack', step: 5, name: 'Anfall och sköld', what: 'Grannar anfaller byn; sköld för ädelstenar eller soldater för guld.' },
   { id: 'guilt', step: 5, name: 'Skuld när man slutar', what: 'Rådgivaren och byborna ber spelaren stanna när hen trycker Avsluta.' },
   { id: 'figures', step: 0, name: 'Figurer som pressar', what: 'Rådgivarens brev, bybornas pratbubblor och trivselmätaren.' },
+  // ---- The expansion: steps 6-9 come during the week at home (day or world, whichever is first).
+  { id: 'stars', step: 1, name: 'Stjärnor per bana', what: '1-3 stjärnor efter hur många drag som var kvar. Lexikonet: Poäng, nivåer och märken.' },
+  { id: 'league', step: 6, name: 'Veckoliga', what: 'Byn tävlar mot nio påhittade grannbyar om stjärnor. Topp 3 får ädelstenar, de tre sista flyttas ner. Lexikonet: Topplistor.' },
+  { id: 'askHelp', step: 6, name: 'Be grannarna om liv', what: 'Utan liv kan spelaren be grannarna om liv och skicka gåvor tillbaka. Lexikonet: Be om hjälp.' },
+  { id: 'album', step: 6, name: 'Samlaralbum', what: 'Sex set med sex bilder; en bild per vinst, de sista är sällsynta. Lexikonet: Samla alla.' },
+  { id: 'ads', step: 6, name: 'Belönad reklam', what: 'En påhittad reklamfilm på 5 sekunder ger ett liv eller dubbelt guld. Lexikonet: Belönad reklam.' },
+  { id: 'pass', step: 6, name: 'Veckopasset', what: '20 nivåer under 7 dagar; Guldpasset för 120 ädelstenar ger mer. Det som inte hämtats försvinner. Lexikonet: Säsongspass.' },
+  { id: 'chests', step: 7, name: 'Kistor', what: 'Kistor med slumpat innehåll efter vinst; öppnas efter väntan eller direkt för ädelstenar. Lexikonet: Lootboxar.' },
+  { id: 'wheel', step: 7, name: 'Lyckohjulet', what: 'En gratis snurr om dagen, fler för ädelstenar; stannar ofta precis bredvid storvinsten. Lexikonet: Snurr.' },
+  { id: 'heroes', step: 7, name: 'Kämpar (dragning)', what: 'Dra kämpar till armén för ädelstenar; 2 % legendariska, garanterad efter 30 dragningar. Lexikonet: Gacha och pity.' },
+  { id: 'conquest', step: 8, name: 'Erövring av grannbyar', what: 'Anfall och ta över påhittade grannbyar; de ger guld som ruttnar efter 8 timmar och kan tas tillbaka. Lexikonet: Bygga och äga, Spela på beställning.' },
+  { id: 'troops', step: 8, name: 'Köp trupper', what: 'Legosoldater för ädelstenar ger övertaget i striden. Lexikonet: Betala för att vinna.' },
+  { id: 'powerCreep', step: 8, name: 'Nya soldattyper', what: 'Knektar och sedan ryttare gör de gamla soldaterna svagare mot grannbyarna. Lexikonet: Power creep.' },
+  { id: 'personalOffer', step: 8, name: 'Erbjudande bara för dig', what: 'Ett paket som väljs efter vad spelaren köpt förut. Lexikonet: Personaliserade erbjudanden.' },
+  { id: 'vip', step: 8, name: 'Lojalitetsnivå', what: 'Brons, silver och guld efter köpta kronor, med mer guld per bana. Lexikonet: Lojalitetsprogram och VIP.' },
+  { id: 'neighboursNeeded', step: 9, name: 'Grannar krävs', what: 'Vintermarknaden öppnar först med tre grannar som hjälper till, och de vill ha hjälp tillbaka. Lexikonet: Värva vänner.' },
+  { id: 'fakeGifts', step: 9, name: 'Gåvor från grannar', what: 'Påhittade grannar skickar gåvor och slår spelarens rekord, som om de vore riktiga spelare. Lexikonet: Falska vänhandlingar.' },
 ];
+
+/** The hooks that belong to the expansion (off in builds without it). */
+export const EXPANSION_HOOKS: HookId[] = ['stars', 'league', 'askHelp', 'album', 'ads', 'pass', 'chests', 'wheel', 'heroes', 'conquest', 'troops', 'powerCreep', 'personalOffer', 'vip', 'neighboursNeeded', 'fakeGifts'];
 
 export type HookResponse = 'yes' | 'no' | 'shown' | 'cannot-afford' | 'waited' | 'expired';

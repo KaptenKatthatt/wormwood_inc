@@ -79,9 +79,63 @@ export function makeChallenge(n: number): Level {
   }
 }
 
-/** How many challenges there are in the row. After the last, it starts over at 1. */
+/** How many challenges the first world has (the pilot's whole road). After the last, it starts over at 1. */
 export const CHALLENGE_COUNT = 40;
 export const LEVELS: Level[] = Array.from({ length: CHALLENGE_COUNT }, (_, i) => makeChallenge(i + 1));
+
+/**
+ * The five worlds (Jonas, 2026-11-17: 200 challenges). Names are working names.
+ * World 1 is the painted summer map with challenges 1-40, unchanged.
+ */
+export interface World { id: number; name: string; from: number; to: number; blurb: string }
+export const WORLDS: World[] = [
+  { id: 1, name: 'Sommarlandet', from: 1, to: 40, blurb: 'Skärgård, skog och fjäll i sommarljus.' },
+  { id: 2, name: 'Slätten', from: 41, to: 80, blurb: 'Rapsfält, väderkvarnar och långa alléer.' },
+  { id: 3, name: 'Bergslagen', from: 81, to: 120, blurb: 'Bruksorter, gruvhål och höstskog.' },
+  { id: 4, name: 'Höga kusten', from: 121, to: 160, blurb: 'Branta klippor och fiskelägen vid havet.' },
+  { id: 5, name: 'Vintermarknaden', from: 161, to: 200, blurb: 'Snö, marknadsstånd och levande ljus.' },
+];
+export const TOTAL_CHALLENGES = 200;
+
+export function worldOf(n: number): World {
+  return WORLDS.find((w) => n >= w.from && n <= w.to) ?? WORLDS[0];
+}
+
+/**
+ * Challenges 41-200. Each world starts a little easier than the last one
+ * ended and climbs again, so a new world feels like a fresh start. The same
+ * rhythm as world 1: every fifth is a rigged peak, the next a breather.
+ */
+export function makeLaterChallenge(n: number): Level {
+  const w = worldOf(n);
+  const inWorld = (n - w.from) / 39; // 0 to 1 across the world
+  const peak = n % 5 === 0;
+  const breather = n % 5 === 1;
+  const base0 = 0.45 + 0.1 * (w.id - 2); // world 2 starts at 0.45, world 5 at 0.75
+  const hard = Math.min(1.35, base0 + 0.45 * inWorld + (peak ? 0.25 : 0) - (breather ? 0.2 : 0));
+  const base = { id: n, name: `Utmaning ${n}`, rows: 8, cols: 8, kinds: 6, rigTarget: peak ? 0.93 : 1 };
+  switch (n % 3) {
+    case 1: {
+      const count = Math.round(10 + 12 * hard);
+      return { ...base, moves: Math.round(20 + 3 * hard), goal: { type: 'collect', kind: (n + w.id) % TILES.length, count } };
+    }
+    case 2: {
+      const [r0, r1, c0, c1] = ICE_SHAPES[(n + w.id) % ICE_SHAPES.length];
+      return { ...base, moves: Math.round(22 + 5 * hard), goal: { type: 'ice' }, ice: block(r0, r1, c0, c1) };
+    }
+    default: {
+      const score = Math.round((2800 + 2600 * hard) / 100) * 100;
+      return { ...base, moves: Math.round(16 + 4 * hard), goal: { type: 'score', score } };
+    }
+  }
+}
+
+export const ALL_LEVELS: Level[] = [...LEVELS, ...Array.from({ length: TOTAL_CHALLENGES - CHALLENGE_COUNT }, (_, i) => makeLaterChallenge(CHALLENGE_COUNT + i + 1))];
+
+/** Challenge n, 1-based (clamped to the road). */
+export function levelAt(n: number): Level {
+  return ALL_LEVELS[Math.min(ALL_LEVELS.length, Math.max(1, Math.round(n))) - 1];
+}
 
 export function goalText(goal: Goal): string {
   switch (goal.type) {

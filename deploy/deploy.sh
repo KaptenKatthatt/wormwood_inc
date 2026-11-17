@@ -12,7 +12,9 @@ git fetch --quiet origin
 git checkout --quiet --detach "$REF"
 npm ci --no-audit --no-fund
 npm run verify
-VITE_DEV_MENU=false npx vite build --outDir dist-test --emptyOutDir
+# The expansion (worlds, week staircase, neighbours) stays out of the tester
+# build until the pilot is over: TEST_EXPANSION=true deploy.sh ... turns it on.
+VITE_DEV_MENU=false VITE_EXPANSION="${TEST_EXPANSION:-false}" npx vite build --outDir dist-test --emptyOutDir
 chown -R wormwood:wormwood "$APP/dist" "$APP/dist-test"
 systemctl restart wormwood
 sleep 1

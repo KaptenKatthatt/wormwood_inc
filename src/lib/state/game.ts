@@ -10,12 +10,12 @@ import { collectDue, finishNow, remaining, startTimer, type GameTimer, type Time
 import { load, randomId, save } from './storage';
 import { log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
-import { CHALLENGE_COUNT } from '../match3/levels';
+import { CHALLENGE_COUNT, TOTAL_CHALLENGES } from '../match3/levels';
 import { AWAY_ATTACK_AFTER, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
 import { BUILDINGS, SIDES, TOWERS, START_VILLAGE, buildBlock, buildTime, goldMultiplier, priceFor, skipGems, topUpGems, withAllBuildings, type BuildingId, type VillageState } from '../economy/village';
-import { DEV_MENU } from '../config/flags';
+import { DEV_MENU, EXPANSION } from '../config/flags';
 import { HOOKS, type HookId, type HookResponse } from '../hooks';
 import { ATTACK, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
 import { BUBBLES, LETTERS, pickLine } from '../voices';
@@ -110,6 +110,26 @@ export function tipOnce(id: string, text: string): void {
 /** The shop overlay; `reason` says why it opened (logged). */
 export const shopOpen = writable<null | { reason: string }>(null);
 
+// ------------------------------------------------------------------ the expansion's hooks into the game
+
+/**
+ * The expansion (state/expansion.ts) listens here instead of being imported,
+ * so the two modules do not import each other. Plain functions, set once.
+ */
+export interface WinInfo { level: number; stars: number; gold: number }
+export const expansionHooks: {
+  onWin: (info: WinInfo) => void;
+  onLoss: (level: number) => void;
+  onReset: () => void;
+  onReturn: (awayMs: number) => void;
+  onAwayPush: () => void;
+  onTick: () => void;
+  goldBonus: () => number;
+} = { onWin: () => {}, onLoss: () => {}, onReset: () => {}, onReturn: () => {}, onAwayPush: () => {}, onTick: () => {}, goldBonus: () => 0 };
+
+/** The last challenge on the road: 40 in the pilot, 200 with the expansion. */
+export const LAST_CHALLENGE = EXPANSION ? TOTAL_CHALLENGES : CHALLENGE_COUNT;
+
 // ------------------------------------------------------------------ logging
 
 export function minutesIn(): number {
@@ -133,6 +153,7 @@ export function tick(): void {
     for (const t of due) onTimerDone(t);
   }
   stairTick();
+  expansionHooks.onTick();
 }
 
 function onTimerDone(t: GameTimer): void {
@@ -169,7 +190,7 @@ export function setHook(id: HookId, on: boolean): void {
 
 // ------------------------------------------------------------------ currencies
 
-function spendGems(n: number): boolean {
+export function spendGems(n: number): boolean {
   const p = get(purse);
   if (p.gems < n) return false;
   purse.set({ ...p, gems: p.gems - n });
@@ -198,7 +219,7 @@ export function buyPack(packId: string, reason: string): boolean {
 }
 
 /** Pays gems, or opens the shop when there are too few. */
-function payGems(n: number, hook: HookId, offer: Record<string, unknown>): boolean {
+export function payGems(n: number, hook: HookId, offer: Record<string, unknown>): boolean {
   if (spendGems(n)) {
     logHook(hook, { ...offer, gems: n }, 'yes');
     return true;
@@ -240,9 +261,9 @@ export function buyLives(full: boolean): boolean {
 export const challengeNo = writable<number>(load('challengeNo', 1));
 challengeNo.subscribe((n) => save('challengeNo', n));
 
-export function levelWon(levelId: number, extra: Record<string, unknown>): number {
-  challengeNo.set(levelId >= CHALLENGE_COUNT ? 1 : levelId + 1);
-  let gold = levelReward(levelId, goldMultiplier(effectiveVillage()));
+export function levelWon(levelId: number, extra: Record<string, unknown>, stars = 3): number {
+  challengeNo.set(levelId >= LAST_CHALLENGE ? 1 : levelId + 1);
+  let gold = levelReward(levelId, goldMultiplier(effectiveVillage()) + expansionHooks.goldBonus());
   const weekend = dayOn('weekend') && weekendEvent(clock.now()).on;
   if (weekend) gold *= WEEKEND_GOLD;
   addGold(gold);
@@ -260,7 +281,8 @@ export function levelWon(levelId: number, extra: Record<string, unknown>): numbe
   let gems = 0;
   if (Math.random() < 0.15) { gems = 5; purse.update((p) => ({ ...p, gems: p.gems + gems })); }
   levelStats.update((s) => ({ ...s, [levelId]: { wins: (s[levelId]?.wins ?? 0) + 1, losses: s[levelId]?.losses ?? 0 } }));
-  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, minutesIn: minutesIn(), ...extra });
+  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, stars, minutesIn: minutesIn(), ...extra });
+  expansionHooks.onWin({ level: levelId, stars, gold });
   return gold + streakBonus;
 }
 
@@ -270,6 +292,7 @@ export function levelLost(levelId: number, extra: Record<string, unknown>): void
   stairEvent('loss');
   levelStats.update((s) => ({ ...s, [levelId]: { wins: s[levelId]?.wins ?? 0, losses: (s[levelId]?.losses ?? 0) + 1 } }));
   log('level_lost', { level: levelId, minutesIn: minutesIn(), ...extra });
+  expansionHooks.onLoss(levelId);
 }
 
 /** Pays for extra moves. The caller adds them to the board. */
@@ -392,6 +415,7 @@ export function resetAll(): void {
   startedAt = clock.now();
   save('startedAt', startedAt);
   save('welcomed', false);
+  expansionHooks.onReset();
   tick();
 }
 
@@ -432,7 +456,7 @@ export function say(text: string): void {
   bubbleTimer = setTimeout(() => bubble.set(null), 5000);
 }
 
-function writeLetter(key: keyof typeof LETTERS): void {
+export function writeLetter(key: keyof typeof LETTERS): void {
   if (!hookOn('figures') || !get(settings).letters) return;
   letter.set({ text: LETTERS[key], key: String(key) });
   logHook('figures', { letter: key }, 'shown');
@@ -605,6 +629,7 @@ export function welcomeBack(): void {
   const st = get(stairs);
   const away = clock.now() - st.lastSeen;
   awayAttack(away);
+  expansionHooks.onReturn(away);
   if (away > 60 * MINUTE) {
     changeMood(-Math.min(30, Math.floor(away / (60 * MINUTE)) * 5));
     say(pickLine(BUBBLES.sad));
@@ -683,6 +708,7 @@ export function scheduleAwayPushes(): void {
     void schedulePush(playerId, 'calendar', Math.max(60_000, nextReminder(Date.now()) - Date.now()), 'Dagens gåva väntar', 'Hämta den innan dagen är slut.');
   }
   if (dayOn('awayAttack')) void schedulePush(playerId, 'threat', THREAT_PUSH_AFTER, 'Grannbyn närmar sig', 'Byborna undrar var du är.');
+  expansionHooks.onAwayPush();
   log('push_scheduled', { lives: full !== null, day: dayKey(now) });
 }
 
