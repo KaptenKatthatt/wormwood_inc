@@ -18,7 +18,7 @@ export default defineConfig({
       injectManifest: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // The art and the font are precached too, so the game also works offline.
-        globPatterns: ['**/*.{js,css,html,png,jpg,woff2,svg,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,png,jpg,webp,woff2,svg,webmanifest}'],
       },
       manifest: {
         id: '/',

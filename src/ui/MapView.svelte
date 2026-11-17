@@ -1,32 +1,45 @@
 <script lang="ts">
   /**
-   * The start page (Jonas, 2026-11-17): a map of a made-up Sweden with a road
-   * through the archipelago, the forest and the mountains. The challenges lie
-   * in order along the road; only the next one can be played.
-   * Placeholder drawing until the map art is approved.
+   * The start page (Jonas, 2026-11-17): the painted map of a made-up Sweden,
+   * archipelago at the bottom, forest in the middle, mountains at the top.
+   * Challenges 1-11 lie on skerries joined by a dashed boat route; from 12 on
+   * they follow the gravel road painted into the image. Only the next one can
+   * be played; after challenge 40 the road starts over at 1.
    */
   import { tick } from 'svelte';
   import { LEVELS, goalText } from '../lib/match3/levels';
+  import NODES from '../lib/match3/mapNodes.json';
 
   let { current, countdown = 0, onPlay }: { current: number; countdown?: number; onPlay: () => void } = $props();
 
-  const STEP = 92; // px between challenges along the road
-  const W = 360;
-  const H = LEVELS.length * STEP + 140;
-  // Challenge n sits from the bottom up, swinging left and right.
-  const pos = (n: number) => ({ x: W / 2 + Math.sin(n * 0.9) * 110, y: H - 80 - (n - 1) * STEP });
-  const road = LEVELS.map((l) => pos(l.id)).map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  // The image is 1024 x 5632 px; the nodes are in its pixels.
+  const W = 1024;
+  const H = 5632;
+  const pts = (NODES as number[][]).map(([x, y]) => [x, y] as const);
+  const BOAT_TO = 11;
+
+  /** A smooth Catmull-Rom curve through the points. */
+  function curve(q: readonly (readonly [number, number])[]): string {
+    let d = `M${q[0][0]},${q[0][1]}`;
+    for (let i = 0; i < q.length - 1; i++) {
+      const p0 = q[Math.max(0, i - 1)], p1 = q[i], p2 = q[i + 1], p3 = q[Math.min(q.length - 1, i + 2)];
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
+    }
+    return d;
+  }
+  const boat = curve(pts.slice(0, BOAT_TO));
   const zone = (n: number) => (n <= 13 ? 'Skärgården' : n <= 27 ? 'Skogen' : 'Fjällen');
-  const zoneTop = (from: number) => pos(from).y + STEP / 2;
 
   let scroller: HTMLDivElement;
   $effect(() => {
     void current;
     void tick().then(() => {
-      const svg = scroller?.querySelector('svg');
-      if (!svg) return;
-      const y = pos(current).y * (svg.clientWidth / W); // the drawing is scaled to the width
-      scroller.scrollTo({ top: Math.max(0, y - scroller.clientHeight * 0.65), behavior: 'auto' });
+      const wrap = scroller?.querySelector('.wrap') as HTMLElement | null;
+      if (!wrap) return;
+      const y = pts[current - 1][1] * (wrap.clientWidth / W); // the map is scaled to the width
+      scroller.scrollTo({ top: Math.max(0, y - scroller.clientHeight * 0.6), behavior: 'auto' });
     });
   });
 
@@ -35,36 +48,27 @@
 
 <section class="map" aria-label="Kartan">
   <div class="scroll" bind:this={scroller}>
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Vägen genom ${LEVELS.length} utmaningar. Du är på ${level.name}, i ${zone(current).toLowerCase()}.`}>
-      <!-- the three lands, from the sea at the bottom to the mountains at the top -->
-      <rect x="0" y={zoneTop(14)} width={W} height={H - zoneTop(14)} fill="#9fd0e6" />
-      <rect x="0" y={zoneTop(28)} width={W} height={zoneTop(14) - zoneTop(28)} fill="#8fbf7a" />
-      <rect x="0" y="0" width={W} height={zoneTop(28)} fill="#e9eef2" />
-      {#each [[40, 0.92], [300, 0.85], [70, 0.7], [290, 0.62]] as [x, f]}
-        <ellipse cx={x} cy={H * f} rx="46" ry="26" fill="#c9b8b0" stroke="#8a7a72" stroke-width="2" />
-      {/each}
-      {#each [[50, 0.5], [310, 0.45], [40, 0.38], [300, 0.33]] as [x, f]}
-        <polygon points={`${x},${H * f - 34} ${x - 22},${H * f + 8} ${x + 22},${H * f + 8}`} fill="#3f6d3a" />
-      {/each}
-      {#each [[60, 0.2], [290, 0.12], [80, 0.05]] as [x, f]}
-        <polygon points={`${x},${H * f - 44} ${x - 46},${H * f + 18} ${x + 46},${H * f + 18}`} fill="#a9b4bd" />
-        <polygon points={`${x},${H * f - 44} ${x - 16},${H * f - 22} ${x + 16},${H * f - 22}`} fill="#fff" />
-      {/each}
-      <text x="12" y={zoneTop(14) - 10} class="zone">Skärgården</text>
-      <text x="12" y={zoneTop(28) - 10} class="zone">Skogen</text>
-      <text x="12" y="28" class="zone">Fjällen</text>
-      <path d={road} fill="none" stroke="#e9d9bd" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" />
-      <path d={road} fill="none" stroke="#c9a978" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round" />
-      {#each LEVELS as l (l.id)}
-        {@const p = pos(l.id)}
-        {@const done = l.id < current}
-        {@const now = l.id === current}
-        <g class:now transform={`translate(${p.x} ${p.y})`}>
-          <circle r={now ? 24 : 17} fill={done ? '#d9a441' : now ? '#b8382a' : '#d8ccc0'} stroke={now ? '#fff' : '#5a1d14'} stroke-width={now ? 4 : 2} />
-          <text y="6" text-anchor="middle" class:light={now} class="num">{l.id}</text>
-        </g>
-      {/each}
-    </svg>
+    <div class="wrap">
+      <img src="/art/map/karta.webp" width={W} height={H} alt="" decoding="async" />
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Vägen genom ${LEVELS.length} utmaningar. Du är på ${level.name}, i ${zone(current).toLowerCase()}.`}>
+        <path d={boat} fill="none" stroke="#2f6f8a55" stroke-width="26" stroke-linecap="round" />
+        <path d={boat} fill="none" stroke="#fff" stroke-width="10" stroke-dasharray="5 24" stroke-linecap="round" />
+        {#each LEVELS as l, i (l.id)}
+          {@const p = pts[i]}
+          {@const done = l.id < current}
+          {@const now = l.id === current}
+          {@const r = now ? 58 : 42}
+          <g transform={`translate(${p[0]} ${p[1]})`}>
+            <ellipse cy={r * 0.42} rx={r} ry={r * 0.55} fill="#00000033" />
+            <g class:now>
+              <circle {r} fill={done ? '#e0b04a' : now ? '#b8382a' : '#f4ead8'} stroke={now ? '#fff' : '#7a2418'} stroke-width={now ? 10 : 6.5} />
+              <text y={now ? 18 : 14} text-anchor="middle" class="num" class:light={now}>{l.id}</text>
+            </g>
+            {#if done}<text y={-r - 6} text-anchor="middle" class="stars">★★★</text>{/if}
+          </g>
+        {/each}
+      </svg>
+    </div>
   </div>
   <div class="next">
     <div>
@@ -77,13 +81,15 @@
 </section>
 
 <style>
-  .map { display: flex; flex-direction: column; height: 100%; background: #9fd0e6; }
+  .map { display: flex; flex-direction: column; height: 100%; background: #6fa9c2; }
   .scroll { flex: 1; overflow-y: auto; min-height: 0; }
-  svg { display: block; max-width: 520px; margin: 0 auto; }
-  .zone { font: 800 15px 'Baloo 2', system-ui, sans-serif; fill: #5a1d14; opacity: .75; }
-  .num { font: 800 15px 'Baloo 2', system-ui, sans-serif; fill: #5a1d14; }
-  .num.light { fill: #fff; font-size: 18px; }
-  g.now circle { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .wrap { position: relative; max-width: 520px; margin: 0 auto; }
+  .wrap img { display: block; width: 100%; height: auto; }
+  svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .num { font: 800 40px 'Baloo 2', system-ui, sans-serif; fill: #5a1d14; }
+  .num.light { fill: #fff; font-size: 52px; }
+  .stars { font-size: 30px; fill: #f2c230; stroke: #7a2418; stroke-width: 2; }
+  g.now { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
   @keyframes pulse { 50% { transform: scale(1.12); } }
   .next { display: flex; align-items: center; gap: 12px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: #fff8ec; border-top: 3px solid #7a2418; color: var(--deep); }
   .next div { flex: 1; display: grid; line-height: 1.25; }
