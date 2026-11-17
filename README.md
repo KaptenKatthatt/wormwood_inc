@@ -4,7 +4,7 @@ Ett match-3-spel med en by, byggt som PWA för ett examensarbete om
 engagemangsdriven design ("Kära spelare – En studie i manipulation och
 underhållning"). Spelet är bara på svenska.
 
-**Status:** projektskelett. Pusslet och byn är platshållare; speldesignen görs separat.
+**Status:** spelbar första version enligt speldesignen (`docs/speldesign.md` på grenen claude/project-thread-poksrp): tre match-3-banor, liv, extra drag, byn med fem byggnader och kostnadskurva, butik med testplånbok. Grafiken är platshållare. Anfallet, rådgivarens brev, byborna, erbjudandet och enkäten kommer i nästa omgång.
 
 ## Stack
 
@@ -26,6 +26,10 @@ som tidpunkter i speltid och "räknas ikapp" när spelet öppnas.
 När ett bygge startas och notiser är på ber spelet servern om en notis vid
 rätt verklig tid (`/api/push/schedule`), så notisen kommer även när spelet är stängt.
 
+## Match-3 och riggad nära vinst
+
+`src/lib/match3/engine.ts` har reglerna utan grafik; `src/game/Match3Scene.ts` animerar stegen. När kroken *Riggad nära vinst* är på styr en "regissör" nya brickor: ligger spelaren före kurvan undviker de nya brickorna att bilda rader och målbrickan, ligger hen efter gynnas båda. Det gör att banor oftast slutar precis vid målet. Bana 3 siktar på att sluta strax under målet. Av betyder ärlig slump.
+
 ## Utvecklarmeny och testplånbok
 
 Utvecklarmenyn (tid, påfyllning av plånboken, nollställning, teknisk info)
@@ -37,7 +41,7 @@ VITE_DEV_MENU=false npm run build
 ```
 
 Köp görs med en **testplånbok** med låtsaskronor (`src/lib/economy/wallet.ts`),
-100 kr från start. Inga riktiga pengar rör sig; varje köp och nekat köp loggas.
+100 kr från start, som köper ädelstenspaket i butiken. Inga riktiga pengar rör sig. Varje krokögonblick loggas som en `hook`-händelse med vad som erbjöds och vad spelaren gjorde. Varje krok kan slås av i utvecklarmenyn.
 
 ## Speltestlogg
 

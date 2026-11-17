@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { lives, now, settings, wallet } from '../lib/state/game';
-  import { formatKr } from '../lib/economy/wallet';
+  import { lives, now, purse, settings, shopOpen } from '../lib/state/game';
   import { formatDuration } from '../lib/time/clock';
   import { nextLifeIn } from '../lib/time/lives';
 
@@ -8,25 +7,24 @@
 </script>
 
 <header class="hud">
-  <div class="lives" aria-label={`${$lives.count} av ${$lives.max} liv`}>
-    {#each Array($lives.max) as _, i}
-      <span class="heart" class:empty={i >= $lives.count} aria-hidden="true">♥</span>
-    {/each}
-    <span class="next">{next === null ? 'Fullt' : `+1 om ${formatDuration(next)}`}</span>
+  <div class="lives" aria-label={`${$lives.count} av ${$lives.max} liv${next === null ? '' : `, nästa om ${formatDuration(next)}`}`}>
+    <span class="heart" aria-hidden="true">♥</span><strong>{$lives.count}</strong>
+    <span class="next" aria-hidden="true">{next === null ? 'fullt' : formatDuration(next)}</span>
   </div>
-  <div class="right">
-    {#if $settings.fastMode}<span class="badge" title="30 minuter blir 2">Snabb</span>{/if}
-    <span class="kr" aria-label={`Plånbok: ${formatKr($wallet.kronor)}`}>{formatKr($wallet.kronor)}</span>
-  </div>
+  <span class="gold" aria-label={`${$purse.gold} guld`}><span aria-hidden="true">🪙</span> {$purse.gold}</span>
+  <button class="gems" onclick={() => shopOpen.set({ reason: 'hud' })} aria-label={`${$purse.gems} ädelstenar. Öppna butiken`}>
+    <span aria-hidden="true">💎</span> {$purse.gems} <span class="plus" aria-hidden="true">+</span>
+  </button>
+  {#if $settings.speed !== 1}<span class="badge" title="Snabbad klocka">×{$settings.speed}</span>{/if}
 </header>
 
 <style>
-  .hud { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  .lives { min-width: 0; display: flex; align-items: center; gap: 2px; }
-  .heart { color: var(--falu); font-size: 1.15rem; line-height: 1; }
-  .heart.empty { color: var(--line); }
-  .next { white-space: nowrap; margin-left: 6px; color: var(--muted); font-size: .95rem; font-variant-numeric: tabular-nums; }
-  .right { display: flex; align-items: center; gap: 6px; }
-  .kr { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .badge { background: var(--gold); color: #1f1a17; font-weight: 700; border-radius: 999px; padding: 2px 10px; font-size: .85rem; }
+  .hud { min-width: 0; display: flex; align-items: center; gap: 12px; padding: 6px 12px; background: var(--panel); border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .lives { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; flex: 1; min-width: 0; }
+  .heart { color: var(--falu); font-size: 1.3rem; line-height: 1; }
+  .next { color: var(--muted); font-size: .9rem; margin-left: 2px; }
+  .gold { font-weight: 700; white-space: nowrap; }
+  .gems { min-height: 40px; padding: 4px 10px; background: transparent; border: 2px solid var(--line); color: var(--ink); white-space: nowrap; }
+  .plus { color: var(--falu); font-weight: 900; }
+  .badge { background: var(--gold); color: #1f1a17; font-weight: 800; border-radius: 999px; padding: 2px 8px; font-size: .8rem; }
 </style>

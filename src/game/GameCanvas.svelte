@@ -1,38 +1,54 @@
 <script lang="ts">
   import Phaser from 'phaser';
   import { onMount } from 'svelte';
-  import { PuzzleScene } from './PuzzleScene';
-  import { VillageScene } from './VillageScene';
-  import type { PlotView } from './VillageScene';
 
-  let { scene, plots = [], label }: { scene: 'puzzle' | 'village'; plots?: PlotView[]; label: string } = $props();
+  /**
+   * Hosts one Phaser game with one scene. `data` goes into the game registry
+   * (the scene listens for changes), `on` maps game events to callbacks.
+   */
+  let {
+    scene,
+    data = {},
+    on = {},
+    label,
+  }: {
+    scene: typeof Phaser.Scene;
+    data?: Record<string, unknown>;
+    on?: Record<string, (...args: any[]) => void>;
+    label: string;
+  } = $props();
+
   let host: HTMLDivElement;
-  let game: Phaser.Game | undefined;
+  let game = $state<Phaser.Game>();
 
   onMount(() => {
-    game = new Phaser.Game({
+    const g = new Phaser.Game({
       type: Phaser.AUTO,
       parent: host,
       backgroundColor: '#1d3a44',
       scale: { mode: Phaser.Scale.RESIZE, width: host.clientWidth, height: host.clientHeight },
-      scene: [],
       banner: false,
+      callbacks: {
+        preBoot: (game) => { for (const [k, v] of Object.entries(data)) game.registry.set(k, v); },
+      },
     });
-    game.scene.add('puzzle', PuzzleScene, scene === 'puzzle');
-    game.scene.add('village', VillageScene, scene === 'village');
-    return () => game?.destroy(true);
+    g.scene.add('main', scene, true);
+    game = g;
+    return () => g.destroy(true);
   });
 
   $effect(() => {
     const g = game;
     if (!g) return;
-    const other = scene === 'puzzle' ? 'village' : 'puzzle';
-    if (g.scene.isActive(other)) g.scene.stop(other);
-    if (!g.scene.isActive(scene)) g.scene.start(scene);
+    for (const [k, v] of Object.entries(data)) if (g.registry.get(k) !== v) g.registry.set(k, v);
   });
 
   $effect(() => {
-    game?.registry.set('plots', plots);
+    const g = game;
+    if (!g) return;
+    const entries = Object.entries(on);
+    for (const [ev, fn] of entries) g.events.on(ev, fn);
+    return () => { for (const [ev, fn] of entries) g.events.off(ev, fn); };
   });
 </script>
 

@@ -4,16 +4,17 @@
   import VillageView from './ui/VillageView.svelte';
   import SettingsView from './ui/SettingsView.svelte';
   import Consent from './ui/Consent.svelte';
-  import { settings, toasts } from './lib/state/game';
+  import { settings, shopOpen, toasts } from './lib/state/game';
+  import Shop from './ui/Shop.svelte';
   import { log } from './lib/log/logger';
 
   type Tab = 'pussel' | 'byn' | 'installningar';
   const TABS: { id: Tab; label: string }[] = [
-    { id: 'pussel', label: 'Pussel' },
+    { id: 'pussel', label: 'Banor' },
     { id: 'byn', label: 'Byn' },
     { id: 'installningar', label: 'Inställningar' },
   ];
-  const fromHash = (): Tab => (TABS.find((t) => `#${t.id}` === location.hash)?.id ?? 'byn');
+  const fromHash = (): Tab => (TABS.find((t) => `#${t.id}` === location.hash)?.id ?? 'pussel');
   let tab = $state<Tab>(fromHash());
 
   function go(t: Tab) {
@@ -26,7 +27,7 @@
 <div class="app">
   <Hud />
   <main>
-    {#if tab === 'pussel'}<PuzzleView />{:else if tab === 'byn'}<VillageView />{:else}<SettingsView />{/if}
+    {#if tab === 'pussel'}<PuzzleView onVillage={() => go('byn')} />{:else if tab === 'byn'}<VillageView onPlay={() => go('pussel')} />{:else}<SettingsView />{/if}
   </main>
   <nav aria-label="Huvudmeny">
     {#each TABS as t}
@@ -36,6 +37,7 @@
   <div class="toasts" aria-live="polite">
     {#each $toasts as t (t.id)}<div class="toast">{t.text}</div>{/each}
   </div>
+  {#if $shopOpen}<Shop />{/if}
   {#if $settings.logging === null}<Consent />{/if}
 </div>
 
