@@ -1,6 +1,6 @@
 import { play as playSound, playMatch } from '../lib/audio/sound';
 import Phaser from 'phaser';
-import { BOMB, type Cell, type Match3, type Special, type Step } from '../lib/match3/engine';
+import { BOMB, isFree, type Cell, type Match3, type Special, type Step } from '../lib/match3/engine';
 import { TILES } from '../lib/match3/levels';
 import { DEEP, FRAME } from './palette';
 
@@ -9,7 +9,8 @@ type Tile = Phaser.GameObjects.Container;
 /**
  * Draws a Match3 board and animates its steps. Svelte puts the engine in the
  * registry as 'match3'; the scene tells Svelte about each finished move with
- * the game event 'match3:moved'. Tap two neighbours or swipe to swap.
+ * the game event 'match3:moved'. Tap two neighbours or swipe to swap; a tap on
+ * a rocket, fireworks or the pearl sets it off.
  */
 export class Match3Scene extends Phaser.Scene {
   private engine?: Match3;
@@ -40,6 +41,7 @@ export class Match3Scene extends Phaser.Scene {
 
   preload(): void {
     for (const name of TILES) this.load.image(`tile-${name}`, `/art/tiles/${name}.png`);
+    for (const name of ['raket', 'fyrverkeri', 'parla']) this.load.image(`sp-${name}`, `/art/tiles/${name}.png`);
   }
 
   create(): void {
@@ -235,92 +237,24 @@ export class Match3Scene extends Phaser.Scene {
 
   private makeTile(kind: number, at: { x: number; y: number }, special: Special = null): Tile {
     const size = this.cell * 0.86;
-    if (kind === BOMB) return this.add.container(at.x, at.y, [this.compass(size)]).setDepth(1);
-    const parts: Phaser.GameObjects.GameObject[] = [];
-    if (special) parts.push(this.specialMark(special, size));
-    const shadow = this.add.image(0, 2 * this.k, `tile-${TILES[kind]}`).setDisplaySize(size, size).setTint(0x000000).setAlpha(0.25);
-    const img = this.add.image(0, 0, `tile-${TILES[kind]}`).setDisplaySize(size, size);
-    parts.push(shadow, img);
-    if (special === 'row' || special === 'col') parts.push(this.arrows(special, size));
-    return this.add.container(at.x, at.y, parts).setDepth(1);
-  }
-
-  /** Behind a special tile: a warm glow, and a lifebuoy ring for the area tile. */
-  private specialMark(special: Special, size: number): Phaser.GameObjects.Graphics {
-    const g = this.add.graphics();
-    g.fillStyle(0xffe7a3, 0.85).fillCircle(0, 0, size * 0.5);
-    if (special === 'area') {
-      const w = size * 0.11;
-      for (let i = 0; i < 8; i++) {
-        g.lineStyle(w, i % 2 ? 0xffffff : 0xc0392b, 1);
-        g.beginPath();
-        g.arc(0, 0, size * 0.47, (i * Math.PI) / 4, ((i + 1) * Math.PI) / 4);
-        g.strokePath();
-      }
+    if (!isFree(kind)) {
+      const shadow = this.add.image(0, 2 * this.k, `tile-${TILES[kind]}`).setDisplaySize(size, size).setTint(0x000000).setAlpha(0.25);
+      const img = this.add.image(0, 0, `tile-${TILES[kind]}`).setDisplaySize(size, size);
+      return this.add.container(at.x, at.y, [shadow, img]).setDepth(1);
     }
-    return g;
-  }
-
-  /** Over a row or column tile: two white arrows pointing the way it clears. */
-  /**
-   * Over a row or column tile: white stripes across the tile and one big
-   * double arrow along the line it clears (Jonas: the small arrows were
-   * unclear). The stripes run the same way as the arrow.
-   */
-  private arrows(special: 'row' | 'col', size: number): Phaser.GameObjects.Graphics {
-    const g = this.add.graphics();
-    const across = special === 'row';
-    const half = size * 0.5;
-    // stripes
-    g.fillStyle(0xffffff, 0.55);
-    for (const o of [-0.26, 0, 0.26]) {
-      const t = size * 0.07;
-      if (across) g.fillRect(-half, o * size - t / 2, size, t);
-      else g.fillRect(o * size - t / 2, -half, t, size);
-    }
-    // the arrow: a shaft and two heads reaching past the tile edges
-    const len = size * 0.62;
-    const head = size * 0.2;
-    const w = size * 0.09;
-    const draw = (fill: number, grow: number) => {
-      g.fillStyle(fill, 1);
-      const L = len + grow;
-      const H = head + grow;
-      const W = w + grow;
-      if (across) {
-        g.fillRect(-L + H, -W / 2, 2 * (L - H), W);
-        g.fillTriangle(-L, 0, -L + H, -H * 0.8, -L + H, H * 0.8);
-        g.fillTriangle(L, 0, L - H, -H * 0.8, L - H, H * 0.8);
-      } else {
-        g.fillRect(-W / 2, -L + H, W, 2 * (L - H));
-        g.fillTriangle(0, -L, -H * 0.8, -L + H, H * 0.8, -L + H);
-        g.fillTriangle(0, L, -H * 0.8, L - H, H * 0.8, L - H);
-      }
-    };
-    draw(DEEP, this.k * 3); // outline
-    draw(0xffd34d, 0);
-    return g;
-  }
-
-  /** The compass from five in a row: a gold rim and an eight-pointed star. */
-  private compass(size: number): Phaser.GameObjects.Graphics {
-    const g = this.add.graphics();
-    const R = size * 0.46;
-    g.fillStyle(0x000000, 0.25).fillCircle(0, 2 * this.k, R);
-    g.fillStyle(0xd9a441, 1).fillCircle(0, 0, R);
-    g.fillStyle(0xfff8ec, 1).fillCircle(0, 0, R * 0.84);
-    const star = (len: number, color: number, offset: number) => {
-      for (let i = 0; i < 4; i++) {
-        const t = offset + (i * Math.PI) / 2;
-        const tip = { x: Math.cos(t) * len, y: Math.sin(t) * len };
-        const l = { x: Math.cos(t + Math.PI / 2) * len * 0.22, y: Math.sin(t + Math.PI / 2) * len * 0.22 };
-        g.fillStyle(color, 1).fillTriangle(tip.x, tip.y, l.x, l.y, -l.x, -l.y);
-      }
-    };
-    star(R * 0.62, 0x2c5d7c, Math.PI / 4);
-    star(R * 0.8, 0xb8382a, -Math.PI / 2);
-    g.fillStyle(0xd9a441, 1).fillCircle(0, 0, R * 0.12);
-    return g;
+    // Option A (Jonas, 2026-11-17): specials are their own pictures, with no kind.
+    // A rocket lies along the line it clears; the pearl shows every kind it can take.
+    const name = kind === BOMB ? 'parla' : special === 'area' ? 'fyrverkeri' : 'raket';
+    const glow = this.add.graphics();
+    glow.fillStyle(0xffe7a3, 0.8).fillCircle(0, 0, size * 0.5);
+    const big = kind === BOMB ? size : special === 'area' ? size * 0.98 : size * 1.15;
+    const shadow = this.add.image(0, 2 * this.k, `sp-${name}`).setDisplaySize(big, big).setTint(0x000000).setAlpha(0.25);
+    const img = this.add.image(0, 0, `sp-${name}`).setDisplaySize(big, big);
+    if (special === 'col') { shadow.setAngle(-90); img.setAngle(-90); }
+    const t = this.add.container(at.x, at.y, [glow, shadow, img]).setDepth(1);
+    // a slow breath so the player sees it can be used
+    this.tweens.add({ targets: glow, alpha: 0.35, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    return t;
   }
 
   /** A quick flash where a special went off. */
@@ -375,6 +309,11 @@ export class Match3Scene extends Phaser.Scene {
       void this.swap(s, cell);
       return;
     }
+    if (this.engine && isFree(this.engine.board[cell.r][cell.c])) {
+      this.select(null);
+      void this.fire(cell);
+      return;
+    }
     this.select(s && s.r === cell.r && s.c === cell.c ? null : cell);
   }
 
@@ -409,6 +348,27 @@ export class Match3Scene extends Phaser.Scene {
     }
     this.tiles[a.r][a.c] = tb;
     this.tiles[b.r][b.c] = ta;
+    for (const [i, step] of result.steps.entries()) await this.play(step, i);
+    if (result.shuffled) this.build();
+    this.busy = false;
+    this.drawHint();
+    this.drawCursor();
+    this.game.events.emit('match3:moved', result);
+    this.resetIdle();
+  }
+
+  /** A tapped special goes off where it stands; it costs a move like a swap. */
+  private async fire(cell: Cell): Promise<void> {
+    const e = this.engine;
+    if (!e || this.busy || e.status() !== 'playing') return;
+    this.busy = true;
+    for (const h of this.hintTweens) h.destroy();
+    this.hintTweens = [];
+    const t = this.tiles[cell.r][cell.c];
+    if (t) await this.tween(t, { scale: 1.25 }, 110);
+    const result = e.fire(cell);
+    if (!result.valid) { if (t) t.setScale(1); this.busy = false; return; }
+    playSound('swap');
     for (const [i, step] of result.steps.entries()) await this.play(step, i);
     if (result.shuffled) this.build();
     this.busy = false;

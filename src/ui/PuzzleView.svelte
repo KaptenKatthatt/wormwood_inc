@@ -79,10 +79,10 @@
 
   /** The first time each special tile is made, a short tip says what it does. */
   const SPECIAL_TIPS: Record<string, string> = {
-    row: 'Fyra i rad gav en pilbricka. Använd den i en rad, så sveps hela raden bort åt pilarnas håll.',
-    col: 'Fyra i rad gav en pilbricka. Använd den i en rad, så sveps hela kolumnen bort åt pilarnas håll.',
-    area: 'Ett L eller T gav en livboj. Använd den i en rad, så försvinner allt runt den.',
-    bomb: 'Fem i rad gav en kompass. Byt den med en bricka, så försvinner alla brickor av den sorten.',
+    row: 'Fyra i rad gav en raket. Tryck på den eller byt den med en granne, så flyger den genom hela raden.',
+    col: 'Fyra i rad gav en raket. Tryck på den eller byt den med en granne, så flyger den genom hela kolumnen.',
+    area: 'Ett L eller T gav fyrverkerier. Tryck på dem eller byt dem med en granne, så smäller allt runt omkring.',
+    bomb: 'Fem i rad gav en pärla. Byt den med en bricka, så försvinner alla brickor av den sorten.',
   };
   function noteSpecials(r: SwapResult) {
     const made = r.steps.flatMap((s) => s.made.map((m) => m.special ?? 'bomb'));
