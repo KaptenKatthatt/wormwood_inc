@@ -309,6 +309,11 @@ export class Match3Scene extends Phaser.Scene {
       void this.swap(s, cell);
       return;
     }
+    if (this.engine?.ice[cell.r][cell.c]) {
+      this.select(null);
+      this.frozenNo(cell);
+      return;
+    }
     if (this.engine && isFree(this.engine.board[cell.r][cell.c])) {
       this.select(null);
       void this.fire(cell);
@@ -329,6 +334,7 @@ export class Match3Scene extends Phaser.Scene {
     const e = this.engine;
     if (!e || this.busy || e.status() !== 'playing') return;
     if (b.r < 0 || b.c < 0 || b.r >= e.rows || b.c >= e.cols) return;
+    if (e.ice[a.r][a.c] || e.ice[b.r][b.c]) { this.frozenNo(e.ice[a.r][a.c] ? a : b); return; }
     this.busy = true;
     for (const h of this.hintTweens) h.destroy();
     this.hintTweens = [];
@@ -355,6 +361,16 @@ export class Match3Scene extends Phaser.Scene {
     this.drawCursor();
     this.game.events.emit('match3:moved', result);
     this.resetIdle();
+  }
+
+  /** A frozen tile is locked: it only shivers, with the wooden tock. */
+  private frozenNo(cell: Cell): void {
+    playSound('invalid');
+    const targets = [this.tiles[cell.r]?.[cell.c], this.iceGfx[cell.r]?.[cell.c]].filter(Boolean) as Phaser.GameObjects.Components.Transform[];
+    const x = this.pos(cell).x;
+    for (const t of targets) {
+      this.tweens.add({ targets: t, x: x + 3 * this.k, duration: 45, yoyo: true, repeat: 2, onComplete: () => { t.x = x; } });
+    }
   }
 
   /** A tapped special goes off where it stands; it costs a move like a swap. */

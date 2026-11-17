@@ -82,4 +82,25 @@ describe('special tiles', () => {
     const g = new Match3(level, rng, false, base());
     expect(g.fire({ r: 0, c: 0 }).valid).toBe(false);
   });
+
+  it('a frozen tile cannot be moved and thaws when something beside it clears', () => {
+    const iced: Level = { ...level, ice: [[3, 3]] };
+    const b = base();
+    const g = new Match3(iced, rng, false, b);
+    expect(g.trySwap({ r: 3, c: 3 }, { r: 3, c: 4 }).valid).toBe(false);
+    expect(g.trySwap({ r: 2, c: 3 }, { r: 3, c: 3 }).valid).toBe(false);
+    g.smash({ r: 4, c: 3 });
+    expect(g.ice[3][3]).toBe(false); // thawed by the clear beside it
+  });
+
+  it('tiles above a frozen tile do not fall through it', () => {
+    const iced: Level = { ...level, ice: [[3, 3]] };
+    const g = new Match3(iced, rng, false, base());
+    const kind = g.board[3][3];
+    const step = g.smash({ r: 5, c: 3 }).steps[0];
+    expect(g.ice[3][3]).toBe(true);
+    expect(g.board[3][3]).toBe(kind);
+    expect(step.falls.every((f) => !(f.from.r < 3 && f.to.r > 3))).toBe(true);
+    expect(g.board.flat().every((k) => k >= 0)).toBe(true);
+  });
 });

@@ -1,8 +1,10 @@
 /**
  * Match-3 rules, with no drawing: the Phaser scene animates the steps this
  * returns. A swap is legal when it makes a line of three or more. Matched
- * tiles are cleared (and the ice under them breaks), tiles fall, new tiles
- * come in from the top, and cascades repeat until the board is still.
+ * tiles are cleared, tiles fall, new tiles come in from the top, and
+ * cascades repeat until the board is still. A frozen tile is locked: it
+ * cannot be swapped and does not fall, and it thaws when it is part of a
+ * match or something beside it is cleared.
  *
  * Rigged near-win (game design, section 3): when rigging is on, new tiles are
  * not purely random. A director compares the player's progress with how many
@@ -130,7 +132,7 @@ export class Match3 {
   }
 
   trySwap(a: Cell, b: Cell): SwapResult {
-    if (this.status() !== 'playing' || !this.isAdjacent(a, b) || !this.inside(a) || !this.inside(b)) {
+    if (this.status() !== 'playing' || !this.isAdjacent(a, b) || !this.inside(a) || !this.inside(b) || this.ice[a.r][a.c] || this.ice[b.r][b.c]) {
       return { valid: false, steps: [], shuffled: false };
     }
     this.swapCells(a, b);
@@ -175,7 +177,7 @@ export class Match3 {
 
   /** Tapping a special sets it off where it stands, for one move. */
   fire(cell: Cell): SwapResult {
-    if (this.status() !== 'playing' || !this.inside(cell) || !isFree(this.board[cell.r][cell.c])) return { valid: false, steps: [], shuffled: false };
+    if (this.status() !== 'playing' || !this.inside(cell) || this.ice[cell.r][cell.c] || !isFree(this.board[cell.r][cell.c])) return { valid: false, steps: [], shuffled: false };
     this.movesLeft--;
     this.movesUsed++;
     return this.settle([cell]);
@@ -232,7 +234,7 @@ export class Match3 {
         for (const [dr, dc] of [[0, 1], [1, 0]]) {
           const a = { r, c };
           const b = { r: r + dr, c: c + dc };
-          if (!this.inside(b)) continue;
+          if (!this.inside(b) || this.ice[a.r][a.c] || this.ice[b.r][b.c]) continue;
           if (isFree(this.board[a.r][a.c]) || isFree(this.board[b.r][b.c])) return [a, b];
           this.swapCells(a, b);
           const ok = this.findMatches().length > 0;
@@ -379,6 +381,14 @@ export class Match3 {
         blasts.push({ cell: { r, c }, special: 'bomb' });
       }
     }
+    // Something cleared beside a frozen tile thaws it; the tile stays (Jonas, 2026-11-17).
+    const gone = new Set(matched.map(({ r, c }) => r * this.cols + c));
+    for (const { r, c } of matched) {
+      for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = { r: r + dr, c: c + dc };
+        if (this.inside(n) && this.ice[n.r][n.c] && !gone.has(n.r * this.cols + n.c)) { this.ice[n.r][n.c] = false; iceBroken.push(n); }
+      }
+    }
     for (const { r, c } of matched) {
       if (goal.type === 'collect' && this.board[r][c] === goal.kind) this.collected++;
       if (this.ice[r][c]) { this.ice[r][c] = false; iceBroken.push({ r, c }); }
@@ -394,11 +404,14 @@ export class Match3 {
     const score = matched.length * 20 * chain + Math.max(0, matched.length - 3) * 30 + made.length * 60;
     this.score += score;
 
-    // gravity
+    // gravity: a frozen tile stays put, so each column falls in stretches
+    // between frozen tiles
     const falls: Fall[] = [];
+    const frozen = (r: number, c: number) => this.ice[r][c] && this.board[r][c] !== EMPTY;
     for (let c = 0; c < this.cols; c++) {
       let write = this.rows - 1;
       for (let r = this.rows - 1; r >= 0; r--) {
+        if (frozen(r, c)) { write = r - 1; continue; }
         if (this.board[r][c] === EMPTY) continue;
         if (r !== write) {
           this.board[write][c] = this.board[r][c];
@@ -411,16 +424,22 @@ export class Match3 {
       }
     }
 
-    // refill, bottom-up in each column so the director sees the neighbours below
+    // refill, bottom-up in each stretch so the director sees the neighbours below
     const spawns: Spawn[] = [];
     const mood = this.mood();
     for (let c = 0; c < this.cols; c++) {
-      let empties = 0;
-      for (let r = 0; r < this.rows; r++) if (this.board[r][c] === EMPTY) empties++;
-      for (let r = empties - 1; r >= 0; r--) {
-        const kind = this.chooseKind(r, c, mood);
-        this.board[r][c] = kind;
-        spawns.push({ cell: { r, c }, kind, dropFrom: empties });
+      let bottom = this.rows - 1;
+      while (bottom >= 0) {
+        let top = bottom;
+        while (top > 0 && !frozen(top - 1, c)) top--;
+        let empties = 0;
+        for (let r = top; r <= bottom; r++) if (this.board[r][c] === EMPTY) empties++;
+        for (let r = top + empties - 1; r >= top; r--) {
+          const kind = this.chooseKind(r, c, mood);
+          this.board[r][c] = kind;
+          spawns.push({ cell: { r, c }, kind, dropFrom: empties });
+        }
+        bottom = top - 2; // skip the frozen tile above this stretch
       }
     }
     return { cleared: matched, iceBroken, falls, spawns, score, made, blasts };
@@ -463,16 +482,18 @@ export class Match3 {
   }
 
   private shuffle(): void {
-    const tiles = this.board.flat().map((k, i) => ({ k, s: this.special[Math.floor(i / this.cols)][i % this.cols] }));
+    // frozen tiles stay where they are
+    const spots = this.allCells().filter(({ r, c }) => !this.ice[r][c]);
+    const tiles = spots.map(({ r, c }) => ({ k: this.board[r][c], s: this.special[r][c] }));
     for (let attempt = 0; attempt < 100; attempt++) {
       for (let i = tiles.length - 1; i > 0; i--) {
         const j = Math.floor(this.rng() * (i + 1));
         [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
       }
-      for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) {
-        this.board[r][c] = tiles[r * this.cols + c].k;
-        this.special[r][c] = tiles[r * this.cols + c].s;
-      }
+      spots.forEach(({ r, c }, i) => {
+        this.board[r][c] = tiles[i].k;
+        this.special[r][c] = tiles[i].s;
+      });
       if (this.findMatches().length === 0 && this.hasMove()) return;
     }
     this.board = this.freshBoard();
