@@ -35,7 +35,7 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 
 **Pusslets utseende (godkänt 2026-11-17):** stil "Rödfärg och skärgård". Bakgrunden är västkustskär med en röd sjöbod, brädet är 8x8 med rödfärgad träram. Sex målade brickor som går att skilja åt på formen även i gråskala: fisk, ankare, snäcka, fyr, silltunna och grön segelbåt med två segel. Inga godisbrickor. Granskningssida: https://claude.ai/artifact/9w6tdaRRE2s343Dwq3XBzP, bilder i /mnt/project-files/pussel-stil/stil1-v1/.
 
-**Öppen fråga:** ska hjälpmedlen hammare och blandare (från förstudieskissen) finnas med?
+**Hjälpmedel (beslut):** hammaren tar bort en bricka, blandaren blandar om brädet. En gratis av varje i introduktionen, sedan köps de med ädelstenar.
 
 ### Byggnaderna
 Stil: en gammal svensk by på fastlandet, med åkrar och skog runt om (inte en ö eller udde, som blir för begränsad i yta). Byggnaderna ska passa i sina rutor.
@@ -87,6 +87,8 @@ Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efte
 | Vara | Ädelstenar |
 |---|---|
 | 5 extra drag | 30 |
+| Hammare | 20 |
+| Blandare | 15 |
 | Ett liv | 20 |
 | Fulla liv | 60 |
 | En minut byggtid | 1 (minst 5 per köp) |
