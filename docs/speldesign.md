@@ -96,7 +96,9 @@ Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efte
 
 **Startbidrag:** 30 ädelstenar, så att spelaren hinner betala med ädelstenar innan det kostar kronor.
 
-**Erbjudandet i steg 4:** "Startpaket", 19 kr för 250 ädelstenar och 1 000 guld, försvinner efter 5 minuter (nedräkning syns).
+**Erbjudandet i steg 4:** "Startpaket" för 60 ädelstenar (överstruket 150) som ger 2 000 guld och fulla liv, försvinner efter 5 minuter (nedräkning syns). Räcker ädelstenarna inte öppnas butiken.
+
+**Beslut:** inget säljs direkt för kronor. Allt köps för ädelstenar, och bara ädelstenarna köps för kronor i butiken.
 
 Priser i ädelstenar visas utan kronor bredvid, eftersom det otydliga priset är en del av kroken *Flera valutalager*.
 
@@ -148,6 +150,8 @@ Brytpunkten mäts två gånger: steget i första passet där personen slutar, oc
 ### Rösterna i spelet
 **Ton (beslut):** spelet har ingen märkbar mörk underton. Spelaren ska invaggas i en falsk trygghet: allt känns gulligt, vänligt och ofarligt. Screwtape-temat finns i titeln och i analysen, inte i det spelaren ser.
 
+**Ljust och varmt:** spelet är alltid ljust och följer inte systemets mörka läge. Ljust vatten, falurött brädram, ljusa trärutor.
+
 **Beslut:** en kombination av en rådgivare och byborna. Lite text att läsa.
 - **Rådgivaren**, en äldre släkting, skriver korta brev ("Min käre ...") vid varje nytt steg i trappan och när spelaren vill sluta. Högst två meningar per brev. Varm, omtänksam och tryggt välmenande. Bär kroken *Figurer som pressar*.
 - **Byborna** syns i byn och reagerar med korta pratbubblor på några ord: glada efter bygge, oroliga när anfallet närmar sig, ledsna när spelaren vill sluta.
@@ -164,6 +168,8 @@ Spelet förklarar sig självt, så att Jonas kan lämna det till vem som helst u
 5. Liv.
 6. Byn och byggen.
 7. Var Avsluta finns.
+
+Medan introduktionen pågår pausas brev, erbjudanden och anfallsbanner, och introduktionen flyttar själv spelaren till rätt flik.
 
 ## 5. Mätning och loggning
 
