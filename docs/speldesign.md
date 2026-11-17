@@ -38,6 +38,8 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 
 **De tre första utmaningarna (spelet 0.6.0):** samla 16 fiskar på 20 drag; rensa is i 2x4 rutor på 22 drag; nå 2 600 poäng på 16 drag. Hjälpmedlen ligger under brädet (hammare 20, blandare 15, +5 drag 30 ädelstenar) med egen krokbrytare "Hjälpmedel".
 
+**Kartan och de 40 utmaningarna (spelet 0.7.0):** fliken heter Kartan. Vägen går genom skärgård (1–13), skog (14–27) och fjäll (28–40), och efter 40 börjar den om på 1. Utmaning 4–40 byggs av inställningar: målen växlar mellan samla, is och poäng och växer långsamt. Var femte är en riggad topp som slutar strax under målet, och nästa är en vilopaus. Belöning: 100 guld plus 10 per tredje utmaning, och 50 extra på topparna. Kartan är en platshållare ritad i kod tills en kartbild godkänns.
+
 **Pusslets utseende (godkänt 2026-11-17):** stil "Rödfärg och skärgård". Bakgrunden är västkustskär med en röd sjöbod, brädet är 8x8 med rödfärgad träram. Sex målade brickor som går att skilja åt på formen även i gråskala: fisk, ankare, snäcka, fyr, silltunna och grön segelbåt med två segel. Inga godisbrickor. Granskningssida: https://claude.ai/artifact/9w6tdaRRE2s343Dwq3XBzP, bilder i /mnt/project-files/pussel-stil/stil1-v1/.
 
 **Hjälpmedel (beslut):** hammaren tar bort en bricka, blandaren blandar om brädet. En gratis av varje i introduktionen, sedan köps de med ädelstenar.
