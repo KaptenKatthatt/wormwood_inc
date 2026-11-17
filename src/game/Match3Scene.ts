@@ -262,18 +262,43 @@ export class Match3Scene extends Phaser.Scene {
   }
 
   /** Over a row or column tile: two white arrows pointing the way it clears. */
+  /**
+   * Over a row or column tile: white stripes across the tile and one big
+   * double arrow along the line it clears (Jonas: the small arrows were
+   * unclear). The stripes run the same way as the arrow.
+   */
   private arrows(special: 'row' | 'col', size: number): Phaser.GameObjects.Graphics {
     const g = this.add.graphics();
-    const d = size * 0.54;
-    const a = size * 0.2;
-    g.fillStyle(0xffffff, 1).lineStyle(this.k * 2, DEEP, 1);
-    for (const sgn of [-1, 1]) {
-      const pts = special === 'row'
-        ? [sgn * d, 0, sgn * (d - a * 1.3), -a, sgn * (d - a * 1.3), a]
-        : [0, sgn * d, -a, sgn * (d - a * 1.3), a, sgn * (d - a * 1.3)];
-      g.fillTriangle(pts[0], pts[1], pts[2], pts[3], pts[4], pts[5]);
-      g.strokeTriangle(pts[0], pts[1], pts[2], pts[3], pts[4], pts[5]);
+    const across = special === 'row';
+    const half = size * 0.5;
+    // stripes
+    g.fillStyle(0xffffff, 0.55);
+    for (const o of [-0.26, 0, 0.26]) {
+      const t = size * 0.07;
+      if (across) g.fillRect(-half, o * size - t / 2, size, t);
+      else g.fillRect(o * size - t / 2, -half, t, size);
     }
+    // the arrow: a shaft and two heads reaching past the tile edges
+    const len = size * 0.62;
+    const head = size * 0.2;
+    const w = size * 0.09;
+    const draw = (fill: number, grow: number) => {
+      g.fillStyle(fill, 1);
+      const L = len + grow;
+      const H = head + grow;
+      const W = w + grow;
+      if (across) {
+        g.fillRect(-L + H, -W / 2, 2 * (L - H), W);
+        g.fillTriangle(-L, 0, -L + H, -H * 0.8, -L + H, H * 0.8);
+        g.fillTriangle(L, 0, L - H, -H * 0.8, L - H, H * 0.8);
+      } else {
+        g.fillRect(-W / 2, -L + H, W, 2 * (L - H));
+        g.fillTriangle(0, -L, -H * 0.8, -L + H, H * 0.8, -L + H);
+        g.fillTriangle(0, L, -H * 0.8, L - H, H * 0.8, L - H);
+      }
+    };
+    draw(DEEP, this.k * 3); // outline
+    draw(0xffd34d, 0);
     return g;
   }
 
@@ -299,21 +324,33 @@ export class Match3Scene extends Phaser.Scene {
   }
 
   /** A quick flash where a special went off. */
-  private flash(step: Step): void {
+  /** What a special does when it goes off: a beam sweeps the line, a ring spreads, the compass shines. */
+  private flash(step: Step): number {
     const e = this.engine;
-    if (!e) return;
+    if (!e || step.blasts.length === 0) return 0;
+    const bw = this.cell * e.cols;
+    const bh = this.cell * e.rows;
+    const ms = 260 / Math.max(this.speed, 0.6);
     for (const b of step.blasts) {
       const p = this.pos(b.cell);
-      let rect: Phaser.GameObjects.Rectangle;
-      const bw = this.cell * e.cols;
-      const bh = this.cell * e.rows;
-      if (b.special === 'row') rect = this.add.rectangle(this.origin.x + bw / 2, p.y, bw, this.cell * 0.7, 0xfff3c4, 0.9);
-      else if (b.special === 'col') rect = this.add.rectangle(p.x, this.origin.y + bh / 2, this.cell * 0.7, bh, 0xfff3c4, 0.9);
-      else if (b.special === 'area') rect = this.add.rectangle(p.x, p.y, this.cell * 3, this.cell * 3, 0xfff3c4, 0.85);
-      else rect = this.add.rectangle(this.origin.x + bw / 2, this.origin.y + bh / 2, bw, bh, 0xffffff, 0.45);
-      rect.setDepth(4);
-      void this.tween(rect, { alpha: 0 }, 380).then(() => rect.destroy());
+      if (b.special === 'row' || b.special === 'col') {
+        const across = b.special === 'row';
+        for (const dir of [-1, 1]) {
+          const beam = this.add.rectangle(p.x, p.y, across ? 1 : this.cell * 0.55, across ? this.cell * 0.55 : 1, 0xffe58a, 0.95)
+            .setOrigin(across ? (dir < 0 ? 1 : 0) : 0.5, across ? 0.5 : dir < 0 ? 1 : 0).setDepth(4);
+          const reach = across ? (dir < 0 ? p.x - this.origin.x : this.origin.x + bw - p.x) : dir < 0 ? p.y - this.origin.y : this.origin.y + bh - p.y;
+          void this.tween(beam, across ? { width: reach } : { height: reach }, ms)
+            .then(() => this.tween(beam, { alpha: 0 }, 160)).then(() => beam.destroy());
+        }
+      } else if (b.special === 'area') {
+        const ring = this.add.circle(p.x, p.y, this.cell * 0.4).setStrokeStyle(this.cell * 0.18, 0xffffff, 0.95).setDepth(4);
+        void this.tween(ring, { radius: this.cell * 1.6, alpha: 0 }, ms + 120).then(() => ring.destroy());
+      } else {
+        const glow = this.add.circle(p.x, p.y, this.cell * 0.5, 0xffe58a, 0.9).setDepth(4);
+        void this.tween(glow, { radius: Math.max(bw, bh), alpha: 0 }, ms + 200).then(() => glow.destroy());
+      }
     }
+    return ms;
   }
 
   private select(cell: Cell | null): void {
@@ -421,7 +458,9 @@ export class Match3Scene extends Phaser.Scene {
   private async play(step: Step, cascade = 0): Promise<void> {
     // A special tile made or set off counts as two steps up: it should sound bigger.
     playMatch(cascade + (step.made.length || step.blasts.length ? 2 : 0));
-    this.flash(step);
+    // let the sweep be seen before the tiles go
+    const wait = this.flash(step);
+    if (wait) await new Promise((done) => this.time.delayedCall(wait * 0.8, done));
     const cleared = step.cleared.map(({ r, c }) => this.tiles[r][c]!).filter(Boolean);
     for (const { r, c } of step.iceBroken) {
       const ice = this.iceGfx[r]?.[c];
