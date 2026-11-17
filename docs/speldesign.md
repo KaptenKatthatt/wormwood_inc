@@ -30,7 +30,7 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 | Kronor (låtsas) | Testplånbok, 100 kr vid start | Köpa ädelstenar och paket i butiken |
 
 ### Utmaningarna (inga banor att välja)
-- **Beslut:** spelaren kommer direkt in på brädet. Ingen banakarta, inga banor att välja. Utmaningarna kommer i följd, och nästa startar av sig själv.
+- **Beslut:** spelet öppnar på en karta över ett påhittat Sverige, en väg genom skärgård, skog och fjäll (som Candy Crush). Utmaningarna ligger i ordning på vägen, och spelaren trycker på nästa. Inga banor att välja mellan. Från steg 2 i trappan startar nästa utmaning av sig själv efter 3 sekunder på kartan (inga naturliga stopp).
 - En utmaning har ett mål och ett begränsat antal drag. Tre sorters mål: samla brickor av en sort, rensa is, nå en poänggräns.
 - Klarad utmaning ger en belöning (guld, ibland ädelstenar eller ett hjälpmedel) och kostar inget. Misslyckad utmaning ger ingen belöning och kostar ett liv (som Candy Crush).
 - Utmaningarna blir svårare och belöningarna större efter hand; den tredje är svår. Ett första pass blir 8–10 utmaningar.
@@ -122,7 +122,7 @@ Spelet ska räcka i några timmar, så att testare kan spela på egen hand läng
 
 1. **Byn växer utåt.** Marken utanför byn ligger under skog eller dimma och röjs i flera omgångar när Stugan går upp i nivå, så att nya tomter blir lediga.
 2. **Fler nivåer och byggnader.** 8 byggnader med 10 nivåer var. Samma modell per byggnad med små tillägg per nivå. Nya byggnader (till exempel kvarn, smedja, marknad) låses upp med Stugans nivå.
-3. **Cirka 40 utmaningar i följd**, byggda av inställningar (mål, drag, brickor) i samma pusselmotor. Ingen banakarta; spelaren ser vilken utmaning i ordningen hen är på.
+3. **Cirka 40 utmaningar i följd**, byggda av inställningar (mål, drag, brickor) i samma pusselmotor. Kartan visar hur långt vägen fortsätter bortom det spelaren hunnit.
 
 ## 4. Kroktrappan
 
