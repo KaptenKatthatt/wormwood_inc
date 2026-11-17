@@ -15,6 +15,8 @@ export class Match3Scene extends Phaser.Scene {
   private tiles: (Tile | null)[][] = [];
   private iceGfx: (Phaser.GameObjects.Rectangle | null)[][] = [];
   private cell = 48;
+  /** Device pixels per CSS pixel; the board is drawn in device pixels. */
+  private k = 1;
   private origin = { x: 0, y: 0 };
   private selected: Cell | null = null;
   private selBox?: Phaser.GameObjects.Rectangle;
@@ -100,25 +102,26 @@ export class Match3Scene extends Phaser.Scene {
     const e = this.engine;
     if (!e) return;
     // The approved look: a falu red wooden frame, a white list and light wooden cells.
-    const pad = 16;
+    const k = (this.k = this.registry.get('dpr') ?? 1);
+    const pad = 16 * k;
     this.cell = Math.floor(Math.min((width - 2 * pad) / e.cols, (height - 2 * pad) / e.rows));
     const bw = this.cell * e.cols;
     const bh = this.cell * e.rows;
     this.origin = { x: Math.round((width - bw) / 2), y: Math.round((height - bh) / 2) };
     const { x: ox, y: oy } = this.origin;
     const g = this.add.graphics();
-    g.fillStyle(DEEP, 1).fillRoundedRect(ox - 13, oy - 9, bw + 26, bh + 26, 14);
-    g.fillStyle(FRAME, 1).fillRoundedRect(ox - 13, oy - 13, bw + 26, bh + 26, 14);
-    g.lineStyle(1, 0x000000, 0.08);
-    for (let x = ox - 10; x < ox + bw + 12; x += 9) g.lineBetween(x, oy - 13, x + 3, oy + bh + 13);
-    g.fillStyle(0xf6efe2, 1).fillRoundedRect(ox - 3, oy - 3, bw + 6, bh + 6, 6);
+    g.fillStyle(DEEP, 1).fillRoundedRect(ox - 13 * k, oy - 9 * k, bw + 26 * k, bh + 26 * k, 14 * k);
+    g.fillStyle(FRAME, 1).fillRoundedRect(ox - 13 * k, oy - 13 * k, bw + 26 * k, bh + 26 * k, 14 * k);
+    g.lineStyle(k, 0x000000, 0.08);
+    for (let x = ox - 10 * k; x < ox + bw + 12 * k; x += 9 * k) g.lineBetween(x, oy - 13 * k, x + 3 * k, oy + bh + 13 * k);
+    g.fillStyle(0xf6efe2, 1).fillRoundedRect(ox - 3 * k, oy - 3 * k, bw + 6 * k, bh + 6 * k, 6 * k);
     g.fillStyle(0xd9d0c0, 1).fillRect(ox, oy, bw, bh);
     for (let r = 0; r < e.rows; r++) {
       for (let c = 0; c < e.cols; c++) {
         if ((r + c) % 2 === 0) g.fillStyle(0xffffff, 0.18).fillRect(ox + c * this.cell, oy + r * this.cell, this.cell, this.cell);
       }
     }
-    g.lineStyle(1, 0x5a4632, 0.18);
+    g.lineStyle(k, 0x5a4632, 0.18);
     for (let i = 1; i < e.cols; i++) g.lineBetween(ox + i * this.cell, oy, ox + i * this.cell, oy + bh);
     for (let i = 1; i < e.rows; i++) g.lineBetween(ox, oy + i * this.cell, ox + bw, oy + i * this.cell);
     this.tiles = e.board.map((row, r) => row.map((kind, c) => this.makeTile(kind, this.pos({ r, c }))));
@@ -127,7 +130,7 @@ export class Match3Scene extends Phaser.Scene {
       row.map((has, c) => {
         if (!has) return null;
         const p = this.pos({ r, c });
-        return this.add.rectangle(p.x, p.y, this.cell - 4, this.cell - 4, 0xbfe6fa, 0.55).setStrokeStyle(2, 0xffffff, 0.95).setDepth(2);
+        return this.add.rectangle(p.x, p.y, this.cell - 4 * k, this.cell - 4 * k, 0xbfe6fa, 0.55).setStrokeStyle(2 * k, 0xffffff, 0.95).setDepth(2);
       }),
     );
     this.hintTweens = [];
@@ -144,7 +147,7 @@ export class Match3Scene extends Phaser.Scene {
     if (!move) return;
     for (const cell of move) {
       const p = this.pos(cell);
-      const box = this.add.rectangle(p.x, p.y, this.cell - 2, this.cell - 2).setStrokeStyle(4, FRAME, 1).setDepth(3);
+      const box = this.add.rectangle(p.x, p.y, this.cell - 2 * this.k, this.cell - 2 * this.k).setStrokeStyle(4 * this.k, FRAME, 1).setDepth(3);
       this.tweens.add({ targets: box, alpha: 0.2, duration: 600, yoyo: true, repeat: -1 });
       this.hintTweens.push(box);
     }
@@ -184,12 +187,12 @@ export class Match3Scene extends Phaser.Scene {
     this.cursorBox = undefined;
     if (!this.usingKeys || !this.engine) return;
     const p = this.pos(this.cursor);
-    this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3, DEEP, 1).setDepth(3);
+    this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3 * this.k, DEEP, 1).setDepth(3);
   }
 
   private makeTile(kind: number, at: { x: number; y: number }): Tile {
     const size = this.cell * 0.86;
-    const shadow = this.add.image(0, 2, `tile-${TILES[kind]}`).setDisplaySize(size, size).setTint(0x000000).setAlpha(0.25);
+    const shadow = this.add.image(0, 2 * this.k, `tile-${TILES[kind]}`).setDisplaySize(size, size).setTint(0x000000).setAlpha(0.25);
     const img = this.add.image(0, 0, `tile-${TILES[kind]}`).setDisplaySize(size, size);
     return this.add.container(at.x, at.y, [shadow, img]).setDepth(1);
   }
@@ -200,7 +203,7 @@ export class Match3Scene extends Phaser.Scene {
     this.selBox = undefined;
     if (cell) {
       const p = this.pos(cell);
-      this.selBox = this.add.rectangle(p.x, p.y, this.cell - 2, this.cell - 2).setStrokeStyle(4, DEEP, 1).setDepth(3);
+      this.selBox = this.add.rectangle(p.x, p.y, this.cell - 2 * this.k, this.cell - 2 * this.k).setStrokeStyle(4 * this.k, DEEP, 1).setDepth(3);
     }
   }
 

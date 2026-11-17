@@ -34,7 +34,8 @@ export class VillageScene extends Phaser.Scene {
     // The first five sit in the middle; the last three on the outer land that is cleared later.
     const spots = [[0, -0.12], [-0.52, 0.08], [0.52, 0.08], [-0.26, 0.52], [0.26, 0.52], [-0.6, -0.52], [0.6, -0.52], [0, -0.7]];
     const s = Math.min(rx * 0.24, ry * 0.42);
-    const font = `${Math.max(11, Math.round(s * 0.2))}px`;
+    const k = this.registry.get('dpr') ?? 1;
+    const font = `${Math.max(11 * k, Math.round(s * 0.2))}px`;
     plots.forEach((p, i) => {
       const [dx, dy] = spots[i] ?? [0, 0];
       const x = cx + dx * rx;
@@ -66,7 +67,7 @@ export class VillageScene extends Phaser.Scene {
         }
       }
       const label = p.locked ? '' : p.level > 0 ? `${p.name} ${p.level}` : p.name;
-      this.add.text(x, y + h / 2 + 4, label, { fontFamily: 'system-ui, sans-serif', fontSize: font, color: '#f3ece4', fontStyle: 'bold', stroke: '#5a1d14', strokeThickness: 3 }).setOrigin(0.5, 0);
+      this.add.text(x, y + h / 2 + 4, label, { fontFamily: 'system-ui, sans-serif', fontSize: font, color: '#f3ece4', fontStyle: 'bold', stroke: '#5a1d14', strokeThickness: 3 * k }).setOrigin(0.5, 0);
     });
   }
 }
