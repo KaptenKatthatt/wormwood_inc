@@ -49,7 +49,7 @@ VITE_DEV_MENU=false npm run build
 ```
 
 Köp görs med en **testplånbok** med låtsaskronor (`src/lib/economy/wallet.ts`),
-100 kr från start, som köper ädelstenspaket i butiken. Inga riktiga pengar rör sig. Varje krokögonblick loggas som en `hook`-händelse med vad som erbjöds och vad spelaren gjorde. Varje krok kan slås av i utvecklarmenyn.
+100 kr från start, som bara köper ädelstenspaket i butiken. Allt annat i spelet, även startpaketet, kostar ädelstenar (Jonas, 2026-11-17). Inga riktiga pengar rör sig. Varje krokögonblick loggas som en `hook`-händelse med vad som erbjöds och vad spelaren gjorde. Varje krok kan slås av i utvecklarmenyn.
 
 ## Speltestlogg
 

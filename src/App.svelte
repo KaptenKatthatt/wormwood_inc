@@ -12,6 +12,7 @@
   import Shop from './ui/Shop.svelte';
   import Coach from './ui/Coach.svelte';
   import { log } from './lib/log/logger';
+  import { TUT_STEPS, tutorial } from './lib/tutorial';
 
   type Tab = 'pussel' | 'byn' | 'installningar';
   const TABS: { id: Tab; label: string }[] = [
@@ -28,6 +29,14 @@
     return () => window.removeEventListener('hashchange', onHash);
   });
 
+  // The introduction takes the player to the tab each step is about, so it
+  // cannot get stuck when it is started from Settings.
+  const tutStep = $derived($tutorial.index === null ? null : TUT_STEPS[$tutorial.index]);
+  $effect(() => {
+    const s = tutStep;
+    if (s && s.tab !== 'any' && !s.selfNav && s.tab !== tab) go(s.tab);
+  });
+
   function go(t: Tab) {
     tab = t;
     history.replaceState(null, '', `#${t}`);
@@ -36,7 +45,7 @@
 </script>
 
 <div class="app">
-  <div class="top"><Hud /><Banners /></div>
+  <div class="top"><Hud />{#if !tutStep}<Banners />{/if}</div>
   <main>
     {#if tab === 'pussel'}<PuzzleView onVillage={() => go('byn')} />{:else if tab === 'byn'}<VillageView onPlay={() => go('pussel')} />{:else}<SettingsView />{/if}
   </main>
@@ -48,10 +57,10 @@
   <div class="toasts" aria-live="polite">
     {#each $toasts as t (t.id)}<div class="toast">{t.text}</div>{/each}
   </div>
-  {#if $offerOpen}<Offer />{/if}
+  {#if $offerOpen && !tutStep}<Offer />{/if}
   {#if $shopOpen}<Shop />{/if}
   <Coach />
-  <Letter />
+  {#if !tutStep}<Letter />{/if}
   {#if $quitFlow}<QuitFlow />{/if}
   {#if $settings.logging === null}<Consent />{/if}
 </div>

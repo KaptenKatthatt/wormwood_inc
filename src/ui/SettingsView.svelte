@@ -28,7 +28,7 @@
 
 <section class="settings">
   <h2>Hjälp</h2>
-  <button class="ghost" onclick={() => { location.hash = '#pussel'; startTutorial(true); }}>Visa introduktionen igen</button>
+  <button class="ghost" onclick={() => startTutorial(true)}>Visa introduktionen igen</button>
 
   <h2>Installera</h2>
   <InstallGuide />

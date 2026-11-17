@@ -31,7 +31,12 @@ export function nextStep(current: Step, minutesIn: number, event?: StairEvent): 
 }
 
 /** The starter pack in step 4. */
-export const OFFER = { kronor: 19, gems: 250, gold: 1000, lastsMs: 5 * MINUTE };
+/**
+ * The starter pack is paid in gems, like everything else in the game; only gems
+ * are bought for kronor (Jonas, 2026-11-17). It costs more gems than the player
+ * starts with, so it leads to the shop.
+ */
+export const OFFER = { gems: 60, was: 150, gold: 2000, lastsMs: 5 * MINUTE };
 
 /** The attack in step 5. */
 export const ATTACK = {

@@ -14,6 +14,8 @@ export interface TutStep {
   id: string;
   /** Which tab the step lives on. */
   tab: 'pussel' | 'byn' | 'installningar' | 'any';
+  /** The player goes there themselves (the step teaches the way); otherwise the game takes them. */
+  selfNav?: boolean;
   /** data-tut attribute of the element to point at, if any; "a|b" points at the first that exists. */
   target?: string;
   title: string;
@@ -31,7 +33,7 @@ export const TUT_STEPS: TutStep[] = [
   { id: 'goal', tab: 'pussel', target: 'goal', title: 'Målet', text: 'Här står vad banan går ut på och hur nära du är. Siffran till höger är hur många drag du har kvar.' },
   { id: 'lives', tab: 'pussel', target: 'lives', title: 'Liv', text: 'Hjärtat är dina liv. Klarar du inte en bana går ett liv åt, och ett nytt kommer av sig självt efter en stund.' },
   { id: 'finish', tab: 'pussel', target: 'board', title: 'Spela klart banan', text: 'Fortsätt byta brickor tills banan är slut. Vinner du får du guld.', waitFor: 'levelEnded' },
-  { id: 'village', tab: 'byn', target: 'to-village|tab-byn', title: 'Byn', text: 'Gå till byn. Där använder du guldet.', waitFor: 'inVillage' },
+  { id: 'village', tab: 'byn', target: 'to-village|tab-byn', selfNav: true, title: 'Byn', text: 'Gå till byn. Där använder du guldet.', waitFor: 'inVillage' },
   { id: 'build', tab: 'byn', target: 'build-stugan', title: 'Bygg ditt första hus', text: 'Tryck Bygg vid Stugan. Ett bygge tar en liten stund, och sedan står huset där.', waitFor: 'built' },
   { id: 'gems', tab: 'byn', target: 'gems', title: 'Ädelstenar', text: 'Ädelstenarna kan användas till genvägar, som extra drag. Tryck här för att se butiken. Pengarna är på låtsas.' },
   { id: 'quit', tab: 'byn', target: 'quit', title: 'När du vill sluta', text: 'Tryck Avsluta längst ner i byn. Då får du svara på några korta frågor.' },

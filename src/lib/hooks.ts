@@ -14,7 +14,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'autoNext', step: 2, name: 'Inga naturliga stopp', what: 'Nästa bana startar av sig själv efter en vinst.' },
   { id: 'buyLives', step: 3, name: 'Köp liv', what: 'Liv för ädelstenar när liven är slut.' },
   { id: 'skipWait', step: 3, name: 'Köp bort väntan', what: 'Byggtid som kan köpas bort med ädelstenar.' },
-  { id: 'timedOffer', step: 4, name: 'Tidsbegränsat erbjudande', what: 'Startpaket för 19 kr som försvinner efter 5 minuter.' },
+  { id: 'timedOffer', step: 4, name: 'Tidsbegränsat erbjudande', what: 'Startpaket för 60 ädelstenar (förr 150) som försvinner efter 5 minuter. Räcker inte ädelstenarna öppnas butiken.' },
   { id: 'gemPacks', step: 0, name: 'Ädelstenspaket', what: 'Butiken med paket för kronor, märkta "Populärast" och "Bäst värde".' },
   { id: 'attack', step: 5, name: 'Anfall och sköld', what: 'Grannar anfaller byn; sköld för ädelstenar eller soldater för guld.' },
   { id: 'guilt', step: 5, name: 'Skuld när man slutar', what: 'Rådgivaren och byborna ber spelaren stanna när hen trycker Avsluta.' },

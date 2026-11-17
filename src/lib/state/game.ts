@@ -388,7 +388,7 @@ function openOffer(): void {
   if (st.offer || !hookOn('timedOffer')) return;
   stairs.set({ ...st, offer: { endsAt: clock.now() + realMs(OFFER.lastsMs), status: 'open' } });
   offerOpen.set(true);
-  logHook('timedOffer', { kronor: OFFER.kronor, gems: OFFER.gems, gold: OFFER.gold }, 'shown');
+  logHook('timedOffer', { gems: OFFER.gems, gold: OFFER.gold }, 'shown');
 }
 
 /** The starter pack dialog on screen. */
@@ -396,19 +396,14 @@ export const offerOpen = writable(false);
 
 export function buyOffer(): boolean {
   const st = get(stairs);
-  const p = get(purse);
   if (st.offer?.status !== 'open') return false;
-  if (p.kronor < OFFER.kronor) {
-    logHook('timedOffer', { kronor: OFFER.kronor }, 'cannot-afford');
-    toast('För lite pengar i testplånboken');
-    return false;
-  }
-  purse.set({ ...p, kronor: p.kronor - OFFER.kronor, kronorSpent: p.kronorSpent + OFFER.kronor, gems: p.gems + OFFER.gems, gold: p.gold + OFFER.gold });
+  if (!payGems(OFFER.gems, 'timedOffer', { leftMs: st.offer.endsAt - clock.now() })) return false;
+  addGold(OFFER.gold);
+  lives.update((l) => ({ ...settleLives(l, clock.now()), count: l.max, regenFrom: clock.now() }));
   stairs.set({ ...st, offer: { ...st.offer, status: 'bought' } });
-  logHook('timedOffer', { kronor: OFFER.kronor, leftMs: st.offer.endsAt - clock.now() }, 'yes');
-  log('purchase', { item: 'starterPack', kronor: OFFER.kronor });
+  log('purchase', { item: 'starterPack', gems: OFFER.gems });
   offerOpen.set(false);
-  toast(`+${OFFER.gems} ädelstenar och ${OFFER.gold} guld`);
+  toast(`+${OFFER.gold} guld och fulla liv`);
   return true;
 }
 
