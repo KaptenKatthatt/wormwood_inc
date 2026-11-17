@@ -324,12 +324,12 @@ export class Match3Scene extends Phaser.Scene {
     const pa = this.pos(a);
     const pb = this.pos(b);
     const result = e.trySwap(a, b);
-    playSound('swap');
+    // One sound per move: the slide when it makes a line, the wooden tock when it does not.
+    playSound(result.valid ? 'swap' : 'invalid');
     await Promise.all([this.tween(ta, { x: pb.x, y: pb.y }, 130), this.tween(tb, { x: pa.x, y: pa.y }, 130)]);
     if (!result.valid) {
       await Promise.all([this.tween(ta, { x: pa.x, y: pa.y }, 130), this.tween(tb, { x: pb.x, y: pb.y }, 130)]);
       this.busy = false;
-      playSound('invalid');
       this.game.events.emit('match3:invalid');
       return;
     }
