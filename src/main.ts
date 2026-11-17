@@ -10,6 +10,8 @@ import { onTutorialFinish, startTutorial, tutorialDone } from './lib/tutorial';
 import { initLogger, log } from './lib/log/logger';
 import { listenForInstall, isStandalone } from './lib/pwa/install';
 import { get } from 'svelte/store';
+import { permissionNow, subscribe } from './lib/push/push';
+import { rescheduleAll, toast } from './lib/state/game';
 
 // Registered before the logger's own pagehide flush, so this event goes out with it.
 window.addEventListener('pagehide', () => log('pagehide', { minutesIn: minutesIn() }));
@@ -75,3 +77,18 @@ if ('serviceWorker' in navigator) {
 }
 
 export default mount(App, { target: document.getElementById('app')! });
+
+// If notifications were allowed outside the game (or the prompt answered
+// late), turn them on without asking again.
+async function syncPush(): Promise<void> {
+  if (get(settings).notifications || permissionNow() !== 'granted') return;
+  const r = await subscribe(playerId);
+  log('push_sync', { result: r });
+  if (r !== 'ok') return;
+  settings.update((s) => ({ ...s, notifications: true }));
+  rescheduleAll();
+  toast('Notiser är på.');
+}
+void syncPush();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void syncPush(); });
+void navigator.permissions?.query({ name: 'notifications' as PermissionName }).then((p) => { p.onchange = () => void syncPush(); }).catch(() => {});

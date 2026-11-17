@@ -4,7 +4,8 @@
   import DevMenu from './DevMenu.svelte';
   import { startTutorial } from '../lib/tutorial';
   import { testCode } from '../lib/testCode';
-  import { enablePush, pushSupported, testPush } from '../lib/push/push';
+  import { enablePush, lastPushError, permissionNow, testPush } from '../lib/push/push';
+  import { log } from '../lib/log/logger';
   import { flush } from '../lib/log/logger';
   import InstallGuide from './InstallGuide.svelte';
 
@@ -13,7 +14,14 @@
   async function turnOnPush() {
     pushStatus = 'Frågar …';
     const r = await enablePush(playerId);
-    pushStatus = { ok: 'Notiser är på.', unsupported: 'Den här webbläsaren kan inte ta emot notiser här. På iPhone: installera spelet på hemskärmen först.', denied: 'Notiser nekades. Ändra det i telefonens inställningar.', error: 'Något gick fel. Försök igen.' }[r];
+    log('push_enable', { result: r, permission: permissionNow(), error: lastPushError || undefined });
+    pushStatus = {
+      ok: 'Notiser är på.',
+      unsupported: 'Den här webbläsaren kan inte ta emot notiser här. På iPhone: installera spelet på hemskärmen först.',
+      denied: 'Notiser är avstängda för spelet. Slå på dem i webbläsarens eller telefonens inställningar för den här sidan, och tryck sedan här igen.',
+      unanswered: 'Inget svar kom från frågan om notiser. Tryck igen, eller slå på notiser för sidan i webbläsaren. Spelet märker det själv när de är på.',
+      error: 'Notiser är tillåtna, men anslutningen misslyckades. Försök igen om en stund.',
+    }[r];
     if (r === 'ok') {
       settings.update((s) => ({ ...s, notifications: true }));
       rescheduleAll();

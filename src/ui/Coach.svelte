@@ -89,7 +89,6 @@
   .bubble.floating .row { margin-top: 0; }
   h2 { margin: 0; font-size: 1.15rem; }
   p { margin: 0; }
-  .count { font-size: .8rem; color: #5c524b; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
   .skip { background: none; border: 0; color: #5c524b; text-decoration: underline; font-weight: 500; min-height: 44px; padding: 4px 6px; }
 </style>

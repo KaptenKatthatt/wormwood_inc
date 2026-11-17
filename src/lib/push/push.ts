@@ -15,12 +15,47 @@ export function pushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
 
-export type PushResult = 'ok' | 'unsupported' | 'denied' | 'error';
+export type PushResult = 'ok' | 'unsupported' | 'denied' | 'unanswered' | 'error';
+
+/** The last failure, for the log (Jonas saw "denied" after allowing). */
+export let lastPushError = '';
+
+/**
+ * Asks for permission. The browser's own answer can lag behind what the
+ * player chose (a quiet prompt answered later, an older callback-style API),
+ * so the current Notification.permission is the one that counts.
+ */
+async function askPermission(): Promise<NotificationPermission> {
+  if (Notification.permission === 'granted') return 'granted';
+  let answer: NotificationPermission | undefined;
+  try {
+    answer = await new Promise<NotificationPermission>((done) => {
+      const p = Notification.requestPermission(done);
+      if (p && typeof p.then === 'function') void p.then(done, () => done(Notification.permission));
+    });
+  } catch {
+    answer = undefined;
+  }
+  const now = Notification.permission as NotificationPermission; // re-read after the await
+  return now === 'granted' ? 'granted' : answer ?? Notification.permission;
+}
+
+export function permissionNow(): NotificationPermission | 'unsupported' {
+  return pushSupported() ? Notification.permission : 'unsupported';
+}
 
 export async function enablePush(playerId: string): Promise<PushResult> {
   if (!pushSupported()) return 'unsupported';
-  const perm = await Notification.requestPermission();
-  if (perm !== 'granted') return 'denied';
+  const perm = await askPermission();
+  if (perm === 'denied') return 'denied';
+  if (perm !== 'granted') return 'unanswered';
+  return subscribe(playerId);
+}
+
+/** Subscribes without asking (permission is already granted). */
+export async function subscribe(playerId: string): Promise<PushResult> {
+  if (!pushSupported() || Notification.permission !== 'granted') return 'denied';
+  lastPushError = '';
   try {
     const { key } = await (await fetch('/api/push/key')).json();
     const reg = await navigator.serviceWorker.ready;
@@ -31,8 +66,10 @@ export async function enablePush(playerId: string): Promise<PushResult> {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ playerId, subscription: sub.toJSON() }),
     });
+    if (!r.ok) lastPushError = `subscribe ${r.status}`;
     return r.ok ? 'ok' : 'error';
-  } catch {
+  } catch (e) {
+    lastPushError = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
     return 'error';
   }
 }
