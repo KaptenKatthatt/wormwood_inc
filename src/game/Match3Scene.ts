@@ -1,6 +1,6 @@
 import { play as playSound, playMatch } from '../lib/audio/sound';
 import Phaser from 'phaser';
-import { BOMB, isFree, isRocket, type Cell, type Match3, type Special, type Step } from '../lib/match3/engine';
+import { BOMB, ROCKET_BOTH_WAYS, isFree, isRocket, type Cell, type Rocket, type Match3, type Special, type Step } from '../lib/match3/engine';
 import { TILES } from '../lib/match3/levels';
 import { DEEP, FRAME } from './palette';
 
@@ -289,17 +289,11 @@ export class Match3Scene extends Phaser.Scene {
     const bw = this.cell * e.cols;
     const bh = this.cell * e.rows;
     const ms = 260 / Math.max(this.speed, 0.6);
+    let wait = ms;
     for (const b of step.blasts) {
       const p = this.pos(b.cell);
       if (isRocket(b.special)) {
-        // one beam from the rocket the way its nose points
-        const across = b.special === 'left' || b.special === 'right';
-        const dir = b.special === 'left' || b.special === 'up' ? -1 : 1;
-        const beam = this.add.rectangle(p.x, p.y, across ? 1 : this.cell * 0.55, across ? this.cell * 0.55 : 1, 0xffe58a, 0.95)
-          .setOrigin(across ? (dir < 0 ? 1 : 0) : 0.5, across ? 0.5 : dir < 0 ? 1 : 0).setDepth(4);
-        const reach = across ? (dir < 0 ? p.x - this.origin.x : this.origin.x + bw - p.x) : dir < 0 ? p.y - this.origin.y : this.origin.y + bh - p.y;
-        void this.tween(beam, across ? { width: reach } : { height: reach }, ms)
-          .then(() => this.tween(beam, { alpha: 0 }, 160)).then(() => beam.destroy());
+        wait = Math.max(wait, this.rocketFlight(b.cell, b.special));
       } else if (b.special === 'area') {
         const ring = this.add.circle(p.x, p.y, this.cell * 0.4).setStrokeStyle(this.cell * 0.18, 0xffffff, 0.95).setDepth(4);
         void this.tween(ring, { radius: this.cell * 1.6, alpha: 0 }, ms + 120).then(() => ring.destroy());
@@ -308,7 +302,87 @@ export class Match3Scene extends Phaser.Scene {
         void this.tween(glow, { radius: Math.max(bw, bh), alpha: 0 }, ms + 200).then(() => glow.destroy());
       }
     }
-    return ms;
+    return wait;
+  }
+
+  /**
+   * A rocket takes off the way its nose points (Jonas, 2026-11-17): it flies
+   * to the edge of the board and each tile in front of it bursts as it passes,
+   * with a flame trailing behind. Returns how long it takes.
+   */
+  private rocketFlight(cell: Cell, nose: Rocket): number {
+    const e = this.engine!;
+    const across = nose === 'left' || nose === 'right';
+    const dir = nose === 'left' || nose === 'up' ? -1 : 1;
+    const steps = across ? (dir > 0 ? e.cols - 1 - cell.c : cell.c) : dir > 0 ? e.rows - 1 - cell.r : cell.r;
+    const perCell = 55 / Math.max(this.speed, 0.6);
+    const ms = Math.max(1, steps + 1) * perCell;
+    const from = this.pos(cell);
+    const to = { x: from.x + (across ? dir * (steps + 0.8) * this.cell : 0), y: from.y + (across ? 0 : dir * (steps + 0.8) * this.cell) };
+    // the rocket leaves its own cell
+    const own = this.tiles[cell.r][cell.c];
+    if (own) own.setVisible(false);
+    const size = this.cell * 0.86 * 1.15;
+    const angle = { right: 0, down: 90, left: 180, up: -90 }[nose];
+    const rocket = this.add.image(from.x, from.y, 'sp-raket').setDisplaySize(size, size).setAngle(angle).setDepth(6);
+    // the flame: a fiery tail from the rocket back along the line; it reaches
+    // the far edge behind the rocket and burns those tiles too (whole line)
+    const backSteps = across ? (dir > 0 ? cell.c : e.cols - 1 - cell.c) : dir > 0 ? cell.r : e.rows - 1 - cell.r;
+    const backReach = ROCKET_BOTH_WAYS ? backSteps + 0.5 : 1.2; // in cells behind the start
+    const flame = this.add.graphics().setDepth(5);
+    const tail = { len: 0 };
+    const drawFlame = () => {
+      flame.clear();
+      const along = (v: number) => (across ? rocket.x - from.x : rocket.y - from.y) * dir + v; // distance from start, forward positive
+      const head = along(-size * 0.35);
+      const end = -tail.len * this.cell;
+      if (head <= end) return;
+      for (const [w, col] of [[0.5, 0xff8a1f], [0.24, 0xffe27a]] as const) {
+        const a = Math.min(head, end) * dir;
+        const b = Math.max(head, end) * dir;
+        const lo = Math.min(a, b);
+        const len = Math.abs(b - a);
+        flame.fillStyle(col, col === 0xff8a1f ? 0.85 : 1);
+        if (across) flame.fillRect(from.x + lo, from.y - (this.cell * w) / 2, len, this.cell * w);
+        else flame.fillRect(from.x - (this.cell * w) / 2, from.y + lo, this.cell * w, len);
+      }
+    };
+    this.tweens.add({ targets: tail, len: backReach, duration: ms * 0.7, ease: 'Quad.easeOut' });
+    this.tweens.add({ targets: rocket, x: to.x, y: to.y, duration: ms, ease: 'Quad.easeIn', onUpdate: drawFlame });
+    if (ROCKET_BOTH_WAYS) {
+      for (let i = 1; i <= backSteps; i++) {
+        const at = across ? { r: cell.r, c: cell.c - dir * i } : { r: cell.r - dir * i, c: cell.c };
+        // Quad.easeOut: the tail reaches cell i when 1-(1-t)^2 = i/backReach
+        const f = Math.min(1, i / backReach);
+        this.time.delayedCall(ms * 0.7 * (1 - Math.sqrt(1 - f)), () => this.burst(at, true));
+      }
+    }
+    // each tile in front bursts as the rocket reaches it
+    for (let i = 1; i <= steps; i++) {
+      const at = across ? { r: cell.r, c: cell.c + dir * i } : { r: cell.r + dir * i, c: cell.c };
+      // Quad.easeIn: distance grows with t squared
+      const t = ms * Math.sqrt(i / (steps + 0.8));
+      this.time.delayedCall(t, () => this.burst(at));
+    }
+    this.time.delayedCall(ms, () => {
+      rocket.destroy();
+      this.tweens.add({ targets: flame, alpha: 0, duration: 200, onComplete: () => flame.destroy() });
+    });
+    return ms + 60;
+  }
+
+  /** A tile smashed by a rocket (or burnt by its flame): it hides and throws out splinters and a puff. */
+  private burst(at: Cell, burnt = false): void {
+    const t = this.tiles[at.r]?.[at.c];
+    if (t) t.setVisible(false);
+    const p = this.pos(at);
+    const puff = this.add.circle(p.x, p.y, this.cell * 0.3, burnt ? 0x5a4a40 : 0xfff3c4, burnt ? 0.6 : 0.9).setDepth(5);
+    this.tweens.add({ targets: puff, scale: 1.8, alpha: 0, duration: 220, onComplete: () => puff.destroy() });
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + Math.random() * 0.5;
+      const bit = this.add.rectangle(p.x, p.y, this.cell * 0.12, this.cell * 0.12, i % 2 ? 0xff8a1f : 0xffd34d, 1).setDepth(5).setAngle(Math.random() * 90);
+      this.tweens.add({ targets: bit, x: p.x + Math.cos(a) * this.cell * 0.7, y: p.y + Math.sin(a) * this.cell * 0.7, angle: bit.angle + 180, alpha: 0, duration: 320, ease: 'Quad.easeOut', onComplete: () => bit.destroy() });
+    }
   }
 
   private select(cell: Cell | null): void {

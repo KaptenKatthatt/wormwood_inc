@@ -64,7 +64,7 @@ describe('special tiles', () => {
     const r = g.fire({ r: 2, c: 1 });
     expect(r.valid).toBe(true);
     expect(g.movesLeft).toBe(level.moves - 1);
-    expect(r.steps[0].cleared.filter((x) => x.r === 2)).toHaveLength(5); // from the rocket at c=1 to the right edge
+    expect(r.steps[0].cleared.filter((x) => x.r === 2)).toHaveLength(6); // forward to the edge, and the flame burns the rest
   });
 
   it('swapping fireworks with any neighbour sets them off where they land', () => {
@@ -118,12 +118,12 @@ describe('special tiles', () => {
     expect(fired.steps[0].cleared).toHaveLength(6); // every kind-4 tile on the base board
   });
 
-  it('a rocket clears only the way its nose points', () => {
+  it('a rocket clears its whole line: forward, and the flame behind it', () => {
     const g = new Match3(level, rng, false, base());
     g.board[2][3] = POWER; g.special[2][3] = 'up';
     const step = g.fire({ r: 2, c: 3 }).steps[0];
     const col = step.cleared.filter((x) => x.c === 3).map((x) => x.r).sort();
-    expect(col).toEqual([0, 1, 2]);
+    expect(col).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
   it('a rocket points toward the side of the board with more tiles', () => {

@@ -30,6 +30,8 @@ export interface Spawn { cell: Cell; kind: number; /** rows above the board it f
 /** A rocket clears from itself the way its nose points (Jonas, 2026-11-17). */
 export type Rocket = 'left' | 'right' | 'up' | 'down';
 export type Special = Rocket | 'area' | 'all' | null;
+/** The flame behind a rocket burns the rest of its line (Jonas, 2026-11-17). */
+export const ROCKET_BOTH_WAYS = true;
 export const isRocket = (s: Special | 'bomb'): s is Rocket => s === 'left' || s === 'right' || s === 'up' || s === 'down';
 export interface Made { cell: Cell; kind: number; special: Special }
 export interface Step {
@@ -396,6 +398,13 @@ export class Match3 {
       if (sp === 'left') for (let cc = c - 1; cc >= 0; cc--) queue.push({ r, c: cc });
       if (sp === 'down') for (let rr = r + 1; rr < this.rows; rr++) queue.push({ r: rr, c });
       if (sp === 'up') for (let rr = r - 1; rr >= 0; rr--) queue.push({ r: rr, c });
+      if (ROCKET_BOTH_WAYS && isRocket(sp)) {
+        // the flame behind it burns the rest of the line
+        if (sp === 'right') for (let cc = c - 1; cc >= 0; cc--) queue.push({ r, c: cc });
+        if (sp === 'left') for (let cc = c + 1; cc < this.cols; cc++) queue.push({ r, c: cc });
+        if (sp === 'down') for (let rr = r - 1; rr >= 0; rr--) queue.push({ r: rr, c });
+        if (sp === 'up') for (let rr = r + 1; rr < this.rows; rr++) queue.push({ r: rr, c });
+      }
       if (sp === 'area') for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) queue.push({ r: r + dr, c: c + dc });
       if (sp === 'all') {
         queue.push(...this.cellsOf(this.board[r][c]));
