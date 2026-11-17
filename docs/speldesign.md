@@ -36,13 +36,15 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 - Utmaningarna blir svårare och belöningarna större efter hand; den tredje är svår. Ett första pass blir 8–10 utmaningar.
 - **Nära vinst är riggad.** Spelet väljer nya brickor så att en misslyckad utmaning oftast slutar 1–3 drag eller några brickor från målet. Då erbjuds 5 extra drag för ädelstenar. Brytare i dev-menyn ger ärlig slump.
 
-**De tre första utmaningarna (spelet 0.6.0):** samla 16 fiskar på 20 drag; rensa is i 2x4 rutor på 22 drag; nå 2 600 poäng på 16 drag. Hjälpmedlen ligger under brädet (hammare 20, blandare 15, +5 drag 30 ädelstenar) med egen krokbrytare "Hjälpmedel".
+**De tre första utmaningarna (spelet 0.6.0):** samla 6 fiskar på 12 drag (utan riggning, 5 sorters brickor, snabb och lätt); rensa is i 2x4 rutor på 22 drag; nå 2 600 poäng på 16 drag. Hjälpmedlen ligger under brädet (hammare 20, blandare 15, +5 drag 30 ädelstenar) med egen krokbrytare "Hjälpmedel".
 
 **Kartan och de 40 utmaningarna (spelet 0.7.0):** fliken heter Kartan. Vägen går genom skärgård (1–13), skog (14–27) och fjäll (28–40), och efter 40 börjar den om på 1. Utmaning 4–40 byggs av inställningar: målen växlar mellan samla, is och poäng och växer långsamt. Var femte är en riggad topp som slutar strax under målet, och nästa är en vilopaus. Belöning: 100 guld plus 10 per tredje utmaning, och 50 extra på topparna. Kartan är en platshållare ritad i kod tills en kartbild godkänns.
 
 **Pusslets utseende (godkänt 2026-11-17):** stil "Rödfärg och skärgård". Bakgrunden är västkustskär med en röd sjöbod, brädet är 8x8 med rödfärgad träram. Sex målade brickor som går att skilja åt på formen även i gråskala: fisk, ankare, snäcka, fyr, silltunna och grön segelbåt med två segel. Inga godisbrickor. Granskningssida: https://claude.ai/artifact/9w6tdaRRE2s343Dwq3XBzP, bilder i /mnt/project-files/pussel-stil/stil1-v1/.
 
 **Hjälpmedel (beslut):** hammaren tar bort en bricka, blandaren blandar om brädet. En gratis av varje i introduktionen, sedan köps de med ädelstenar.
+
+**Samla-målen** börjar på 8 brickor efter utmaning 1 och stiger långsamt mot cirka 20 (spelet 0.10.0).
 
 **Specialbrickor i brädet (beslut):** fyra i rad ger en bricka som spränger raden eller kolumnen, L- eller T-form ger en som spränger runt sig (3x3), och fem i rad ger en bomb som tar bort alla brickor av en sort. Gratis, kommer av skicklighet, motiv i skärgårdsstil. Hammaren och blandaren ligger kvar som köpknappar utanför brädet (köpkrok).
 
@@ -178,17 +180,14 @@ Brytpunkten mäts två gånger: steget i första passet där personen slutar, oc
 
 ## Introduktion
 
-Spelet förklarar sig självt, så att Jonas kan lämna det till vem som helst utan att säga något. En kort interaktiv genomgång, varm och trygg i tonen, som går att spela om från Inställningar:
+Det ska gå jättefort att komma in i spelet, och spelet ska vara så tydligt att det knappt behövs någon introduktion. **Beslut:** högst 4 steg, som i liknande spel:
 
 1. Samtycke till testet och loggningen.
-2. Lägga spelet på hemskärmen och slå på notiser.
-3. Hur man byter brickor.
-4. Banans mål.
-5. Liv.
-6. Byn och byggen.
-7. Var Avsluta finns.
+2. Utmaning 1 startar direkt, och en hand visar första draget.
+3. Spelaren spelar klart utan skylt över brädet.
+4. Spelaren går till byn och bygger Stugan.
 
-Medan introduktionen pågår pausas brev, erbjudanden och anfallsbanner, och introduktionen flyttar själv spelaren till rätt flik.
+Liv, Avsluta, specialbrickor, hemskärm och notiser förklaras med ett kort tips första gången de dyker upp. Introduktionen går att spela om från Inställningar. Medan introduktionen pågår pausas brev, erbjudanden och anfallsbanner, och den flyttar själv spelaren till rätt flik.
 
 ## 5. Mätning och loggning
 
