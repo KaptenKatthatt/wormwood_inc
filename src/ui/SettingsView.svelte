@@ -1,0 +1,59 @@
+<script lang="ts">
+  import { playerId, rescheduleAll, settings, toast } from '../lib/state/game';
+  import { DEV_MENU } from '../lib/config/flags';
+  import DevMenu from './DevMenu.svelte';
+  import { enablePush, pushSupported, testPush } from '../lib/push/push';
+  import { flush } from '../lib/log/logger';
+  import InstallGuide from './InstallGuide.svelte';
+
+  let pushStatus = $state('');
+
+  async function turnOnPush() {
+    pushStatus = 'Frågar …';
+    const r = await enablePush(playerId);
+    pushStatus = { ok: 'Notiser är på.', unsupported: 'Den här webbläsaren kan inte ta emot notiser här. På iPhone: installera spelet på hemskärmen först.', denied: 'Notiser nekades. Ändra det i telefonens inställningar.', error: 'Något gick fel. Försök igen.' }[r];
+    if (r === 'ok') {
+      settings.update((s) => ({ ...s, notifications: true }));
+      rescheduleAll();
+    }
+  }
+
+  function setLogging(on: boolean) {
+    settings.update((s) => ({ ...s, logging: on }));
+    if (on) flush(false);
+  }
+
+</script>
+
+<section class="settings">
+  <h2>Installera</h2>
+  <InstallGuide />
+
+  <h2>Notiser</h2>
+  {#if $settings.notifications}
+    <p>Notiser är på. Du får en notis när ett bygge är klart, även när spelet är stängt.</p>
+    <button class="ghost" onclick={async () => toast((await testPush(playerId)) ? 'Testnotis skickad' : 'Kunde inte skicka')}>Skicka en testnotis</button>
+  {:else}
+    <p>Få en notis när ett bygge är klart.</p>
+    <button class="primary" onclick={turnOnPush}>Slå på notiser</button>
+  {/if}
+  {#if pushStatus}<p class="status" role="status">{pushStatus}</p>{/if}
+
+  <h2>Speltest</h2>
+  <label class="row">
+    <input type="checkbox" checked={$settings.logging === true} onchange={(e) => setLogging(e.currentTarget.checked)} />
+    <span><strong>Skicka testdata</strong>: anonyma händelser (vad du trycker på och när) till testledaren.</span>
+  </label>
+
+  {#if DEV_MENU}<DevMenu />{/if}
+</section>
+
+<style>
+  .settings { background: var(--panel); color: var(--ink); padding: 8px 16px 24px; overflow-y: auto; height: 100%; display: flex; flex-direction: column; gap: 10px; }
+  .settings > :global(*) { width: 100%; max-width: 640px; margin-inline: auto; }
+  h2 { font-size: 1.15rem; margin: 14px 0 0; }
+  p { margin: 0; }
+  .row { display: flex; gap: 10px; align-items: flex-start; min-height: 48px; }
+  .row input { width: 24px; height: 24px; margin-top: 2px; accent-color: var(--falu); flex: none; }
+  .status { color: var(--muted); }
+</style>

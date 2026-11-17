@@ -1,0 +1,42 @@
+import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { VitePWA } from 'vite-plugin-pwa';
+import { readFileSync } from 'node:fs';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+
+export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  plugins: [
+    svelte(),
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      registerType: 'autoUpdate',
+      injectRegister: false,
+      injectManifest: { maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 },
+      manifest: {
+        id: '/',
+        name: 'My Dear Wormwood',
+        short_name: 'Wormwood',
+        description: 'Ett spel om lockelser.',
+        lang: 'sv',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        orientation: 'portrait',
+        background_color: '#1d3a44',
+        theme_color: '#1d3a44',
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+      devOptions: { enabled: false },
+    }),
+  ],
+  server: { proxy: { '/api': 'http://127.0.0.1:8787' } },
+  build: { chunkSizeWarningLimit: 2000 },
+});

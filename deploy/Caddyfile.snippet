@@ -1,0 +1,5 @@
+# Add to the devserver's Caddyfile, then: systemctl reload caddy
+wormwood.84.247.143.6.sslip.io {
+	encode gzip zstd
+	reverse_proxy 127.0.0.1:8787
+}

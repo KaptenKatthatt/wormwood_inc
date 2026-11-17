@@ -1,0 +1,21 @@
+[Unit]
+Description=My Dear Wormwood (game server: static files, playtest log, Web Push)
+After=network-online.target
+
+[Service]
+Type=simple
+User=wormwood
+WorkingDirectory=/opt/wormwood/app
+Environment=PORT=8787
+Environment=HOST=127.0.0.1
+Environment=DATA_DIR=/var/lib/wormwood
+EnvironmentFile=-/etc/wormwood/env
+ExecStart=/usr/bin/node server/index.mjs
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/wormwood
+
+[Install]
+WantedBy=multi-user.target
