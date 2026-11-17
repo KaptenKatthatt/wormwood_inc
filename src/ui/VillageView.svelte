@@ -18,7 +18,7 @@
 
   const plots = $derived<PlotView[]>(
     BUILDINGS.map((b) => ({
-      id: b.id, name: b.name, level: $village.levels[b.id], locked: $village.levels.stugan < b.unlock,
+      id: b.id, name: b.short ?? b.name, level: $village.levels[b.id], locked: $village.levels.stugan < b.unlock,
       building: constr?.id === b.id, progress: constr?.id === b.id && timer ? progress(timer, $now) : 0,
     })),
   );

@@ -14,7 +14,7 @@ import { CHALLENGE_COUNT } from '../match3/levels';
 import { AWAY_ATTACK_AFTER, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
-import { BUILDINGS, START_VILLAGE, buildBlock, buildTime, goldMultiplier, priceFor, skipGems, topUpGems, withAllBuildings, type BuildingId, type VillageState } from '../economy/village';
+import { BUILDINGS, SIDES, TOWERS, START_VILLAGE, buildBlock, buildTime, goldMultiplier, priceFor, skipGems, topUpGems, withAllBuildings, type BuildingId, type VillageState } from '../economy/village';
 import { DEV_MENU } from '../config/flags';
 import { HOOKS, type HookId, type HookResponse } from '../hooks';
 import { ATTACK, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
@@ -402,7 +402,8 @@ export interface StairState {
   /** Minutes in when each step was reached. */
   reached: Partial<Record<Step, number>>;
   offer: { endsAt: number; status: 'open' | 'bought' | 'expired' } | null;
-  attack: { hitsAt: number; strength: number; result?: AttackResult } | null;
+  /** side: 0 north, 1 east, 2 south, 3 west (which tower takes the brunt). */
+  attack: { hitsAt: number; strength: number; side?: number; result?: AttackResult } | null;
   soldiers: number;
   shieldUntil: number;
   damaged: { id: BuildingId; timerId: string } | null;
@@ -516,15 +517,21 @@ function stairTick(): void {
 function startAttack(): void {
   const st = get(stairs);
   const v = effectiveVillage();
-  const strength = attackStrength(defence(st.soldiers, v.levels.vakttornet, v.levels.smedjan));
-  stairs.set({ ...st, attack: { hitsAt: clock.now() + realMs(ATTACK.warningMs), strength } });
+  const side = Math.floor(Math.random() * 4);
+  const strength = attackStrength(defenceOf(v, st.soldiers, side));
+  stairs.set({ ...st, attack: { hitsAt: clock.now() + realMs(ATTACK.warningMs), strength, side } });
   writeLetter(5);
   say(pickLine(BUBBLES.worried));
-  logHook('attack', { strength, defence: defence(st.soldiers, v.levels.vakttornet, v.levels.smedjan) }, 'shown');
+  logHook('attack', { strength, side: SIDES[side], defence: defenceOf(v, st.soldiers, side) }, 'shown');
 }
 
-export function currentDefence(): number {
-  return defence(get(stairs).soldiers, effectiveVillage().levels.vakttornet, effectiveVillage().levels.smedjan);
+function defenceOf(v: VillageState, soldiers: number, side: number): number {
+  return defence(soldiers, TOWERS.map((t) => v.levels[t] ?? 0), side, v.levels.smedjan ?? 0);
+}
+
+/** The defence against the coming attack (or from the north when none is coming). */
+export function currentDefence(side = get(stairs).attack?.side ?? 0): number {
+  return defenceOf(effectiveVillage(), get(stairs).soldiers, side);
 }
 
 export function buyShield(): boolean {
@@ -650,7 +657,7 @@ function awayAttack(away: number): void {
   const v = get(village);
   if (!BUILDINGS.some((b) => v.levels[b.id] > 0)) return;
   const st = get(stairs);
-  const def = currentDefence();
+  const def = currentDefence(Math.floor(Math.random() * 4));
   const result = resolveAttack(attackStrength(def), def, st.shieldUntil > clock.now());
   let goldLost = 0;
   let damaged: string | null = null;

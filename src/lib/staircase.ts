@@ -50,9 +50,14 @@ export const ATTACK = {
   repairMs: 5 * MINUTE,
 };
 
-/** Smedjan (smithy) adds 5 per soldier for each of its levels. */
-export function defence(soldiers: number, towerLevel: number, smithyLevel = 0): number {
-  return soldiers * (ATTACK.soldierPower + 5 * smithyLevel) + towerLevel * ATTACK.towerPower;
+/**
+ * The army plus the towers. `towers` are the levels of the four towers (N, E,
+ * S, W); the one on the attack's side counts in full, the others at half.
+ * Smedjan (smithy) adds 5 per soldier for each of its levels.
+ */
+export function defence(soldiers: number, towers: number[], side = 0, smithyLevel = 0): number {
+  const towerPart = towers.reduce((sum, lvl, i) => sum + lvl * ATTACK.towerPower * (i === side ? 1 : 0.5), 0);
+  return Math.round(soldiers * (ATTACK.soldierPower + 5 * smithyLevel) + towerPart);
 }
 
 /**

@@ -8,7 +8,7 @@
  */
 import { HOUR, MINUTE } from '../time/clock';
 
-export type BuildingId = 'stugan' | 'sjoboden' | 'kasernen' | 'vakttornet' | 'kapellet' | 'kvarnen' | 'smedjan' | 'marknaden';
+export type BuildingId = 'stugan' | 'sjoboden' | 'kasernen' | 'vakttornet' | 'kapellet' | 'kvarnen' | 'smedjan' | 'marknaden' | 'tornet_o' | 'tornet_s' | 'tornet_v';
 
 export interface BuildingDef {
   id: BuildingId;
@@ -16,7 +16,18 @@ export interface BuildingDef {
   effect: string;
   /** Stugan's level that clears the land for it (0: from the start). */
   unlock: number;
+  /** Short label in the village picture. */
+  short?: string;
 }
+
+/**
+ * Four watchtowers, one on each side of the gathered village (Jonas,
+ * 2026-11-17). An attack comes from one side: that tower counts in full, the
+ * others at half. Tower 1 (north) is there from the start, the rest come with
+ * Stugan level 2, 4 and 6.
+ */
+export const TOWERS: BuildingId[] = ['vakttornet', 'tornet_o', 'tornet_s', 'tornet_v'];
+export const SIDES = ['norr', 'öster', 'söder', 'väster'] as const;
 
 export const MAX_LEVEL = 10;
 
@@ -24,11 +35,14 @@ export const BUILDINGS: BuildingDef[] = [
   { id: 'stugan', name: 'Stugan', unlock: 0, effect: 'Huvudbyggnaden. Dess nivå är taket för de andra, och nivå 3, 5 och 7 röjer ny mark.' },
   { id: 'sjoboden', name: 'Sjöboden', unlock: 0, effect: '+10 % guld per klarad utmaning för varje nivå.' },
   { id: 'kasernen', name: 'Kasernen', unlock: 0, effect: 'Här tränas soldater när byn anfalls.' },
-  { id: 'vakttornet', name: 'Vakttornet', unlock: 0, effect: '+30 i försvar vid anfall för varje nivå.' },
+  { id: 'vakttornet', name: 'Vakttornet i norr', short: 'Torn N', unlock: 0, effect: '+30 i försvar mot anfall norrifrån för varje nivå, +15 från andra håll.' },
   { id: 'kapellet', name: 'Kapellet', unlock: 0, effect: 'Gör byborna gladare för varje nivå.' },
   { id: 'kvarnen', name: 'Kvarnen', unlock: 3, effect: '+1 drag i varje utmaning för varannan nivå.' },
   { id: 'smedjan', name: 'Smedjan', unlock: 5, effect: '+5 i försvar per soldat för varje nivå.' },
   { id: 'marknaden', name: 'Marknaden', unlock: 7, effect: 'Byggen kostar 5 % mindre för varje nivå.' },
+  { id: 'tornet_o', name: 'Vakttornet i öster', short: 'Torn Ö', unlock: 2, effect: '+30 i försvar mot anfall österifrån för varje nivå, +15 från andra håll.' },
+  { id: 'tornet_s', name: 'Vakttornet i söder', short: 'Torn S', unlock: 4, effect: '+30 i försvar mot anfall söderifrån för varje nivå, +15 från andra håll.' },
+  { id: 'tornet_v', name: 'Vakttornet i väster', short: 'Torn V', unlock: 6, effect: '+30 i försvar mot anfall västerifrån för varje nivå, +15 från andra håll.' },
 ];
 
 const COSTS = [0, 0, 150, 400, 900, 1600];
@@ -71,7 +85,7 @@ export interface VillageState {
 }
 
 export const START_VILLAGE: VillageState = {
-  levels: { stugan: 0, sjoboden: 0, kasernen: 0, vakttornet: 0, kapellet: 0, kvarnen: 0, smedjan: 0, marknaden: 0 },
+  levels: { stugan: 0, sjoboden: 0, kasernen: 0, vakttornet: 0, kapellet: 0, kvarnen: 0, smedjan: 0, marknaden: 0, tornet_o: 0, tornet_s: 0, tornet_v: 0 },
   builds: 0,
   construction: null,
 };

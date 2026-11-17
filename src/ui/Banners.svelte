@@ -1,5 +1,6 @@
 <script lang="ts">
   /** Running events shown under the top bar on every screen: the offer and the attack. */
+  import { SIDES } from '../lib/economy/village';
   import { buyShield, currentDefence, dayOn, now, offerOpen, purse, stairs, trainSoldier, village } from '../lib/state/game';
   import { weekendEvent } from '../lib/daily';
   import { ATTACK } from '../lib/staircase';
@@ -14,7 +15,7 @@
 
 {#if attack}
   <div class="banner attack" role="region" aria-label="Anfall">
-    <p><strong>Grannbyn är på väg!</strong> Framme om {formatDuration(attack.hitsAt - $now)}.</p>
+    <p><strong>Grannbyn är på väg{attack.side !== undefined ? ` från ${SIDES[attack.side]}` : ''}!</strong> Framme om {formatDuration(attack.hitsAt - $now)}.</p>
     <p class="nums">Ert försvar {def} mot deras styrka {attack.strength}{shielded ? ' · Skölden är uppe' : ''}</p>
     <div class="row">
       {#if !shielded}<button class="primary" onclick={buyShield}>Sköld 💎 {ATTACK.shieldGems}</button>{/if}

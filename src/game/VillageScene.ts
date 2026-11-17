@@ -24,7 +24,7 @@ export class VillageScene extends Phaser.Scene {
     this.children.removeAll(true);
     this.add.rectangle(0, 0, width, height, SEA).setOrigin(0);
     const cx = width / 2;
-    const cy = height / 2;
+    const cy = height * 0.54; // a little down, clear of the mood bar
     const rx = Math.min(width * 0.47, height * 0.75);
     const ry = Math.min(height * 0.42, rx * 0.7);
     this.add.ellipse(cx, cy + ry * 0.12, rx * 2.05, ry * 2.05, ROCK);
@@ -32,16 +32,22 @@ export class VillageScene extends Phaser.Scene {
 
     const plots: PlotView[] = this.registry.get('plots') ?? [];
     // The first five sit in the middle; the last three on the outer land that is cleared later.
-    const spots = [[0, -0.12], [-0.52, 0.08], [0.52, 0.08], [-0.26, 0.52], [0.26, 0.52], [-0.6, -0.52], [0.6, -0.52], [0, -0.7]];
-    const s = Math.min(rx * 0.24, ry * 0.42);
+    // A gathered village with a watchtower on each side (Jonas, 2026-11-17).
+    const SPOTS: Record<string, [number, number]> = {
+      stugan: [0, -0.12], sjoboden: [-0.48, 0.04], kasernen: [0.48, 0.04], kapellet: [-0.24, 0.44], marknaden: [0.24, 0.44],
+      kvarnen: [-0.36, -0.44], smedjan: [0.36, -0.44],
+      vakttornet: [0, -0.7], tornet_o: [0.82, -0.12], tornet_s: [0, 0.7], tornet_v: [-0.82, -0.12],
+    };
+    const s = Math.min(rx * 0.2, ry * 0.36);
     const k = this.registry.get('dpr') ?? 1;
     const font = `${Math.max(11 * k, Math.round(s * 0.2))}px`;
     plots.forEach((p, i) => {
-      const [dx, dy] = spots[i] ?? [0, 0];
+      const [dx, dy] = SPOTS[p.id] ?? [0, 0];
       const x = cx + dx * rx;
       const y = cy + dy * ry;
-      const w = s;
-      const h = s * 0.62;
+      const tower = p.id === 'vakttornet' || p.id.startsWith('tornet');
+      const w = tower ? s * 0.5 : s;
+      const h = tower ? s * 0.9 : s * 0.62;
       if (p.locked) {
         // forest still standing on the plot
         for (const [tx, ty] of [[-0.3, 0.1], [0.05, -0.15], [0.32, 0.12], [-0.05, 0.3]]) {
