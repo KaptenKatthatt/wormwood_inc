@@ -15,7 +15,11 @@ export default defineConfig({
       filename: 'sw.ts',
       registerType: 'autoUpdate',
       injectRegister: false,
-      injectManifest: { maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 },
+      injectManifest: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // The art and the font are precached too, so the game also works offline.
+        globPatterns: ['**/*.{js,css,html,png,jpg,woff2,svg,webmanifest}'],
+      },
       manifest: {
         id: '/',
         name: 'My Dear Wormwood',

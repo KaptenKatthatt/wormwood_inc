@@ -28,7 +28,7 @@
     const g = new Phaser.Game({
       type: Phaser.AUTO,
       parent: host,
-      backgroundColor: '#a9d8ec',
+      transparent: true,
       scale: { mode: Phaser.Scale.RESIZE, width: host.clientWidth, height: host.clientHeight },
       banner: false,
       callbacks: {

@@ -9,6 +9,9 @@ export const GEM_PACKS: GemPack[] = [
 
 export const PRICE = {
   extraMoves: 30,
+  /** Boosters under the board (Jonas, 2026-11-17); one of each is free at the start. */
+  hammer: 20,
+  shuffle: 15,
   extraMovesCount: 5,
   oneLife: 20,
   fullLives: 60,

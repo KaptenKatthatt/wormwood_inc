@@ -130,6 +130,33 @@ export class Match3 {
     return { valid: true, steps, shuffled };
   }
 
+  /** The hammer: removes one tile without using a move, then lets the board settle. */
+  smash(cell: Cell): SwapResult {
+    if (this.status() !== 'playing' || !this.inside(cell)) return { valid: false, steps: [], shuffled: false };
+    return this.settle([cell]);
+  }
+
+  /** The shuffler: mixes the tiles without using a move. */
+  mix(): void {
+    if (this.status() === 'playing') this.shuffle();
+  }
+
+  private settle(first: Cell[]): SwapResult {
+    const steps: Step[] = [this.resolve(first, 1)];
+    let chain = 2;
+    while (this.status() !== 'won') {
+      const matched = this.findMatches();
+      if (matched.length === 0) break;
+      steps.push(this.resolve(matched, chain++));
+    }
+    let shuffled = false;
+    if (this.status() === 'playing' && !this.hasMove()) {
+      this.shuffle();
+      shuffled = true;
+    }
+    return { valid: true, steps, shuffled };
+  }
+
   /** A legal move, if any (used for hints and the no-moves shuffle). */
   findMove(): [Cell, Cell] | null {
     for (let r = 0; r < this.rows; r++) {

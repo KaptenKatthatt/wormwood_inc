@@ -4,7 +4,7 @@
  * logged with what the player did.
  */
 export type HookId =
-  | 'starterHelp' | 'nearWin' | 'extraMoves' | 'autoNext' | 'buyLives' | 'skipWait' | 'topUpGold'
+  | 'starterHelp' | 'nearWin' | 'extraMoves' | 'autoNext' | 'buyLives' | 'skipWait' | 'topUpGold' | 'boosters'
   | 'timedOffer' | 'gemPacks' | 'attack' | 'guilt' | 'figures';
 
 export const HOOKS: { id: HookId; step: number; name: string; what: string }[] = [
@@ -15,6 +15,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'buyLives', step: 3, name: 'Köp liv', what: 'Liv för ädelstenar när liven är slut.' },
   { id: 'skipWait', step: 3, name: 'Köp bort väntan', what: 'Byggtid som kan köpas bort med ädelstenar.' },
   { id: 'topUpGold', step: 3, name: 'Fyll på guld', what: 'Saknas guld till ett bygge visas "Fyll på X guld för Y ädelstenar" (10 guld per ädelsten), så att spelaren slipper spela fler banor.' },
+  { id: 'boosters', step: 2, name: 'Hjälpmedel', what: 'Hammare (20 ädelstenar) och blandare (15) under brädet. En gratis av varje i början.' },
   { id: 'timedOffer', step: 4, name: 'Tidsbegränsat erbjudande', what: 'Startpaket för 60 ädelstenar (förr 150) som försvinner efter 5 minuter. Räcker inte ädelstenarna öppnas butiken.' },
   { id: 'gemPacks', step: 0, name: 'Ädelstenspaket', what: 'Butiken med paket för kronor, märkta "Populärast" och "Bäst värde".' },
   { id: 'attack', step: 5, name: 'Anfall och sköld', what: 'Grannar anfaller byn; sköld för ädelstenar eller soldater för guld.' },

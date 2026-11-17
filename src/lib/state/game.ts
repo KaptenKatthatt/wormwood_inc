@@ -239,6 +239,28 @@ export function levelLost(levelId: number, extra: Record<string, unknown>): void
 }
 
 /** Pays for extra moves. The caller adds them to the board. */
+// ------------------------------------------------------------------ boosters
+
+export type Booster = 'hammer' | 'shuffle';
+/** Free uses left; one of each is a gift at the start (Jonas, 2026-11-17). */
+export const freeBoosters = writable<Record<Booster, number>>(load('freeBoosters', { hammer: 1, shuffle: 1 }));
+freeBoosters.subscribe((f) => save('freeBoosters', f));
+
+/** Pays for one use (a free one first, then gems; too few gems opens the shop). */
+export function payBooster(b: Booster, level: number): boolean {
+  const free = get(freeBoosters);
+  if (free[b] > 0) {
+    freeBoosters.set({ ...free, [b]: free[b] - 1 });
+    logHook('boosters', { booster: b, level, free: true }, 'yes');
+    return true;
+  }
+  return payGems(PRICE[b], 'boosters', { booster: b, level });
+}
+
+export function canAffordBooster(b: Booster): boolean {
+  return get(freeBoosters)[b] > 0 || get(purse).gems >= PRICE[b];
+}
+
 export function buyExtraMoves(offer: Record<string, unknown>): boolean {
   return payGems(PRICE.extraMoves, 'extraMoves', offer);
 }
@@ -328,6 +350,7 @@ export function resetAll(): void {
   letter.set(null);
   timers.set([]);
   levelStats.set({});
+  freeBoosters.set({ hammer: 1, shuffle: 1 });
   startedAt = clock.now();
   save('startedAt', startedAt);
   save('welcomed', false);

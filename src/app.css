@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'Baloo 2';
+  src: url('/fonts/baloo2-latin.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
 :root {
   --panel: #f3ece4;
   --ink: #1f1a17;
@@ -11,7 +17,7 @@
   --frame: #8b2a1e;
   --deep: #5a1d14;
   color-scheme: light;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.45;
 }

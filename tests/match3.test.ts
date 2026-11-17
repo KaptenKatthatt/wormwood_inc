@@ -101,3 +101,23 @@ describe('match-3 engine', () => {
     expect(avg(rig)).toBeGreaterThan(0.75);
   });
 });
+
+describe('boosters', () => {
+  it('the hammer removes a tile without using a move', () => {
+    const g = new Match3(LEVELS[0], makeRng(5), false);
+    const before = g.movesLeft;
+    const r = g.smash({ r: 3, c: 3 });
+    expect(r.valid).toBe(true);
+    expect(r.steps[0].cleared).toEqual([{ r: 3, c: 3 }]);
+    expect(g.movesLeft).toBe(before);
+    expect(g.board.flat().every((k) => k >= 0)).toBe(true);
+  });
+  it('the shuffler keeps the tiles and leaves a move', () => {
+    const g = new Match3(LEVELS[0], makeRng(9), false);
+    const sorted = (b: number[][]) => b.flat().sort().join();
+    const before = sorted(g.board);
+    g.mix();
+    expect(sorted(g.board)).toBe(before);
+    expect(g.findMove()).not.toBeNull();
+  });
+});

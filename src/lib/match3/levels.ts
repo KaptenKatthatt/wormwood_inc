@@ -25,8 +25,9 @@ export interface Level {
   ice?: [number, number][];
 }
 
-/** Swedish names of the tile kinds, in tile order. Placeholder until the art is chosen. */
-export const KIND_NAMES = ['röda cirklar', 'blå rutor', 'gula trianglar', 'gröna romber', 'lila sexhörningar'];
+/** The approved tiles ("Rödfärg och skärgård"), in kind order: file name and Swedish plural. */
+export const TILES = ['fisk', 'ankare', 'snacka', 'fyr', 'tunna', 'bat'] as const;
+export const KIND_NAMES = ['fiskar', 'ankare', 'snäckor', 'fyrar', 'tunnor', 'båtar'];
 
 function block(r0: number, r1: number, c0: number, c1: number): [number, number][] {
   const out: [number, number][] = [];
@@ -35,9 +36,9 @@ function block(r0: number, r1: number, c0: number, c1: number): [number, number]
 }
 
 export const LEVELS: Level[] = [
-  { id: 1, name: 'Bana 1', rows: 8, cols: 7, kinds: 5, moves: 20, rigTarget: 1, goal: { type: 'collect', kind: 0, count: 20 } },
-  { id: 2, name: 'Bana 2', rows: 8, cols: 7, kinds: 5, moves: 18, rigTarget: 1, goal: { type: 'ice' }, ice: block(4, 6, 1, 5) },
-  { id: 3, name: 'Bana 3', rows: 8, cols: 7, kinds: 5, moves: 14, rigTarget: 0.93, goal: { type: 'score', score: 3600 } },
+  { id: 1, name: 'Bana 1', rows: 8, cols: 8, kinds: 6, moves: 20, rigTarget: 1, goal: { type: 'collect', kind: 0, count: 16 } },
+  { id: 2, name: 'Bana 2', rows: 8, cols: 8, kinds: 6, moves: 22, rigTarget: 1, goal: { type: 'ice' }, ice: block(3, 4, 2, 5) },
+  { id: 3, name: 'Bana 3', rows: 8, cols: 8, kinds: 6, moves: 16, rigTarget: 0.93, goal: { type: 'score', score: 2600 } },
 ];
 
 export function goalText(goal: Goal): string {
