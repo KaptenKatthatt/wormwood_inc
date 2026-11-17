@@ -101,7 +101,7 @@ Priser i ädelstenar visas utan kronor bredvid, eftersom det otydliga priset är
 - Banorna 3–4 blir märkbart svårare, så att livet tar slut för de flesta inom ett pass.
 
 ### Dev-menyn
-Växla verklig och snabbad tid, slå krokar av och på, nollställa sparad data. Menyn stängs av helt i versionen som går till testpersoner (byggflagga).
+Växla verklig och snabbad tid, slå krokar av och på, nollställa sparad data. Nedräkningarna för anfallet och Startpaketet går i verkliga sekunder även med snabbad klocka. Menyn stängs av helt i versionen som går till testpersoner (byggflagga).
 
 ## 4. Kroktrappan
 
@@ -123,11 +123,25 @@ Hela tiden: butiken finns tillgänglig. Från steg 2: nästa bana startar av sig
 **Beslut:** en kombination av en rådgivare och byborna. Lite text att läsa.
 - **Rådgivaren**, en äldre släkting, skriver korta brev ("Min käre ...") vid varje nytt steg i trappan och när spelaren vill sluta. Högst två meningar per brev. Varm, omtänksam och tryggt välmenande. Bär kroken *Figurer som pressar*.
 - **Byborna** syns i byn och reagerar med korta pratbubblor på några ord: glada efter bygge, oroliga när anfallet närmar sig, ledsna när spelaren vill sluta.
-- **Trivselmätare** i byns överkant: en snabb överblick över hur byborna trivs (ansikte plus stapel). Trivseln stiger med byggen och sjunker vid anfall, skadade byggnader och när spelaren varit borta. Ger skuldkroken något att peka på.
+- **Trivselmätare** i byns överkant: en snabb överblick över hur byborna trivs (ansikte plus stapel). Trivseln stiger med byggen och sjunker vid anfall, skadade byggnader och när spelaren varit borta. Ger skuldkroken något att peka på. Trivselmätaren och rådgivarens brev ligger under krokbrytaren *Figurer som pressar*.
+
+## Introduktion
+
+Spelet förklarar sig självt, så att Jonas kan lämna det till vem som helst utan att säga något. En kort interaktiv genomgång, varm och trygg i tonen, som går att spela om från Inställningar:
+
+1. Samtycke till testet och loggningen.
+2. Lägga spelet på hemskärmen och slå på notiser.
+3. Hur man byter brickor.
+4. Banans mål.
+5. Liv.
+6. Byn och byggen.
+7. Var Avsluta finns.
 
 ## 5. Mätning och loggning
 
 Vid varje krokögonblick loggar spelet: tid sedan start, steg, krok, vad som erbjöds och vad spelaren gjorde (ja, nej, väntade, slutade). Loggen skickas till logg-endpointen på devservern.
+
+Per bana loggas: tid på banan, antal drag (även extra drag), vinst eller förlust, och hur nära målet spelaren kom (andel och vad som var kvar).
 
 ### Kontrolläge
 **Beslut:** varje krok kan slås av och på en och en i dev-menyn. Testerna körs med hela trappan. Ett läge utan krokar kan köras som jämförelse om tiden räcker.
