@@ -178,6 +178,27 @@ Brytpunkten mäts två gånger: steget i första passet där personen slutar, oc
 - **Byborna** syns i byn och reagerar med korta pratbubblor på några ord: glada efter bygge, oroliga när anfallet närmar sig, ledsna när spelaren vill sluta.
 - **Trivselmätare** i byns överkant: en snabb överblick över hur byborna trivs (ansikte plus stapel). Trivseln stiger med byggen och sjunker vid anfall, skadade byggnader och när spelaren varit borta. Ger skuldkroken något att peka på. Trivselmätaren och rådgivarens brev ligger under krokbrytaren *Figurer som pressar*.
 
+## Ljud
+
+Ljudbilden är "Rödfärg och skärgård": svensk folkton, varm och trygg, utan mörk underton. Jonas valde allt på lyssningssidan https://claude.ai/artifact/KuTHggqRTMhRB9kNH26ntz 2026-11-17.
+
+**Musik**
+- Byn och kartan: "Udden", en egen polskaliknande vals med dragspel och klarinett. Havsljud med vågor och måsar under musiken i byn.
+- Pusslet: två låtar växlar mellan utmaningarna, "Brickor" (egen, marimba) och "Gem Waltz" (Haley Halcyon, CC-BY 4.0).
+
+| Händelse | Ljud | Krok |
+|---|---|---|
+| Matchning | Marimba, ett tonsteg högre för varje kedja | Kombo (variabel belöning) |
+| Utmaning klar, slut på drag | Gem Waltz-jinglar; förlustljudet är tröstande, aldrig bestraffande | |
+| "Så nära!" | Kalimba som stannar ett steg före grundtonen | Nära vinst |
+| Köp | Celesta-klang | |
+| Guld / ädelstenar | Mynt som klingar / celesta-glissando | |
+| Bygge startar / klart | Hammare, såg och dragspelsackord / folkfanfar på fiol | |
+| Anfall / avvärjt | Trumvirvel och stråkar / horn och fiol | |
+| Brev / knappar | Klockspel / mjukt klick | |
+
+Musik, havsljud och effekter har var sitt reglage i Inställningar. Ljudet startar först efter spelarens första tryckning och pausas när appen är dold. Licenserna står i `public/audio/CREDITS.md`: eget (FluidR3_GM, MIT), CC0 eller CC-BY (Gem Waltz).
+
 ## Introduktion
 
 Det ska gå jättefort att komma in i spelet, och spelet ska vara så tydligt att det knappt behövs någon introduktion. **Beslut:** högst 4 steg, som i liknande spel:
