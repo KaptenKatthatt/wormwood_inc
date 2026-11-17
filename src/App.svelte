@@ -18,7 +18,7 @@
 
   type Tab = 'pussel' | 'byn' | 'installningar';
   const TABS: { id: Tab; label: string }[] = [
-    { id: 'pussel', label: 'Banor' },
+    { id: 'pussel', label: 'Kartan' },
     { id: 'byn', label: 'Byn' },
     { id: 'installningar', label: 'Inställningar' },
   ];

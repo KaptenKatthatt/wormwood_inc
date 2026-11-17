@@ -29,7 +29,7 @@
   </button>
 {:else if weekend}
   <div class="banner weekend" role="region" aria-label="Helgmarknad">
-    🎪 <strong>Helgmarknad:</strong> dubbelt guld för vunna banor, {formatDuration(weekend.endsAt - $now)} kvar
+    🎪 <strong>Helgmarknad:</strong> dubbelt guld för klarade utmaningar, {formatDuration(weekend.endsAt - $now)} kvar
   </div>
 {/if}
 

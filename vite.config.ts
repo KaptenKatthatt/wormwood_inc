@@ -22,9 +22,9 @@ export default defineConfig({
       },
       manifest: {
         id: '/',
-        name: 'My Dear Wormwood',
-        short_name: 'Wormwood',
-        description: 'Ett spel om lockelser.',
+        name: 'Skärgårdsbyn',
+        short_name: 'Skärgårdsbyn',
+        description: 'Lös pussel och bygg en by vid havet.',
         lang: 'sv',
         start_url: '/',
         scope: '/',

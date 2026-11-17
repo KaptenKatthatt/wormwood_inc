@@ -1,6 +1,7 @@
 <script lang="ts">
   import GameCanvas from '../game/GameCanvas.svelte';
   import Modal from './Modal.svelte';
+  import MapView from './MapView.svelte';
   import { Match3Scene } from '../game/Match3Scene';
   import { Match3, type SwapResult } from '../lib/match3/engine';
   import { KIND_NAMES, LEVELS, TILES, goalText, type Level } from '../lib/match3/levels';
@@ -9,7 +10,7 @@
   import { formatDuration } from '../lib/time/clock';
   import { nextLifeIn } from '../lib/time/lives';
   import {
-    buyExtraMoves, buyLives, canAffordBooster, canPlay, freeBoosters, hookOn, payBooster, levelLost, levelStats, levelWon, lives, logHook, now, purse, stairEvent, stairs,
+    buyExtraMoves, buyLives, canAffordBooster, challengeNo, canPlay, freeBoosters, hookOn, payBooster, levelLost, levelStats, levelWon, lives, logHook, now, purse, stairEvent, stairs,
   } from '../lib/state/game';
   import { log } from '../lib/log/logger';
   import { DEV_MENU } from '../lib/config/flags';
@@ -33,6 +34,9 @@
     return { moves: game.movesLeft, remaining: game.remaining(), progress: game.progress() };
   });
   const next = $derived(nextLifeIn($lives, $now));
+
+  // No free level select (Jonas, 2026-11-17): the map shows the road, only the next challenge can be played.
+  const current = $derived(LEVELS[Math.min(LEVELS.length, Math.max(1, $challengeNo)) - 1]);
 
   function start(l: Level) {
     if (!canPlay()) {
@@ -75,7 +79,7 @@
       reward = levelWon(g.level.id, endInfo());
       dialog = 'won';
       tutEvent('levelEnded');
-      if (hookOn('autoNext') && $stairs.step >= 2 && $tutorial.index === null) startCountdown();
+      
     } else if (s === 'out-of-moves') {
       stairEvent('loss');
       if (hookOn('extraMoves')) {
@@ -139,15 +143,7 @@
     tutEvent('levelEnded');
   }
 
-  function quitToMenu() {
-    if (game && game.status() === 'playing' && game.movesUsed > 0) {
-      levelLost(game.level.id, { ...endInfo(), abandoned: true });
-    }
-    game = null;
-    dialog = null;
-  }
-
-  // From step 2 the next level starts by itself: no natural stopping point.
+  // The next challenge starts by itself: no natural stopping point.
   let countdown = $state(0);
   let cdTimer: ReturnType<typeof setInterval> | undefined;
   function startCountdown() {
@@ -169,8 +165,14 @@
   function nextLevel() {
     clearInterval(cdTimer);
     countdown = 0;
-    const i = LEVELS.findIndex((l) => l.id === game?.level.id);
-    start(LEVELS[(i + 1) % LEVELS.length]);
+    start(current);
+  }
+
+  /** Back to the map after a win; from step 2 the next challenge starts by itself after 3 s. */
+  function toMap(afterWin = false) {
+    game = null;
+    dialog = null;
+    if (afterWin && hookOn('autoNext') && $stairs.step >= 2 && $tutorial.index === null) startCountdown();
   }
 
   function buyLife(full: boolean) {
@@ -188,7 +190,6 @@
 {#if game && level && info}
   <section class="view">
     <div class="bar top">
-      <button class="ghost small" onclick={quitToMenu} aria-label="Lämna banan">←</button>
       <div class="goal" data-tut="goal">
         <strong class="name">{level.name}</strong>
         <span class="what">
@@ -233,23 +234,7 @@
     {/if}
   </section>
 {:else}
-  <section class="levels">
-    <h2>Banor</h2>
-    <ul>
-      {#each LEVELS as l (l.id)}
-        {@const st = $levelStats[l.id]}
-        <li>
-          <div>
-            <strong>{l.name}</strong>
-            <span>{goalText(l.goal)} på {l.moves} drag</span>
-            {#if st}<span class="fine">Vunnen {st.wins} gånger, förlorad {st.losses}</span>{/if}
-          </div>
-          <button class="primary" data-tut={`play-${l.id}`} onclick={() => start(l)}>Spela <span class="sr">{l.name}</span></button>
-        </li>
-      {/each}
-    </ul>
-    <p class="fine">En förlorad bana kostar ett liv. Vinst ger guld till byn.</p>
-  </section>
+  <MapView current={current.id} {countdown} onPlay={() => { stopCountdown(); start(current); }} />
 {/if}
 
 {#if dialog === 'outOfMoves' && game}
@@ -263,12 +248,11 @@
     <p class="fine">Du har 💎 {$purse.gems}.</p>
   </Modal>
 {:else if dialog === 'won' && game}
-  <Modal title="Banan klar!">
+  <Modal title="Utmaningen klarad!">
     <p class="big">+{reward} guld 🪙</p>
-    {#if countdown > 0}<p aria-live="polite">Nästa bana startar om {countdown} …</p>{/if}
     <div class="buttons">
-      <button class="primary" onclick={nextLevel}>Nästa bana</button>
-      <button class="ghost" data-tut="to-village" onclick={() => { stopCountdown(); onVillage(); }}>Till byn</button>
+      <button class="primary" onclick={() => toMap(true)}>Vidare</button>
+      <button class="ghost" data-tut="to-village" onclick={onVillage}>Till byn</button>
     </div>
   </Modal>
 {:else if dialog === 'lost' && game}
@@ -276,8 +260,8 @@
     <p>Du förlorade ett liv. {$lives.count > 0 ? `${$lives.count} kvar.` : 'Inga liv kvar.'}</p>
     <div class="buttons">
       <button class="primary" onclick={() => start(game!.level)}>Försök igen</button>
+      <button class="ghost" onclick={() => toMap()}>Till kartan</button>
       <button class="ghost" data-tut="to-village" onclick={onVillage}>Till byn</button>
-      <button class="ghost" onclick={quitToMenu}>Till banorna</button>
     </div>
   </Modal>
 {:else if dialog === 'noLives'}
@@ -298,7 +282,6 @@
   .view { display: flex; flex-direction: column; height: 100%; background: #7fb6dc url('/art/bakgrund.jpg') center / cover no-repeat; }
   .canvas { position: relative; flex: 1; min-height: 0; }
   .bar.top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
-  .small { min-height: 44px; min-width: 44px; padding: 4px 10px; background: #fff8ec; border: 2.5px solid var(--frame); color: var(--deep); border-radius: 50%; box-shadow: 0 2px 0 var(--deep); }
   .goal { flex: 1; min-width: 0; display: grid; gap: 0; background: #fff8ec; border: 3px solid #7a2418; border-radius: 14px; padding: 4px 10px 6px; box-shadow: 0 3px 0 var(--deep); color: var(--deep); }
   .goal .name { font-size: 1.1rem; line-height: 1.1; font-weight: 800; }
   .what { display: flex; align-items: center; gap: 6px; font-weight: 800; line-height: 1.2; }
@@ -320,11 +303,6 @@
   .plus { font-size: 1.4rem; font-weight: 800; color: #8b2a1e; }
   .price { position: absolute; bottom: -12px; background: #2c6fa6; color: #fff; border: 2px solid #fff; border-radius: 10px; padding: 0 7px; font-weight: 800; font-size: .8rem; white-space: nowrap; }
   .lbl { background: rgb(255 248 236 / .95); border: 2px solid #7a2418; border-radius: 10px; padding: 1px 6px 0; color: var(--deep); font-weight: 800; font-size: 13px; line-height: 1.15; text-align: center; box-shadow: 0 2px 0 var(--deep); }
-  .levels { background: var(--panel); height: 100%; overflow-y: auto; padding: 8px 16px 24px; }
-  .levels h2 { margin: 8px 0 12px; }
-  .levels ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  .levels li { display: flex; align-items: center; gap: 12px; border: 2px solid var(--line); border-radius: 8px; padding: 12px; }
-  .levels li div { flex: 1; display: grid; }
   .fine { color: var(--muted); font-size: .9rem; }
   .big { font-size: 1.25rem; }
 </style>

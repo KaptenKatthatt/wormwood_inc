@@ -25,7 +25,7 @@ self.addEventListener('push', (event) => {
   let data: { title?: string; body?: string; tag?: string } = {};
   try { data = event.data?.json() ?? {}; } catch { data = { body: event.data?.text() }; }
   event.waitUntil(
-    self.registration.showNotification(data.title ?? 'My Dear Wormwood', {
+    self.registration.showNotification(data.title ?? 'Skärgårdsbyn', {
       body: data.body ?? '',
       tag: data.tag,
       icon: '/icons/icon-192.png',

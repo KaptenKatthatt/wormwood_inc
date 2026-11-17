@@ -81,7 +81,7 @@
         </li>
       {/each}
     </ul>
-    <button class="primary play" onclick={onPlay}>Spela en bana för guld</button>
+    <button class="primary play" onclick={onPlay}>Spela för guld</button>
     <button class="ghost quit" data-tut="quit" onclick={pressQuit}>Avsluta</button>
   </div>
 </section>

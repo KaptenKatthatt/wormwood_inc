@@ -18,8 +18,8 @@ const URL = process.argv[3] ?? 'https://wormwood.84.247.143.6.sslip.io/';
   await p.getByText('Ja, det går bra').click();
   await shot('02-valkommen');
   await next();
-  await shot('03-banorna');
-  await p.locator('[data-tut="play-1"]').click();
+  await shot('03-kartan');
+  await p.locator('[data-tut="map-current"]').click();
   await shot('04-byt-brickor', 1000);
 
   // One move by the keyboard, as a player without a touch screen would.

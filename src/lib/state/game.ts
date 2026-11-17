@@ -10,6 +10,7 @@ import { collectDue, finishNow, remaining, startTimer, type GameTimer, type Time
 import { load, randomId, save } from './storage';
 import { log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
+import { CHALLENGE_COUNT } from '../match3/levels';
 import { AWAY_ATTACK_AFTER, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
@@ -20,7 +21,8 @@ import { ATTACK, OFFER, attackStrength, defence, nextStep, resolveAttack, type A
 import { BUBBLES, LETTERS, pickLine } from '../voices';
 import { tutorialActive } from '../tutorial';
 
-export const LIFE_REGEN = 20 * MINUTE;
+/** A new life every 30 minutes, at most five (Jonas, 2026-11-17). */
+export const LIFE_REGEN = 30 * MINUTE;
 export const SPEEDS = [1, 15, 60] as const;
 
 export interface Settings {
@@ -225,7 +227,12 @@ export function buyLives(full: boolean): boolean {
 
 // ------------------------------------------------------------------ levels
 
+/** The challenge the player is on (1 to CHALLENGE_COUNT); a win moves it on. */
+export const challengeNo = writable<number>(load('challengeNo', 1));
+challengeNo.subscribe((n) => save('challengeNo', n));
+
 export function levelWon(levelId: number, extra: Record<string, unknown>): number {
+  challengeNo.set(levelId >= CHALLENGE_COUNT ? 1 : levelId + 1);
   let gold = levelReward(levelId, goldMultiplier(effectiveVillage()));
   const weekend = dayOn('weekend') && weekendEvent(clock.now()).on;
   if (weekend) gold *= WEEKEND_GOLD;
@@ -368,6 +375,7 @@ export function resetAll(): void {
   timers.set([]);
   levelStats.set({});
   freeBoosters.set({ hammer: 1, shuffle: 1 });
+  challengeNo.set(1);
   daily.set(startDaily(clock.now()));
   awayReport.set(null);
   startedAt = clock.now();

@@ -38,7 +38,7 @@
   {:else}
     <p>Nästa gåva kommer i morgon.</p>
   {/if}
-  {#if streak > 0}<p class="fine">Svit: {streak} {streak === 1 ? 'dag' : 'dagar'} i rad med en vunnen bana.</p>{/if}
+  {#if streak > 0}<p class="fine">Svit: {streak} {streak === 1 ? 'dag' : 'dagar'} i rad med en klarad utmaning.</p>{/if}
   <div class="buttons">
     {#if ready && !got}<button class="primary" onclick={take}>Hämta</button>{/if}
     <button class="ghost" onclick={close}>{got ? 'Tack!' : 'Stäng'}</button>

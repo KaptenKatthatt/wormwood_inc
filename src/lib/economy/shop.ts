@@ -22,6 +22,6 @@ export const START = { gold: 100, gems: 30, kronor: 100 };
 
 /** Gold for a won level; level 3 pays more. */
 export function levelReward(levelId: number, multiplier: number): number {
-  const base = [100, 100, 150][levelId - 1] ?? 100;
+  const base = [100, 100, 150][levelId - 1] ?? 100 + 10 * Math.floor(levelId / 3) + (levelId % 5 === 0 ? 50 : 0);
   return Math.round(base * multiplier);
 }

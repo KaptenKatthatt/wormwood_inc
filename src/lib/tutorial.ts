@@ -28,11 +28,11 @@ export interface TutStep {
 
 export const TUT_STEPS: TutStep[] = [
   { id: 'welcome', tab: 'any', title: 'Välkommen!', text: 'Här bygger du upp en liten by vid havet genom att lösa pussel. Jag visar dig hur, det tar bara en minut.' },
-  { id: 'levels', tab: 'pussel', target: 'play-1', title: 'Banorna', text: 'Pusslen kallas banor. Tryck på Spela vid Bana 1.', waitFor: 'levelStarted' },
+  { id: 'levels', tab: 'pussel', target: 'map-current', title: 'Kartan', text: 'Vägen går genom skärgården, skogen och fjällen. Varje punkt är en utmaning. Tryck Spela för att börja.', waitFor: 'levelStarted' },
   { id: 'swap', tab: 'pussel', target: 'board', title: 'Byt plats på två brickor', text: 'Få tre likadana i rad. Tryck på en bricka och sedan på den bredvid, eller dra. De två som blinkar passar bra.', waitFor: 'moved', hint: true },
-  { id: 'goal', tab: 'pussel', target: 'goal', title: 'Målet', text: 'Här står vad banan går ut på och hur nära du är. Siffran till höger är hur många drag du har kvar.' },
-  { id: 'lives', tab: 'pussel', target: 'lives', title: 'Liv', text: 'Hjärtat är dina liv. Klarar du inte en bana går ett liv åt, och ett nytt kommer av sig självt efter en stund.' },
-  { id: 'finish', tab: 'pussel', target: 'board', title: 'Spela klart banan', text: 'Fortsätt byta brickor tills banan är slut. Vinner du får du guld.', waitFor: 'levelEnded' },
+  { id: 'goal', tab: 'pussel', target: 'goal', title: 'Målet', text: 'Här står vad utmaningen går ut på och hur nära du är. Siffran till höger är hur många drag du har kvar.' },
+  { id: 'lives', tab: 'pussel', target: 'lives', title: 'Liv', text: 'Hjärtat är dina liv. Klarar du inte en utmaning går ett liv åt, och ett nytt kommer av sig självt efter en stund.' },
+  { id: 'finish', tab: 'pussel', target: 'board', title: 'Spela klart', text: 'Fortsätt byta brickor tills utmaningen är klar eller dragen är slut. Klarar du den får du guld.', waitFor: 'levelEnded' },
   { id: 'village', tab: 'byn', target: 'to-village|tab-byn', selfNav: true, title: 'Byn', text: 'Gå till byn. Där använder du guldet.', waitFor: 'inVillage' },
   { id: 'build', tab: 'byn', target: 'build-stugan', title: 'Bygg ditt första hus', text: 'Tryck Bygg vid Stugan. Ett bygge tar en liten stund, och sedan står huset där.', waitFor: 'built' },
   { id: 'gems', tab: 'byn', target: 'gems', title: 'Ädelstenar', text: 'Ädelstenarna kan användas till genvägar, som extra drag. Tryck här för att se butiken. Pengarna är på låtsas.' },
