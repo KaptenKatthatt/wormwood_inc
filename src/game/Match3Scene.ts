@@ -28,6 +28,11 @@ export class Match3Scene extends Phaser.Scene {
   private cursor: Cell = { r: 0, c: 0 };
   private cursorBox?: Phaser.GameObjects.Rectangle;
   private usingKeys = false;
+  /** Help after a while without a move, as in the big puzzle games (Jonas, 2026-11-17). */
+  private idleTimer?: Phaser.Time.TimerEvent;
+  private idleTweens: Phaser.Tweens.Tween[] = [];
+  private idleTiles: Tile[] = [];
+  static readonly IDLE_MS = 5000;
 
   constructor() {
     super('match3');
@@ -58,7 +63,9 @@ export class Match3Scene extends Phaser.Scene {
     const onKey = (e: KeyboardEvent) => this.onKey(e);
     host?.addEventListener('keydown', onKey);
     this.events.once('shutdown', () => host?.removeEventListener('keydown', onKey));
+    this.resetIdle();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      this.resetIdle();
       const cell = this.cellAt(p.x, p.y);
       if (cell) this.down = { cell, x: p.x, y: p.y };
     });
@@ -97,6 +104,7 @@ export class Match3Scene extends Phaser.Scene {
   }
 
   private build(): void {
+    this.resetIdle();
     this.children.removeAll(true);
     this.selBox = undefined;
     const { width, height } = this.scale;
@@ -140,6 +148,34 @@ export class Match3Scene extends Phaser.Scene {
   }
 
   /** Two blinking frames around a legal move (used by the introduction). */
+  /** Stops the wobble and waits again; called on every touch, key and finished move. */
+  private resetIdle(): void {
+    this.stopIdleHint();
+    this.idleTimer?.remove();
+    this.idleTimer = this.time.delayedCall(Match3Scene.IDLE_MS, () => this.showIdleHint());
+  }
+
+  private stopIdleHint(): void {
+    for (const t of this.idleTweens) t.remove();
+    this.idleTweens = [];
+    for (const tile of this.idleTiles) if (tile.active) tile.setAngle(0).setScale(1);
+    this.idleTiles = [];
+  }
+
+  /** The two tiles of a good move rock gently until the player touches the board. */
+  private showIdleHint(): void {
+    const e = this.engine;
+    if (!e || e.status() !== 'playing') return;
+    if (this.busy || this.registry.get('hint') || this.registry.get('tool')) { this.resetIdle(); return; }
+    const move = e.findMove();
+    if (!move) return;
+    this.idleTiles = move.map((c) => this.tiles[c.r]?.[c.c]).filter((t): t is Tile => !!t);
+    const calm = this.speed < 1;
+    for (const tile of this.idleTiles) {
+      this.idleTweens.push(this.tweens.add({ targets: tile, angle: { from: -7, to: 7 }, scale: calm ? 1.06 : 1.1, duration: calm ? 900 : 260, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }));
+    }
+  }
+
   private drawHint(): void {
     for (const h of this.hintTweens) h.destroy();
     this.hintTweens = [];
@@ -163,6 +199,7 @@ export class Match3Scene extends Phaser.Scene {
   private onKey(e: KeyboardEvent): void {
     const host = this.game.canvas.parentElement;
     if (!host || document.activeElement !== host || !this.engine) return;
+    this.resetIdle();
     const d: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
     if (d[e.key]) {
       e.preventDefault();
@@ -341,6 +378,7 @@ export class Match3Scene extends Phaser.Scene {
     this.drawHint();
     this.drawCursor();
     this.game.events.emit('match3:moved', result);
+    this.resetIdle();
   }
 
   /** The hammer: the Svelte side has already checked the price; it pays on 'match3:smashed'. */
@@ -359,6 +397,7 @@ export class Match3Scene extends Phaser.Scene {
     this.busy = false;
     this.drawCursor();
     this.game.events.emit('match3:smashed', result);
+    this.resetIdle();
   }
 
   /** The shuffler: tiles fly to their new places. */
