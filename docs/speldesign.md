@@ -6,6 +6,8 @@ Designdokument för My Dear Wormwood (förstudietitel "Kära spelare"). Besluten
 
 Spelet ska mäta vid vilket steg i en trappa med ökande press som spelaren slutar spela (förstudien, Syfte). Därför ska varje krok ha ett tydligt ögonblick, kunna loggas och kunna slås av och på.
 
+**Spelets namn:** *Skärgårdsbyn*. "My Dear Wormwood" är projektets arbetsnamn och syns inte i spelet. Introskärmen är A (Sjöboden), utan versionsnummer och med färre, verklighetstrogna förtöjningar för båten.
+
 ## 2. Spelloopen
 
 1. **Pusselbana** (match-3, cirka 1–2 minuter, begränsat antal drag). Vinst ger guld, ibland en ädelsten. Förlust kostar ett liv.
@@ -24,14 +26,17 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 |---|---|---|
 | Guld | Vunna banor | Byggen, uppgraderingar, soldater |
 | Ädelstenar | Ett fåtal i spelet (startbidrag, sällsynt efter bana), resten köps för kronor | Köpa bort väntetid, liv, extra drag, sköld |
-| Liv | Max 5, ett nytt var 20:e minut | Starta en bana (förlust kostar ett liv) |
+| Liv | Max 5, ett nytt var 30:e minut | En misslyckad utmaning kostar ett liv. Utan liv: vänta eller köp liv för ädelstenar |
 | Kronor (låtsas) | Testplånbok, 100 kr vid start | Köpa ädelstenar och paket i butiken |
 
-### Banorna
-- Tre olika banor med olika mål: samla ett visst antal brickor av en sort, rensa is, nå en poänggräns.
-- Banorna kan spelas om för guld. Ett första pass blir 8–10 banor.
-- Bana 3 är svår, så att liven tar slut för de flesta.
-- **Beslut:** nära vinst är riggad. Spelet väljer nya brickor så att en förlust oftast slutar 1–3 drag eller några brickor från målet. Brytare i dev-menyn slår av riggningen (ärlig slump).
+### Utmaningarna (inga banor att välja)
+- **Beslut:** spelaren kommer direkt in på brädet. Ingen banakarta, inga banor att välja. Utmaningarna kommer i följd, och nästa startar av sig själv.
+- En utmaning har ett mål och ett begränsat antal drag. Tre sorters mål: samla brickor av en sort, rensa is, nå en poänggräns.
+- Klarad utmaning ger en belöning (guld, ibland ädelstenar eller ett hjälpmedel) och kostar inget. Misslyckad utmaning ger ingen belöning och kostar ett liv (som Candy Crush).
+- Utmaningarna blir svårare och belöningarna större efter hand; den tredje är svår. Ett första pass blir 8–10 utmaningar.
+- **Nära vinst är riggad.** Spelet väljer nya brickor så att en misslyckad utmaning oftast slutar 1–3 drag eller några brickor från målet. Då erbjuds 5 extra drag för ädelstenar. Brytare i dev-menyn ger ärlig slump.
+
+**De tre första utmaningarna (spelet 0.6.0):** samla 16 fiskar på 20 drag; rensa is i 2x4 rutor på 22 drag; nå 2 600 poäng på 16 drag. Hjälpmedlen ligger under brädet (hammare 20, blandare 15, +5 drag 30 ädelstenar) med egen krokbrytare "Hjälpmedel".
 
 **Pusslets utseende (godkänt 2026-11-17):** stil "Rödfärg och skärgård". Bakgrunden är västkustskär med en röd sjöbod, brädet är 8x8 med rödfärgad träram. Sex målade brickor som går att skilja åt på formen även i gråskala: fisk, ankare, snäcka, fyr, silltunna och grön segelbåt med två segel. Inga godisbrickor. Granskningssida: https://claude.ai/artifact/9w6tdaRRE2s343Dwq3XBzP, bilder i /mnt/project-files/pussel-stil/stil1-v1/.
 
@@ -117,7 +122,7 @@ Spelet ska räcka i några timmar, så att testare kan spela på egen hand läng
 
 1. **Byn växer utåt.** Marken utanför byn ligger under skog eller dimma och röjs i flera omgångar när Stugan går upp i nivå, så att nya tomter blir lediga.
 2. **Fler nivåer och byggnader.** 8 byggnader med 10 nivåer var. Samma modell per byggnad med små tillägg per nivå. Nya byggnader (till exempel kvarn, smedja, marknad) låses upp med Stugans nivå.
-3. **Banakarta med cirka 40 banor**, byggda av inställningar (mål, drag, brickor) i samma pusselmotor.
+3. **Cirka 40 utmaningar i följd**, byggda av inställningar (mål, drag, brickor) i samma pusselmotor. Ingen banakarta; spelaren ser vilken utmaning i ordningen hen är på.
 
 ## 4. Kroktrappan
 
@@ -141,11 +146,13 @@ Varje testperson spelar först ett pass på cirka 15 minuter med trappan, och be
 
 | Dagskrok | Så blir det |
 |---|---|
-| Dagliga belöningar | En kalender på 7 dagar med guld, ädelstenar och sköld |
-| Streak | Dagar i rad med minst en vunnen bana ger bonus |
-| Notiser (Web Push) | Liven är fulla, bygget är klart, byn hotas |
-| Anfall när spelaren är borta | Förlusten visas vid nästa besök |
-| Tidsbegränsad händelse | En helghändelse med egna banor och en byggnad som bara finns då |
+| Dagliga belöningar | Kalender med 7 gåvor: 100 guld, 10 ädelstenar, 250 guld, sköld 8 h, 20 ädelstenar, 500 guld, 500 guld + 50 ädelstenar |
+| Svit (streak) | 50 guld per dag i rad, högst 250, vid dagens första vinst |
+| Notiser (Web Push) | När spelet läggs undan: fulla liv, dagens gåva nästa dag 18.00, hot efter 18 h |
+| Anfall när spelaren är borta | Efter 20 h borta; förlusten visas vid återkomsten |
+| Tidsbegränsad händelse | Helgmarknad fredag 18.00 till söndag midnatt med dubbelt guld |
+
+Dagskrokarna startar dag 2, så att första passet bara har trappan. Besök loggas med datum, testdag och längd.
 
 Brytpunkten mäts två gånger: steget i första passet där personen slutar, och dagen då personen slutar komma tillbaka. Spelet loggar varje besök med datum och längd.
 
