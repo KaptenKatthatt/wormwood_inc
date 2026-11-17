@@ -10,6 +10,7 @@
   import Banners from './ui/Banners.svelte';
   import QuitFlow from './ui/QuitFlow.svelte';
   import Shop from './ui/Shop.svelte';
+  import Coach from './ui/Coach.svelte';
   import { log } from './lib/log/logger';
 
   type Tab = 'pussel' | 'byn' | 'installningar';
@@ -20,6 +21,12 @@
   ];
   const fromHash = (): Tab => (TABS.find((t) => `#${t.id}` === location.hash)?.id ?? 'pussel');
   let tab = $state<Tab>(fromHash());
+  // The settings' "show the introduction again" switches tab through the hash.
+  $effect(() => {
+    const onHash = () => (tab = fromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  });
 
   function go(t: Tab) {
     tab = t;
@@ -35,7 +42,7 @@
   </main>
   <nav aria-label="Huvudmeny">
     {#each TABS as t}
-      <button class="tab" aria-current={tab === t.id ? 'page' : undefined} onclick={() => go(t.id)}>{t.label}</button>
+      <button class="tab" data-tut={`tab-${t.id}`} aria-current={tab === t.id ? 'page' : undefined} onclick={() => go(t.id)}>{t.label}</button>
     {/each}
   </nav>
   <div class="toasts" aria-live="polite">
@@ -43,6 +50,7 @@
   </div>
   {#if $offerOpen}<Offer />{/if}
   {#if $shopOpen}<Shop />{/if}
+  <Coach />
   <Letter />
   {#if $quitFlow}<QuitFlow />{/if}
   {#if $settings.logging === null}<Consent />{/if}

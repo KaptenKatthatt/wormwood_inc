@@ -2,6 +2,8 @@
   import GameCanvas from '../game/GameCanvas.svelte';
   import { VillageScene, type PlotView } from '../game/VillageScene';
   import { bubble, hookOn, now, pressQuit, purse, skipBuild, skipRepair, stairs, startBuild, timers, village } from '../lib/state/game';
+  import { tutEvent } from '../lib/tutorial';
+  import { onMount } from 'svelte';
   import { BUILDINGS, buildBlock, buildCost, buildTime, skipGems } from '../lib/economy/village';
   import { formatDuration } from '../lib/time/clock';
   import { progress, remaining } from '../lib/time/timers';
@@ -20,6 +22,8 @@
     })),
   );
 
+  onMount(() => tutEvent('inVillage'));
+  $effect(() => { if (constr) tutEvent('built'); });
   const damaged = $derived($stairs.damaged);
   const repairTimer = $derived(damaged ? $timers.find((t) => t.id === damaged.timerId) : undefined);
   const repairLeft = $derived(repairTimer ? remaining(repairTimer, $now) : 0);
@@ -62,7 +66,7 @@
             <strong>{b.name}</strong> <span class="lvl">{$village.levels[b.id] === 0 ? 'ej byggd' : `nivå ${$village.levels[b.id]}`}</span>
             <span class="fine">{b.effect}</span>
           </div>
-          <button class={block ? 'ghost' : 'primary'} disabled={block !== null} onclick={() => startBuild(b.id)} aria-describedby={block ? `why-${b.id}` : undefined}>
+          <button data-tut={`build-${b.id}`} class={block ? 'ghost' : 'primary'} disabled={block !== null} onclick={() => startBuild(b.id)} aria-describedby={block ? `why-${b.id}` : undefined}>
             {$village.levels[b.id] === 0 ? 'Bygg' : 'Bygg ut'}
           </button>
           {#if block}<span class="why" id={`why-${b.id}`}>{blockText[block]}</span>{/if}
@@ -70,7 +74,7 @@
       {/each}
     </ul>
     <button class="primary play" onclick={onPlay}>Spela en bana för guld</button>
-    <button class="ghost quit" onclick={pressQuit}>Avsluta</button>
+    <button class="ghost quit" data-tut="quit" onclick={pressQuit}>Avsluta</button>
   </div>
 </section>
 

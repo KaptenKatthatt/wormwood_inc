@@ -17,6 +17,7 @@ import { DEV_MENU } from '../config/flags';
 import { HOOKS, type HookId, type HookResponse } from '../hooks';
 import { ATTACK, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
 import { BUBBLES, LETTERS, pickLine } from '../voices';
+import { tutorialActive } from '../tutorial';
 
 export const LIFE_REGEN = 20 * MINUTE;
 export const SPEEDS = [1, 15, 60] as const;
@@ -366,6 +367,7 @@ export function effectiveVillage(): VillageState {
 
 /** Moves the staircase on, on an event or by the clock. */
 export function stairEvent(event?: StairEvent): void {
+  if (tutorialActive() && event !== 'quit') return; // the introduction is not part of the staircase
   const st = get(stairs);
   const mins = minutesIn();
   const step = nextStep(st.step, mins, event);
@@ -416,6 +418,7 @@ export function dismissOffer(): void {
 }
 
 function stairTick(): void {
+  if (tutorialActive()) return;
   const now = clock.now();
   stairEvent();
   const st = get(stairs);
@@ -564,4 +567,12 @@ export function devStep(step: Step): void {
   writeLetter(step);
   if (step >= 4) openOffer();
   if (step === 5 && hookOn('attack') && !get(stairs).attack) startAttack();
+}
+
+/** After the introduction: minute 0 of the hook staircase is now. */
+export function restartHookClock(): void {
+  startedAt = clock.now();
+  save('startedAt', startedAt);
+  stairs.update((s) => ({ ...s, step: 1, reached: { 1: 0 } }));
+  log('hook_clock_start', {});
 }

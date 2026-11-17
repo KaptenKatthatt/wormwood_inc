@@ -20,6 +20,10 @@ export class Match3Scene extends Phaser.Scene {
   private busy = false;
   private down: { cell: Cell; x: number; y: number } | null = null;
   private speed = 1;
+  private hintTweens: Phaser.GameObjects.Rectangle[] = [];
+  private cursor: Cell = { r: 0, c: 0 };
+  private cursorBox?: Phaser.GameObjects.Rectangle;
+  private usingKeys = false;
 
   constructor() {
     super('match3');
@@ -31,10 +35,18 @@ export class Match3Scene extends Phaser.Scene {
     this.build();
     this.scale.on('resize', this.build, this);
     this.registry.events.on('changedata-match3', this.onEngine, this);
+    this.registry.events.on('changedata-hint', this.drawHint, this);
     this.events.once('shutdown', () => {
       this.scale.off('resize', this.build, this);
       this.registry.events.off('changedata-match3', this.onEngine, this);
+      this.registry.events.off('changedata-hint', this.drawHint, this);
     });
+    // A plain DOM listener on the board element: Phaser's keyboard queue can
+    // deliver one quick press twice, which moved the frame two cells.
+    const host = this.game.canvas.parentElement;
+    const onKey = (e: KeyboardEvent) => this.onKey(e);
+    host?.addEventListener('keydown', onKey);
+    this.events.once('shutdown', () => host?.removeEventListener('keydown', onKey));
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       const cell = this.cellAt(p.x, p.y);
       if (cell) this.down = { cell, x: p.x, y: p.y };
@@ -92,6 +104,61 @@ export class Match3Scene extends Phaser.Scene {
     );
     const mask = this.make.graphics({}, false).fillRect(this.origin.x - 6, this.origin.y - 6, this.cell * e.cols + 12, this.cell * e.rows + 12);
     this.tiles = e.board.map((row, r) => row.map((kind, c) => this.makeTile(kind, this.pos({ r, c }), mask.createGeometryMask())));
+    this.hintTweens = [];
+    this.drawHint();
+    this.drawCursor();
+  }
+
+  /** Two blinking frames around a legal move (used by the introduction). */
+  private drawHint(): void {
+    for (const h of this.hintTweens) h.destroy();
+    this.hintTweens = [];
+    if (!this.registry.get('hint') || !this.engine || this.busy) return;
+    const move = this.engine.findMove();
+    if (!move) return;
+    for (const cell of move) {
+      const p = this.pos(cell);
+      const box = this.add.rectangle(p.x, p.y, this.cell - 2, this.cell - 2).setStrokeStyle(4, 0xd9a441, 1);
+      this.tweens.add({ targets: box, alpha: 0.2, duration: 600, yoyo: true, repeat: -1 });
+      this.hintTweens.push(box);
+    }
+  }
+
+  /** Keyboard play: arrows move a frame, Enter or Space picks a tile and then its neighbour. */
+  private onKey(e: KeyboardEvent): void {
+    const host = this.game.canvas.parentElement;
+    if (!host || document.activeElement !== host || !this.engine) return;
+    const d: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+    if (d[e.key]) {
+      e.preventDefault();
+      this.usingKeys = true;
+      const [dr, dc] = d[e.key];
+      const next = { r: Phaser.Math.Clamp(this.cursor.r + dr, 0, this.engine.rows - 1), c: Phaser.Math.Clamp(this.cursor.c + dc, 0, this.engine.cols - 1) };
+      if (this.selected && this.engine.isAdjacent(this.selected, next)) {
+        const from = this.selected;
+        this.select(null);
+        this.cursor = next;
+        this.drawCursor();
+        void this.swap(from, next);
+        return;
+      }
+      this.cursor = next;
+      this.drawCursor();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      this.usingKeys = true;
+      this.tap(this.cursor);
+    } else if (e.key === 'Escape') {
+      this.select(null);
+    }
+  }
+
+  private drawCursor(): void {
+    this.cursorBox?.destroy();
+    this.cursorBox = undefined;
+    if (!this.usingKeys || !this.engine) return;
+    const p = this.pos(this.cursor);
+    this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3, 0xf3ece4, 1);
   }
 
   private makeTile(kind: number, at: { x: number; y: number }, mask?: Phaser.Display.Masks.GeometryMask): Tile {
@@ -152,6 +219,8 @@ export class Match3Scene extends Phaser.Scene {
     if (!e || this.busy || e.status() !== 'playing') return;
     if (b.r < 0 || b.c < 0 || b.r >= e.rows || b.c >= e.cols) return;
     this.busy = true;
+    for (const h of this.hintTweens) h.destroy();
+    this.hintTweens = [];
     const ta = this.tiles[a.r][a.c]!;
     const tb = this.tiles[b.r][b.c]!;
     const pa = this.pos(a);
@@ -169,6 +238,8 @@ export class Match3Scene extends Phaser.Scene {
     for (const step of result.steps) await this.play(step);
     if (result.shuffled) this.build();
     this.busy = false;
+    this.drawHint();
+    this.drawCursor();
     this.game.events.emit('match3:moved', result);
   }
 

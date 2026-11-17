@@ -1,18 +1,19 @@
 <script lang="ts">
-  import { firstLetter, settings } from '../lib/state/game';
+  import { settings } from '../lib/state/game';
+  import { startTutorial, tutorialDone } from '../lib/tutorial';
   import { flush } from '../lib/log/logger';
 
   function answer(yes: boolean) {
     settings.update((s) => ({ ...s, logging: yes }));
     if (yes) flush(false);
-    firstLetter();
+    if (!tutorialDone()) startTutorial();
   }
 </script>
 
 <div class="backdrop">
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="consent-title">
-    <h2 id="consent-title">Välkommen till speltestet</h2>
-    <p>Spelet är en del av ett examensarbete. Får det skicka anonyma uppgifter om hur du spelar (vad du trycker på och när) till testledaren?</p>
+    <h2 id="consent-title">Hej och välkommen!</h2>
+    <p>Det här spelet är en del av ett examensarbete. Får det skicka anonyma uppgifter om hur du spelar, till exempel vad du trycker på och när, till den som gör testet?</p>
     <p class="fine">Inget namn, ingen e-post. Du kan ändra dig under Inställningar.</p>
     <div class="buttons">
       <button class="primary" onclick={() => answer(true)}>Ja, det går bra</button>

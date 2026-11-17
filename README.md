@@ -34,6 +34,10 @@ rätt verklig tid (`/api/push/schedule`), så notisen kommer även när spelet �
 
 `src/lib/match3/engine.ts` har reglerna utan grafik; `src/game/Match3Scene.ts` animerar stegen. När kroken *Riggad nära vinst* är på styr en "regissör" nya brickor: ligger spelaren före kurvan undviker de nya brickorna att bilda rader och målbrickan, ligger hen efter gynnas båda. Det gör att banor oftast slutar precis vid målet. Bana 3 siktar på att sluta strax under målet. Av betyder ärlig slump.
 
+## Introduktionen
+
+`src/lib/tutorial.ts` håller elva steg som spelaren gör på riktigt: spela bana 1, byta brickor (två brickor blinkar som tips), målet, liven, bygga stugan i byn, ädelstenarna, var Avsluta finns och hemskärmen. `src/ui/Coach.svelte` ringar in det som ska tryckas på och läser upp varje steg för skärmläsare. Introduktionen startar efter samtycket, går att hoppa över och kan visas igen under Inställningar. Kroktrappan väntar tills introduktionen är klar. Brädet går också att spela med piltangenter och Enter.
+
 ## Utvecklarmeny och testplånbok
 
 Utvecklarmenyn (tid, påfyllning av plånboken, nollställning, teknisk info)
@@ -52,6 +56,8 @@ Köp görs med en **testplånbok** med låtsaskronor (`src/lib/economy/wallet.ts
 `src/lib/log/logger.ts` köar händelser och skickar dem till `/api/log` först
 när spelaren har sagt ja. Spelaren identifieras bara med ett slumpat id.
 Servern sparar en NDJSON-fil per dag.
+
+Varje avslutad bana loggas (`level_won` eller `level_lost`) med tid i sekunder, använda och givna drag, köpta extra drag, hur nära målet spelaren kom (0 till 1), vad som var kvar, poäng och om banan var riggad. Introduktionen loggas med `tutorial_start`, `tutorial_step` och `tutorial_end`.
 
 ## Kommandon
 

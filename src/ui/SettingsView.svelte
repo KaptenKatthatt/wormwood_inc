@@ -2,6 +2,7 @@
   import { playerId, rescheduleAll, settings, toast } from '../lib/state/game';
   import { DEV_MENU } from '../lib/config/flags';
   import DevMenu from './DevMenu.svelte';
+  import { startTutorial } from '../lib/tutorial';
   import { enablePush, pushSupported, testPush } from '../lib/push/push';
   import { flush } from '../lib/log/logger';
   import InstallGuide from './InstallGuide.svelte';
@@ -26,6 +27,9 @@
 </script>
 
 <section class="settings">
+  <h2>Hjälp</h2>
+  <button class="ghost" onclick={() => { location.hash = '#pussel'; startTutorial(true); }}>Visa introduktionen igen</button>
+
   <h2>Installera</h2>
   <InstallGuide />
 

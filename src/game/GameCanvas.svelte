@@ -11,11 +11,14 @@
     data = {},
     on = {},
     label,
+    interactive = false,
   }: {
     scene: typeof Phaser.Scene;
     data?: Record<string, unknown>;
     on?: Record<string, (...args: any[]) => void>;
     label: string;
+    /** Focusable and keyboard driven (the puzzle board); otherwise a picture. */
+    interactive?: boolean;
   } = $props();
 
   let host: HTMLDivElement;
@@ -52,9 +55,11 @@
   });
 </script>
 
-<div class="stage" bind:this={host} role="img" aria-label={label}></div>
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div class="stage" bind:this={host} role={interactive ? 'application' : 'img'} tabindex={interactive ? 0 : -1} aria-label={label}></div>
 
 <style>
   .stage { position: absolute; inset: 0; touch-action: none; }
+  .stage:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
   .stage :global(canvas) { display: block; }
 </style>

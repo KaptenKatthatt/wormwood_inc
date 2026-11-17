@@ -222,7 +222,9 @@ export async function createApp(opts) {
         }),
       );
       const day = new Date(received).toISOString().slice(0, 10);
-      await appendFile(join(dataDir, 'logs', `${day}.ndjson`), lines.join('\n') + '\n');
+      const logDir = join(dataDir, 'logs');
+      await mkdir(logDir, { recursive: true });
+      await appendFile(join(logDir, `${day}.ndjson`), lines.join('\n') + '\n');
       return json(res, 200, { ok: true, stored: lines.length });
     }
 

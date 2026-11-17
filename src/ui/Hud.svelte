@@ -7,12 +7,12 @@
 </script>
 
 <header class="hud">
-  <div class="lives" aria-label={`${$lives.count} av ${$lives.max} liv${next === null ? '' : `, nästa om ${formatDuration(next)}`}`}>
+  <div class="lives" data-tut="lives" aria-label={`${$lives.count} av ${$lives.max} liv${next === null ? '' : `, nästa om ${formatDuration(next)}`}`}>
     <span class="heart" aria-hidden="true">♥</span><strong>{$lives.count}</strong>
     <span class="next" aria-hidden="true">{next === null ? 'fullt' : formatDuration(next)}</span>
   </div>
   <span class="gold" aria-label={`${$purse.gold} guld`}><span aria-hidden="true">🪙</span> {$purse.gold}</span>
-  <button class="gems" onclick={() => shopOpen.set({ reason: 'hud' })} aria-label={`${$purse.gems} ädelstenar. Öppna butiken`}>
+  <button class="gems" data-tut="gems" onclick={() => shopOpen.set({ reason: 'hud' })} aria-label={`${$purse.gems} ädelstenar. Öppna butiken`}>
     <span aria-hidden="true">💎</span> {$purse.gems} <span class="plus" aria-hidden="true">+</span>
   </button>
   {#if $settings.speed !== 1}<span class="badge" title="Snabbad klocka">×{$settings.speed}</span>{/if}

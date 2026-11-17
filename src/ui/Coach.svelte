@@ -1,0 +1,95 @@
+<script lang="ts">
+  /**
+   * Draws the introduction: a ring around the thing to look at and a speech
+   * bubble with the text. The rest of the screen stays usable, so the player
+   * does each step for real. Screen readers hear each step as it comes.
+   */
+  import { tick } from 'svelte';
+  import { TUT_STEPS, endTutorial, nextTutStep, tutorial } from '../lib/tutorial';
+
+  const step = $derived($tutorial.index === null ? null : TUT_STEPS[$tutorial.index]);
+  let rect = $state<DOMRect | null>(null);
+  let nextBtn = $state<HTMLButtonElement>();
+  let frame = 0;
+
+  function targetEl(): Element | null {
+    const sel = step?.target?.split('|').map((t) => `[data-tut="${t}"]`).join(', ');
+    return sel ? document.querySelector(sel) : null;
+  }
+
+  function track() {
+    const el = targetEl();
+    const r = el?.getBoundingClientRect() ?? null;
+    rect = r && r.width > 0 ? r : null;
+    frame = requestAnimationFrame(track);
+  }
+
+  $effect(() => {
+    if (!step) return;
+    frame = requestAnimationFrame(track);
+    return () => cancelAnimationFrame(frame);
+  });
+
+  // Bring the target into view when a step starts (Avsluta sits far down in the village).
+  $effect(() => {
+    if (!step) return;
+    void tick().then(() => {
+      const el = targetEl();
+      const r = el?.getBoundingClientRect();
+      if (el && r && (r.top < 60 || r.bottom > window.innerHeight - 80)) {
+        const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : 'auto' });
+      }
+    });
+  });
+
+  $effect(() => {
+    if (step && !step.waitFor) void tick().then(() => nextBtn?.focus());
+  });
+
+  // Put the bubble below the target when it is in the top half, otherwise above it.
+  const below = $derived(!rect || rect.top + rect.height / 2 < window.innerHeight / 2);
+  const bubbleStyle = $derived(
+    !rect
+      ? 'top: 50%; transform: translateY(-50%);'
+      : below
+        ? `top: ${Math.min(window.innerHeight - 220, rect.bottom + 14)}px;`
+        : `bottom: ${Math.min(window.innerHeight - 220, window.innerHeight - rect.top + 14)}px;`,
+  );
+  const big = $derived(rect !== null && rect.height > window.innerHeight * 0.4);
+</script>
+
+{#if step}
+  {#if rect}
+    <div class="ring" class:big style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
+  {/if}
+  <div class="bubble" class:below class:floating={big} style={big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
+    <p class="count" aria-hidden="true">{($tutorial.index ?? 0) + 1} / {TUT_STEPS.length}</p>
+    <h2 id="coach-title">{step.title}</h2>
+    <p id="coach-text" aria-live="polite">{step.text}</p>
+    <div class="row">
+      {#if !step.waitFor}
+        <button class="primary" bind:this={nextBtn} onclick={nextTutStep}>{($tutorial.index ?? 0) === TUT_STEPS.length - 1 ? 'Börja spela' : 'Nästa'}</button>
+      {/if}
+      <button class="skip" onclick={() => endTutorial(true)}>Hoppa över introduktionen</button>
+    </div>
+  </div>
+{/if}
+
+<style>
+  .ring { position: fixed; z-index: 15; border: 4px solid var(--gold); border-radius: 12px; pointer-events: none;
+    box-shadow: 0 0 0 9999px rgb(0 0 0 / .35); animation: pulse 1.4s ease-in-out infinite; }
+  .ring.big { box-shadow: none; }
+  @keyframes pulse { 50% { border-color: #fff6ee; } }
+  .bubble { position: fixed; left: 12px; right: 12px; z-index: 16; margin: 0 auto; max-width: 440px; background: #fffaf0; color: #1f1a17;
+    border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 24px rgb(0 0 0 / .35); display: grid; gap: 6px; }
+  .bubble.floating { top: calc(8px + env(safe-area-inset-top)); }
+  /* Over the board the bubble sits at the top, above the tiles, and stays small. */
+  .bubble.floating { padding: 10px 14px; gap: 4px; }
+  .bubble.floating .row { margin-top: 0; }
+  h2 { margin: 0; font-size: 1.15rem; }
+  p { margin: 0; }
+  .count { font-size: .8rem; color: #5c524b; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+  .skip { background: none; border: 0; color: #5c524b; text-decoration: underline; font-weight: 500; min-height: 44px; padding: 4px 6px; }
+</style>

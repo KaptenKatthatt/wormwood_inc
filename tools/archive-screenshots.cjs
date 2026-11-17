@@ -10,6 +10,8 @@ const URL = process.argv[3] ?? 'https://wormwood.84.247.143.6.sslip.io/';
   const p = await ctx.newPage();
   const shot = async (n, wait = 600) => { await p.waitForTimeout(wait); await p.screenshot({ path: `${D}${n}.png` }); };
   const dialog = () => p.getByRole('dialog');
+  // Letters from the advisor can pop up at any point; read and close them.
+  const closeLetters = async () => { while (await p.getByRole('button', { name: 'Tack', exact: true }).count()) { await p.getByRole('button', { name: 'Tack', exact: true }).first().click(); await p.waitForTimeout(200); } };
   const clickIf = async (loc) => { if (await loc.count()) { await loc.first().click(); return true; } return false; };
 
   /** Plays one legal move found by the engine (exposed in dev builds only). */
@@ -30,12 +32,16 @@ const URL = process.argv[3] ?? 'https://wormwood.84.247.143.6.sslip.io/';
     await p.getByRole('button', { name: 'Banor' }).click();
     await p.getByRole('button', { name: 'Spela' }).nth(n).click();
     await p.waitForTimeout(700);
-    for (let i = 0; i < 40 && !(await dialog().count()); i++) {
+    for (let i = 0; i < 40; i++) {
+      await closeLetters();
+      if (await dialog().count()) break;
       if (i === 4 && midShot) await shot(midShot, 0);
       await move();
     }
   }
   async function leaveDialog() {
+    await closeLetters();
+    await clickIf(dialog().getByText('Till byn'));
     await clickIf(dialog().getByText('Ge upp'));
     await p.waitForTimeout(300);
     (await clickIf(dialog().getByText('Till byn'))) || (await clickIf(dialog().getByText('Till banorna')));
@@ -45,7 +51,9 @@ const URL = process.argv[3] ?? 'https://wormwood.84.247.143.6.sslip.io/';
   await p.goto(URL);
   await shot('01-samtycke', 1200);
   await p.getByText('Ja, det går bra').click();
-  await shot('02-banor');
+  await shot('02-radgivarens-brev');
+  await p.getByRole('button', { name: 'Tack' }).click();
+  await shot('02b-banor');
 
   await playLevel(0, '03-bana1-samla');
   await shot('04-bana1-slut');
@@ -76,5 +84,35 @@ const URL = process.argv[3] ?? 'https://wormwood.84.247.143.6.sslip.io/';
   await shot('14-utvecklarmeny-tid-och-krokar');
   await p.evaluate(() => document.querySelector('.settings').scrollTo(0, 99999));
   await shot('15-utvecklarmeny-planbok');
+
+  // Steps 4 and 5, reached with the dev menu's step buttons.
+  await p.evaluate(() => document.querySelector('.dev')?.scrollIntoView());
+  if (await p.getByRole('button', { name: 'Till steg 4' }).isEnabled()) {
+    await p.getByRole('button', { name: 'Till steg 4' }).click();
+    await shot('16-brev-steg4');
+    await closeLetters();
+  }
+  await shot('17-startpaket');
+  await clickIf(dialog().getByText('Inte nu'));
+  await p.getByRole('button', { name: 'Till steg 5' }).click();
+  await shot('18-brev-anfall');
+  await closeLetters();
+  await p.getByRole('button', { name: 'Byn' }).click();
+  await shot('19-anfall-varning');
+  await p.waitForTimeout(61000);
+  await shot('20-efter-anfallet');
+  await closeLetters();
+  await shot('21-byn-efter-anfallet');
+  await p.getByRole('button', { name: 'Avsluta' }).click();
+  await shot('22-avsluta-tjat');
+  await p.getByRole('button', { name: 'Avsluta ändå' }).click();
+  await shot('23-enkat');
+  const n = await p.locator('fieldset').count();
+  for (let i = 0; i < n; i++) {
+    await p.locator(`input[name=p${i}][value="3"]`).check({ force: true });
+    await p.locator(`input[name=q${i}]`).nth(1).check({ force: true });
+  }
+  await p.getByRole('button', { name: 'Skicka svaren' }).click();
+  await shot('24-tack');
   await b.close();
 })();

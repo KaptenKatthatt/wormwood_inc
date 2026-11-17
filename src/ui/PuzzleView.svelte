@@ -13,6 +13,7 @@
   } from '../lib/state/game';
   import { log } from '../lib/log/logger';
   import { DEV_MENU } from '../lib/config/flags';
+  import { tutEvent, tutorial, TUT_STEPS } from '../lib/tutorial';
 
   let { onVillage }: { onVillage: () => void } = $props();
 
@@ -20,6 +21,8 @@
   let rev = $state(0); // bumps after every move so the counters re-read the engine
   let dialog = $state<null | 'outOfMoves' | 'won' | 'lost' | 'noLives'>(null);
   let reward = $state(0);
+  let startedReal = 0;
+  const hint = $derived($tutorial.index !== null && TUT_STEPS[$tutorial.index]?.hint === true);
 
   const level = $derived(game?.level);
   const info = $derived.by(() => {
@@ -37,26 +40,40 @@
     }
     dialog = null;
     game = new Match3(l, makeRng(Math.floor(Math.random() * 2 ** 31)), hookOn('nearWin'));
+    startedReal = Date.now();
     rev++;
+    tutEvent('levelStarted');
     // Lets automated screenshot runs find a legal move; not in tester builds.
     if (DEV_MENU) (window as unknown as { __match3?: Match3 }).__match3 = game;
     log('level_start', { level: l.id, rigged: game.rigged });
   }
 
+  /** What is logged when a level ends: time, moves, and how close the player came. */
   function endInfo() {
     const g = game!;
-    return { progress: Math.round(g.progress() * 100) / 100, remaining: g.remaining(), movesUsed: g.movesUsed, extraMoves: g.extraMoves, score: g.score, rigged: g.rigged };
+    return {
+      seconds: Math.round((Date.now() - startedReal) / 1000),
+      movesUsed: g.movesUsed,
+      movesGiven: g.level.moves,
+      extraMoves: g.extraMoves,
+      progress: Math.round(g.progress() * 100) / 100,
+      remaining: g.remaining(),
+      score: g.score,
+      rigged: g.rigged,
+    };
   }
 
   function onMoved(_r: SwapResult) {
     rev++;
+    tutEvent('moved');
     const g = game;
     if (!g) return;
     const s = g.status();
     if (s === 'won') {
       reward = levelWon(g.level.id, endInfo());
       dialog = 'won';
-      if (hookOn('autoNext') && $stairs.step >= 2) startCountdown();
+      tutEvent('levelEnded');
+      if (hookOn('autoNext') && $stairs.step >= 2 && $tutorial.index === null) startCountdown();
     } else if (s === 'out-of-moves') {
       stairEvent('loss');
       if (hookOn('extraMoves')) {
@@ -83,6 +100,7 @@
   function lose() {
     levelLost(game!.level.id, endInfo());
     dialog = 'lost';
+    tutEvent('levelEnded');
   }
 
   function quitToMenu() {
@@ -135,7 +153,7 @@
   <section class="view">
     <div class="bar top">
       <button class="ghost small" onclick={quitToMenu} aria-label="Lämna banan">←</button>
-      <div class="goal">
+      <div class="goal" data-tut="goal">
         <strong>{level.name}: {goalText(level.goal)}</strong>
         <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(info.progress * 100)} aria-label="Hur nära målet">
           <span style:width={`${info.progress * 100}%`}></span>
@@ -144,8 +162,9 @@
       </div>
       <div class="moves" aria-label={`${info.moves} drag kvar`}><strong>{info.moves}</strong><span>drag</span></div>
     </div>
-    <div class="canvas">
-      <GameCanvas scene={Match3Scene} data={{ match3: game }} on={{ 'match3:moved': onMoved }} label={`Spelplan. ${goalText(level.goal)}. Tryck på två grannbrickor eller dra för att byta plats.`} />
+    <p class="sr" aria-live="polite">{unit(level, info.remaining)} kvar, {info.moves} drag kvar.</p>
+    <div class="canvas" data-tut="board">
+      <GameCanvas interactive scene={Match3Scene} data={{ match3: game, hint }} on={{ 'match3:moved': onMoved }} label={`Spelplan. ${goalText(level.goal)}. Tryck på två grannbrickor eller dra för att byta plats. Med tangentbord: piltangenter flyttar, Enter väljer.`} />
     </div>
   </section>
 {:else}
@@ -160,7 +179,7 @@
             <span>{goalText(l.goal)} på {l.moves} drag</span>
             {#if st}<span class="fine">Vunnen {st.wins} gånger, förlorad {st.losses}</span>{/if}
           </div>
-          <button class="primary" onclick={() => start(l)}>Spela</button>
+          <button class="primary" data-tut={`play-${l.id}`} onclick={() => start(l)}>Spela <span class="sr">{l.name}</span></button>
         </li>
       {/each}
     </ul>
@@ -184,7 +203,7 @@
     {#if countdown > 0}<p aria-live="polite">Nästa bana startar om {countdown} …</p>{/if}
     <div class="buttons">
       <button class="primary" onclick={nextLevel}>Nästa bana</button>
-      <button class="ghost" onclick={() => { stopCountdown(); onVillage(); }}>Till byn</button>
+      <button class="ghost" data-tut="to-village" onclick={() => { stopCountdown(); onVillage(); }}>Till byn</button>
     </div>
   </Modal>
 {:else if dialog === 'lost' && game}
@@ -192,6 +211,7 @@
     <p>Du förlorade ett liv. {$lives.count > 0 ? `${$lives.count} kvar.` : 'Inga liv kvar.'}</p>
     <div class="buttons">
       <button class="primary" onclick={() => start(game!.level)}>Försök igen</button>
+      <button class="ghost" data-tut="to-village" onclick={onVillage}>Till byn</button>
       <button class="ghost" onclick={quitToMenu}>Till banorna</button>
     </div>
   </Modal>
