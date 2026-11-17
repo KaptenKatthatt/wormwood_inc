@@ -13,9 +13,9 @@ export interface BuildingDef { id: BuildingId; name: string; effect: string }
 export const BUILDINGS: BuildingDef[] = [
   { id: 'stugan', name: 'Stugan', effect: 'Huvudbyggnaden. Dess nivå är taket för de andra.' },
   { id: 'sjoboden', name: 'Sjöboden', effect: '+10 % guld per vunnen bana för varje nivå.' },
-  { id: 'kasernen', name: 'Kasernen', effect: 'Tränar soldater (kommer snart).' },
-  { id: 'vakttornet', name: 'Vakttornet', effect: 'Försvarar byn vid anfall (kommer snart).' },
-  { id: 'kapellet', name: 'Kapellet', effect: 'Bybornas humör (kommer snart).' },
+  { id: 'kasernen', name: 'Kasernen', effect: 'Här tränas soldater när byn anfalls.' },
+  { id: 'vakttornet', name: 'Vakttornet', effect: '+30 i försvar vid anfall för varje nivå.' },
+  { id: 'kapellet', name: 'Kapellet', effect: 'Gör byborna gladare för varje nivå.' },
 ];
 
 const COSTS = [0, 0, 150, 400, 900, 1600];

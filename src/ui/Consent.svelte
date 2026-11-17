@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { settings } from '../lib/state/game';
+  import { firstLetter, settings } from '../lib/state/game';
   import { flush } from '../lib/log/logger';
 
   function answer(yes: boolean) {
     settings.update((s) => ({ ...s, logging: yes }));
     if (yes) flush(false);
+    firstLetter();
   }
 </script>
 

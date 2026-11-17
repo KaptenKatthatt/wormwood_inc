@@ -2,7 +2,7 @@ import { mount } from 'svelte';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App.svelte';
 import './app.css';
-import { clock, minutesIn, playerId, settings, tick } from './lib/state/game';
+import { clock, firstLetter, markSeen, minutesIn, playerId, settings, tick, welcomeBack } from './lib/state/game';
 import { initLogger, log } from './lib/log/logger';
 import { listenForInstall, isStandalone } from './lib/pwa/install';
 import { get } from 'svelte/store';
@@ -14,11 +14,13 @@ listenForInstall();
 
 // The clock ticks every second while open; when the page comes back after
 // being closed or hidden it catches up at once.
+welcomeBack();
 tick();
 setInterval(tick, 1000);
+if (get(settings).logging !== null) firstLetter();
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') { tick(); log('resume', { minutesIn: minutesIn() }); }
-  else { clock.persist(); log('pause', { minutesIn: minutesIn() }); }
+  if (document.visibilityState === 'visible') { welcomeBack(); tick(); log('resume', { minutesIn: minutesIn() }); }
+  else { clock.persist(); markSeen(); log('pause', { minutesIn: minutesIn() }); }
 });
 
 log('open', { standalone: isStandalone(), version: __APP_VERSION__ });

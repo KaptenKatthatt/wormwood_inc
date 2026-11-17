@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Developer menu: only in builds made without VITE_DEV_MENU=false. */
-  import { SPEEDS, clock, devGive, minutesIn, now, playerId, purse, resetAll, setHook, setSpeed, settings, toast } from '../lib/state/game';
+  import { SPEEDS, clock, devGive, devStep, minutesIn, now, playerId, purse, resetAll, setHook, setSpeed, settings, stairs, toast } from '../lib/state/game';
+  import { STEP_NAMES, type Step } from '../lib/staircase';
   import { HOOKS } from '../lib/hooks';
   import { formatKr } from '../lib/economy/wallet';
 
@@ -24,11 +25,21 @@
   </fieldset>
 
   <fieldset>
+    <legend>Kroktrappan</legend>
+    <p>Nu: steg {$stairs.step} ({STEP_NAMES[$stairs.step]}), {mins} minuter in. Trivsel {$stairs.mood}.</p>
+    <div class="buttons">
+      {#each [2, 3, 4, 5] as k}
+        <button class="ghost" disabled={$stairs.step >= k} onclick={() => devStep(k as Step)}>Till steg {k}</button>
+      {/each}
+    </div>
+  </fieldset>
+
+  <fieldset>
     <legend>Krokar</legend>
     {#each HOOKS as h (h.id)}
       <label class="row">
         <input type="checkbox" checked={$settings.hooks[h.id]} onchange={(e) => setHook(h.id, e.currentTarget.checked)} />
-        <span><strong>{h.name}</strong>: {h.what}</span>
+        <span><strong>{h.name}</strong>{h.step ? ` (steg ${h.step})` : ''}: {h.what}</span>
       </label>
     {/each}
   </fieldset>

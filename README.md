@@ -4,7 +4,7 @@ Ett match-3-spel med en by, byggt som PWA för ett examensarbete om
 engagemangsdriven design ("Kära spelare – En studie i manipulation och
 underhållning"). Spelet är bara på svenska.
 
-**Status:** spelbar första version enligt speldesignen (`docs/speldesign.md` på grenen claude/project-thread-poksrp): tre match-3-banor, liv, extra drag, byn med fem byggnader och kostnadskurva, butik med testplånbok. Grafiken är platshållare. Anfallet, rådgivarens brev, byborna, erbjudandet och enkäten kommer i nästa omgång.
+**Status:** spelbar första version enligt speldesignen (`docs/speldesign.md` på grenen claude/project-thread-poksrp): tre match-3-banor, liv, extra drag, byn med fem byggnader och kostnadskurva, butik med testplånbok. Hela kroktrappan i fem steg finns: rådgivarens brev, bybornas pratbubblor och trivselmätare, nästa bana som startar av sig själv, startpaketet med nedräkning, anfallet med sköld och soldater, Avsluta med tjat och enkäten. Grafiken är platshållare. Tonen är varm och trygg på ytan (beslut 2026-11-17); temat syns bara i titel och analys.
 
 ## Stack
 
@@ -25,6 +25,10 @@ som tidpunkter i speltid och "räknas ikapp" när spelet öppnas.
 
 När ett bygge startas och notiser är på ber spelet servern om en notis vid
 rätt verklig tid (`/api/push/schedule`), så notisen kommer även när spelet är stängt.
+
+## Kroktrappan
+
+`src/lib/staircase.ts` avgör steget (1 Mild, 2 Lockande, 3 Begränsande, 4 Stressande, 5 Skuldbeläggande) från händelser i spelet (förlust, långt bygge, slut på liv, Avsluta), med klockan som reserv (minut 3, 6, 10 och 12 i speltid). Texterna ligger i `src/lib/voices.ts`. Nedräkningar som spelaren ska hinna reagera på (anfallet, startpaketet) går i verkliga sekunder även med snabbad klocka.
 
 ## Match-3 och riggad nära vinst
 

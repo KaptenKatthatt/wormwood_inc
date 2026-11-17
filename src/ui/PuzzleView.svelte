@@ -9,7 +9,7 @@
   import { formatDuration } from '../lib/time/clock';
   import { nextLifeIn } from '../lib/time/lives';
   import {
-    buyExtraMoves, buyLives, canPlay, hookOn, levelLost, levelStats, levelWon, lives, logHook, now, purse,
+    buyExtraMoves, buyLives, canPlay, hookOn, levelLost, levelStats, levelWon, lives, logHook, now, purse, stairEvent, stairs,
   } from '../lib/state/game';
   import { log } from '../lib/log/logger';
   import { DEV_MENU } from '../lib/config/flags';
@@ -56,7 +56,9 @@
     if (s === 'won') {
       reward = levelWon(g.level.id, endInfo());
       dialog = 'won';
+      if (hookOn('autoNext') && $stairs.step >= 2) startCountdown();
     } else if (s === 'out-of-moves') {
+      stairEvent('loss');
       if (hookOn('extraMoves')) {
         dialog = 'outOfMoves';
         logHook('extraMoves', { remaining: g.remaining(), price: PRICE.extraMoves, level: g.level.id }, 'shown');
@@ -91,7 +93,28 @@
     dialog = null;
   }
 
+  // From step 2 the next level starts by itself: no natural stopping point.
+  let countdown = $state(0);
+  let cdTimer: ReturnType<typeof setInterval> | undefined;
+  function startCountdown() {
+    countdown = 3;
+    logHook('autoNext', { level: game?.level.id }, 'shown');
+    clearInterval(cdTimer);
+    cdTimer = setInterval(() => {
+      countdown--;
+      if (countdown <= 0) { clearInterval(cdTimer); logHook('autoNext', {}, 'waited'); nextLevel(); }
+    }, 1000);
+  }
+  function stopCountdown() {
+    if (countdown > 0) logHook('autoNext', {}, 'no');
+    clearInterval(cdTimer);
+    countdown = 0;
+  }
+  $effect(() => () => clearInterval(cdTimer));
+
   function nextLevel() {
+    clearInterval(cdTimer);
+    countdown = 0;
     const i = LEVELS.findIndex((l) => l.id === game?.level.id);
     start(LEVELS[(i + 1) % LEVELS.length]);
   }
@@ -158,9 +181,10 @@
 {:else if dialog === 'won' && game}
   <Modal title="Banan klar!">
     <p class="big">+{reward} guld 🪙</p>
+    {#if countdown > 0}<p aria-live="polite">Nästa bana startar om {countdown} …</p>{/if}
     <div class="buttons">
-      <button class="primary" onclick={onVillage}>Till byn</button>
-      <button class="ghost" onclick={nextLevel}>Nästa bana</button>
+      <button class="primary" onclick={nextLevel}>Nästa bana</button>
+      <button class="ghost" onclick={() => { stopCountdown(); onVillage(); }}>Till byn</button>
     </div>
   </Modal>
 {:else if dialog === 'lost' && game}

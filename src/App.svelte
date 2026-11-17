@@ -4,7 +4,11 @@
   import VillageView from './ui/VillageView.svelte';
   import SettingsView from './ui/SettingsView.svelte';
   import Consent from './ui/Consent.svelte';
-  import { settings, shopOpen, toasts } from './lib/state/game';
+  import { offerOpen, quitFlow, settings, shopOpen, toasts } from './lib/state/game';
+  import Letter from './ui/Letter.svelte';
+  import Offer from './ui/Offer.svelte';
+  import Banners from './ui/Banners.svelte';
+  import QuitFlow from './ui/QuitFlow.svelte';
   import Shop from './ui/Shop.svelte';
   import { log } from './lib/log/logger';
 
@@ -25,7 +29,7 @@
 </script>
 
 <div class="app">
-  <Hud />
+  <div class="top"><Hud /><Banners /></div>
   <main>
     {#if tab === 'pussel'}<PuzzleView onVillage={() => go('byn')} />{:else if tab === 'byn'}<VillageView onPlay={() => go('pussel')} />{:else}<SettingsView />{/if}
   </main>
@@ -37,7 +41,10 @@
   <div class="toasts" aria-live="polite">
     {#each $toasts as t (t.id)}<div class="toast">{t.text}</div>{/each}
   </div>
+  {#if $offerOpen}<Offer />{/if}
   {#if $shopOpen}<Shop />{/if}
+  <Letter />
+  {#if $quitFlow}<QuitFlow />{/if}
   {#if $settings.logging === null}<Consent />{/if}
 </div>
 
@@ -47,6 +54,6 @@
   nav { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
   .tab { background: none; border: 0; border-radius: 0; min-height: 56px; font-weight: 600; color: var(--muted); }
   .tab[aria-current='page'] { color: var(--falu); box-shadow: inset 0 3px 0 var(--falu); }
-  .toasts { position: fixed; top: calc(56px + env(safe-area-inset-top)); left: 0; right: 0; display: grid; justify-items: center; gap: 6px; pointer-events: none; z-index: 5; }
+  .toasts { position: fixed; bottom: calc(72px + env(safe-area-inset-bottom)); left: 0; right: 0; display: grid; justify-items: center; gap: 6px; pointer-events: none; z-index: 5; }
   .toast { background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: 6px; font-weight: 600; max-width: calc(100% - 32px); }
 </style>
