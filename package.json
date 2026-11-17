@@ -1,7 +1,7 @@
 {
   "name": "wormwood",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "description": "My Dear Wormwood: ett match-3-spel med by, byggt som PWA (exjobb 2026).",
   "scripts": {
@@ -14,7 +14,8 @@
     "verify": "npm run check && npm run test && npm run build"
   },
   "dependencies": {
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "workbox-core": "^7.4.1"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",

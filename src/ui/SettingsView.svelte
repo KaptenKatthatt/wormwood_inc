@@ -50,6 +50,7 @@
   </label>
 
   {#if DEV_MENU}<DevMenu />{/if}
+  <p class="version">Version {__APP_VERSION__}</p>
 </section>
 
 <style>
@@ -60,4 +61,5 @@
   .row { display: flex; gap: 10px; align-items: flex-start; min-height: 48px; }
   .row input { width: 24px; height: 24px; margin-top: 2px; accent-color: var(--falu); flex: none; }
   .status { color: var(--muted); }
+  .version { margin: 16px 0 0; font-size: .85rem; opacity: .7; text-align: center; }
 </style>
