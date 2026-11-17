@@ -3,6 +3,7 @@
   import { DEV_MENU } from '../lib/config/flags';
   import DevMenu from './DevMenu.svelte';
   import { startTutorial } from '../lib/tutorial';
+  import { testCode } from '../lib/testCode';
   import { enablePush, pushSupported, testPush } from '../lib/push/push';
   import { flush } from '../lib/log/logger';
   import InstallGuide from './InstallGuide.svelte';
@@ -46,8 +47,9 @@
   <h2>Speltest</h2>
   <label class="row">
     <input type="checkbox" checked={$settings.logging === true} onchange={(e) => setLogging(e.currentTarget.checked)} />
-    <span><strong>Skicka testdata</strong>: anonyma händelser (vad du trycker på och när) till testledaren.</span>
+    <span><strong>Skicka testdata</strong>: vad du gör i spelet och när, till Jonas Olson. Inget namn, ingen e-post.</span>
   </label>
+  <p>Din testkod: <strong class="code">{testCode(playerId)}</strong>. Vill du att dina uppgifter raderas, säg koden till Jonas.</p>
 
   {#if DEV_MENU}<DevMenu />{/if}
   <p class="version">Version {__APP_VERSION__}</p>
@@ -62,4 +64,5 @@
   .row input { width: 24px; height: 24px; margin-top: 2px; accent-color: var(--falu); flex: none; }
   .status { color: var(--muted); }
   .version { margin: 16px 0 0; font-size: .85rem; opacity: .7; text-align: center; }
+  .code { font-family: ui-monospace, monospace; font-size: 1.1rem; letter-spacing: .08em; }
 </style>

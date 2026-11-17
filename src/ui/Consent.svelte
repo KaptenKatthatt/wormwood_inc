@@ -13,8 +13,12 @@
 <div class="backdrop">
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="consent-title">
     <h2 id="consent-title">Hej och välkommen!</h2>
-    <p>Det här spelet är en del av ett examensarbete. Får det skicka anonyma uppgifter om hur du spelar, till exempel vad du trycker på och när, till den som gör testet?</p>
-    <p class="fine">Inget namn, ingen e-post. Du kan ändra dig under Inställningar.</p>
+    <p>Det här spelet är en del av ett examensarbete om mobilspel. Får spelet spara vad du gör i det, till exempel vilka banor du spelar, vad du köper för låtsaspengar och när du spelar, och skicka det till Jonas Olson?</p>
+    <ul class="fine">
+      <li>Inget namn, ingen e-post. Du får en testkod som bara Jonas kan koppla till dig.</li>
+      <li>Uppgifterna används bara i examensarbetet och raderas senast 1 mars 2027.</li>
+      <li>Du kan sluta när du vill och be Jonas radera allt, utan att säga varför.</li>
+    </ul>
     <div class="buttons">
       <button class="primary" onclick={() => answer(true)}>Ja, det går bra</button>
       <button class="ghost" onclick={() => answer(false)}>Nej tack</button>
@@ -27,6 +31,7 @@
   .card { background: var(--panel); color: var(--ink); border-radius: 8px; padding: 20px; max-width: 420px; display: grid; gap: 10px; }
   h2 { margin: 0; }
   p { margin: 0; }
+  ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
   .fine { color: var(--muted); font-size: .9rem; }
   .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
   .buttons button { flex: 1 1 140px; }
