@@ -7,15 +7,15 @@
   --falu-hi: #b8382a;
   --gold: #d9a441;
   --green: #3f6d3a;
-  --sea: #1d3a44;
+  --sea: #a9d8ec;
+  --frame: #8b2a1e;
+  --deep: #5a1d14;
   color-scheme: light;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.45;
 }
-@media (prefers-color-scheme: dark) {
-  :root { --panel: #1b2226; --ink: #ece4da; --muted: #a99f95; --line: #33403f; --falu: #d0493a; --falu-hi: #e05a4a; --green: #7fb06f; color-scheme: dark; }
-}
+/* Always light and warm (Jonas, 2026-11-17): the game does not follow the system's dark mode. */
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--sea); color: var(--ink); overscroll-behavior: none; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 #app { height: 100%; }

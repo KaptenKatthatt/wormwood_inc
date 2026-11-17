@@ -58,7 +58,7 @@ export class VillageScene extends Phaser.Scene {
         }
       }
       const label = p.level > 0 ? `${p.name} ${p.level}` : p.name;
-      this.add.text(x, y + h / 2 + 4, label, { fontFamily: 'system-ui, sans-serif', fontSize: font, color: '#f3ece4', fontStyle: 'bold', stroke: '#1d3a44', strokeThickness: 3 }).setOrigin(0.5, 0);
+      this.add.text(x, y + h / 2 + 4, label, { fontFamily: 'system-ui, sans-serif', fontSize: font, color: '#f3ece4', fontStyle: 'bold', stroke: '#5a1d14', strokeThickness: 3 }).setOrigin(0.5, 0);
     });
   }
 }

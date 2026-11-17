@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Cell, Match3, Step } from '../lib/match3/engine';
-import { PAPER, SEA, SEA_LIGHT, TILE_COLORS } from './palette';
+import { DEEP, FRAME, SEA, SEA_LIGHT, TILE_COLORS } from './palette';
 
 type Tile = Phaser.GameObjects.Container;
 
@@ -94,12 +94,12 @@ export class Match3Scene extends Phaser.Scene {
     if (!e) return;
     this.cell = Math.floor(Math.min((width - 16) / e.cols, (height - 16) / e.rows));
     this.origin = { x: (width - this.cell * e.cols) / 2, y: (height - this.cell * e.rows) / 2 };
-    this.add.rectangle(this.origin.x - 6, this.origin.y - 6, this.cell * e.cols + 12, this.cell * e.rows + 12, SEA_LIGHT).setOrigin(0).setStrokeStyle(2, PAPER, 0.25);
+    this.add.rectangle(this.origin.x - 6, this.origin.y - 6, this.cell * e.cols + 12, this.cell * e.rows + 12, SEA_LIGHT).setOrigin(0).setStrokeStyle(8, FRAME, 1);
     this.iceGfx = e.ice.map((row, r) =>
       row.map((has, c) => {
         if (!has) return null;
         const p = this.pos({ r, c });
-        return this.add.rectangle(p.x, p.y, this.cell - 4, this.cell - 4, 0xbfe6f2, 0.55).setStrokeStyle(2, 0xffffff, 0.9);
+        return this.add.rectangle(p.x, p.y, this.cell - 4, this.cell - 4, 0x9fd6f3, 0.6).setStrokeStyle(2, 0x2f6f8f, 0.9);
       }),
     );
     const mask = this.make.graphics({}, false).fillRect(this.origin.x - 6, this.origin.y - 6, this.cell * e.cols + 12, this.cell * e.rows + 12);
@@ -118,7 +118,7 @@ export class Match3Scene extends Phaser.Scene {
     if (!move) return;
     for (const cell of move) {
       const p = this.pos(cell);
-      const box = this.add.rectangle(p.x, p.y, this.cell - 2, this.cell - 2).setStrokeStyle(4, 0xd9a441, 1);
+      const box = this.add.rectangle(p.x, p.y, this.cell - 2, this.cell - 2).setStrokeStyle(4, FRAME, 1);
       this.tweens.add({ targets: box, alpha: 0.2, duration: 600, yoyo: true, repeat: -1 });
       this.hintTweens.push(box);
     }
@@ -158,7 +158,7 @@ export class Match3Scene extends Phaser.Scene {
     this.cursorBox = undefined;
     if (!this.usingKeys || !this.engine) return;
     const p = this.pos(this.cursor);
-    this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3, 0xf3ece4, 1);
+    this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3, DEEP, 1);
   }
 
   private makeTile(kind: number, at: { x: number; y: number }, mask?: Phaser.Display.Masks.GeometryMask): Tile {
@@ -191,7 +191,7 @@ export class Match3Scene extends Phaser.Scene {
     this.selBox = undefined;
     if (cell) {
       const p = this.pos(cell);
-      this.selBox = this.add.rectangle(p.x, p.y, this.cell - 2, this.cell - 2).setStrokeStyle(4, 0xffffff, 1);
+      this.selBox = this.add.rectangle(p.x, p.y, this.cell - 2, this.cell - 2).setStrokeStyle(4, DEEP, 1);
     }
   }
 

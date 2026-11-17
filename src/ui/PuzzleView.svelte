@@ -238,7 +238,7 @@
   .meter { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
   .meter span { display: block; height: 100%; background: var(--falu); transition: width .3s; }
   .left { font-size: .85rem; color: var(--muted); }
-  .moves { display: grid; justify-items: center; background: var(--sea); color: #fff6ee; border-radius: 8px; padding: 4px 10px; min-width: 56px; }
+  .moves { display: grid; justify-items: center; background: var(--falu); color: #fff6ee; border-radius: 8px; padding: 4px 10px; min-width: 56px; }
   .moves strong { font-size: 1.5rem; line-height: 1.1; }
   .moves span { font-size: .75rem; }
   .levels { background: var(--panel); height: 100%; overflow-y: auto; padding: 8px 16px 24px; }
