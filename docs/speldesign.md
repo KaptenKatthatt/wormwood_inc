@@ -118,8 +118,10 @@ Fem steg med ökande press. Varje steg startas av en händelse i spelet, och klo
 Hela tiden: butiken finns tillgänglig. Från steg 2: nästa bana startar av sig själv (inga naturliga stopp).
 
 ### Rösterna i spelet
+**Ton (beslut):** spelet har ingen märkbar mörk underton. Spelaren ska invaggas i en falsk trygghet: allt känns gulligt, vänligt och ofarligt. Screwtape-temat finns i titeln och i analysen, inte i det spelaren ser.
+
 **Beslut:** en kombination av en rådgivare och byborna. Lite text att läsa.
-- **Rådgivaren**, en äldre släkting, skriver korta brev ("Min käre ...") vid varje nytt steg i trappan och när spelaren vill sluta. Högst två meningar per brev. Artig och varm, med en underton (Screwtape i bakgrunden, inget "djävul" rakt ut). Bär kroken *Figurer som pressar*.
+- **Rådgivaren**, en äldre släkting, skriver korta brev ("Min käre ...") vid varje nytt steg i trappan och när spelaren vill sluta. Högst två meningar per brev. Varm, omtänksam och tryggt välmenande. Bär kroken *Figurer som pressar*.
 - **Byborna** syns i byn och reagerar med korta pratbubblor på några ord: glada efter bygge, oroliga när anfallet närmar sig, ledsna när spelaren vill sluta.
 - **Trivselmätare** i byns överkant: en snabb överblick över hur byborna trivs (ansikte plus stapel). Trivseln stiger med byggen och sjunker vid anfall, skadade byggnader och när spelaren varit borta. Ger skuldkroken något att peka på.
 
