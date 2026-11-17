@@ -22,6 +22,8 @@ export interface Level {
    * goal be reached just in time, below 1 makes the level end a hair short.
    */
   rigTarget: number;
+  /** No rigging at all (the first challenge must be quick and easy). */
+  noRig?: boolean;
   /** Cells covered by ice: [row, col]. */
   ice?: [number, number][];
 }
@@ -37,7 +39,8 @@ function block(r0: number, r1: number, c0: number, c1: number): [number, number]
 }
 
 const FIRST: Level[] = [
-  { id: 1, name: 'Utmaning 1', rows: 8, cols: 8, kinds: 6, moves: 20, rigTarget: 1, goal: { type: 'collect', kind: 0, count: 16 } },
+  // Jonas, 2026-11-17: the first one is very quick and easy (five kinds, no rigging).
+  { id: 1, name: 'Utmaning 1', rows: 8, cols: 8, kinds: 5, moves: 12, rigTarget: 1, noRig: true, goal: { type: 'collect', kind: 0, count: 6 } },
   { id: 2, name: 'Utmaning 2', rows: 8, cols: 8, kinds: 6, moves: 22, rigTarget: 1, goal: { type: 'ice' }, ice: block(3, 4, 2, 5) },
   { id: 3, name: 'Utmaning 3', rows: 8, cols: 8, kinds: 6, moves: 16, rigTarget: 0.93, goal: { type: 'score', score: 2600 } },
 ];
@@ -61,7 +64,8 @@ export function makeChallenge(n: number): Level {
   const base = { id: n, name: `Utmaning ${n}`, rows: 8, cols: 8, kinds: 6, rigTarget: peak ? 0.93 : 1 };
   switch (n % 3) {
     case 1: {
-      const count = Math.round(16 + 14 * hard);
+      // Jonas, 2026-11-17: too many to collect; start at 8 and climb slowly to about 20.
+      const count = Math.round(8 + 12 * Math.max(0, hard));
       return { ...base, moves: Math.round(20 + 2 * hard), goal: { type: 'collect', kind: n % TILES.length, count } };
     }
     case 2: {

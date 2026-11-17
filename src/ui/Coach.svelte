@@ -59,12 +59,11 @@
   const big = $derived(rect !== null && rect.height > window.innerHeight * 0.4);
 </script>
 
-{#if step}
+{#if step && !step.silent}
   {#if rect}
     <div class="ring" class:big style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
   {/if}
   <div class="bubble" class:below class:floating={big} style={big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
-    <p class="count" aria-hidden="true">{($tutorial.index ?? 0) + 1} / {TUT_STEPS.length}</p>
     <h2 id="coach-title">{step.title}</h2>
     <p id="coach-text" aria-live="polite">{step.text}</p>
     <div class="row">
@@ -83,7 +82,8 @@
   @keyframes pulse { 50% { border-color: #fff6ee; } }
   .bubble { position: fixed; left: 12px; right: 12px; z-index: 16; margin: 0 auto; max-width: 440px; background: #fffaf0; color: #1f1a17;
     border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 24px rgb(0 0 0 / .35); display: grid; gap: 6px; }
-  .bubble.floating { top: calc(8px + env(safe-area-inset-top)); }
+  /* over the boosters at the bottom, so the goal card at the top stays readable */
+  .bubble.floating { top: auto; bottom: calc(64px + env(safe-area-inset-bottom)); }
   /* Over the board the bubble sits at the top, above the tiles, and stays small. */
   .bubble.floating { padding: 10px 14px; gap: 4px; }
   .bubble.floating .row { margin-top: 0; }

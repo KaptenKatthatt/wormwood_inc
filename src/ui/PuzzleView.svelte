@@ -1,7 +1,6 @@
 <script lang="ts">
   import { millMoves } from '../lib/economy/village';
-  import { effectiveVillage, toast } from '../lib/state/game';
-  import { load, save } from '../lib/state/storage';
+  import { effectiveVillage, tipOnce } from '../lib/state/game';
   import GameCanvas from '../game/GameCanvas.svelte';
   import Modal from './Modal.svelte';
   import MapView from './MapView.svelte';
@@ -40,6 +39,11 @@
 
   // No free level select (Jonas, 2026-11-17): the map shows the road, only the next challenge can be played.
   const current = $derived(LEVELS[Math.min(LEVELS.length, Math.max(1, $challengeNo)) - 1]);
+
+  // The first challenge starts by itself for a new player: no map, no menu first.
+  $effect(() => {
+    if (!game && dialog === null && $tutorial.index !== null && TUT_STEPS[$tutorial.index]?.id === 'swap') start(current);
+  });
 
   function start(l: Level) {
     if (!canPlay()) {
@@ -83,12 +87,7 @@
   function noteSpecials(r: SwapResult) {
     const made = r.steps.flatMap((s) => s.made.map((m) => m.special ?? 'bomb'));
     if (made.length) log('specials_made', { level: game?.level.id, made });
-    const seen = load<string[]>('specialTips', []);
-    const fresh = made.find((m) => !seen.includes(m));
-    if (fresh) {
-      toast(SPECIAL_TIPS[fresh]);
-      save('specialTips', [...seen, fresh]);
-    }
+    for (const m of new Set(made)) tipOnce(`special-${m}`, SPECIAL_TIPS[m]);
   }
 
   function onMoved(r: SwapResult) {

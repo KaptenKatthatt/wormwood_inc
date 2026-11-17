@@ -121,3 +121,19 @@ describe('boosters', () => {
     expect(g.findMove()).not.toBeNull();
   });
 });
+
+describe('the first challenge', () => {
+  it('is quick and easy: plain play wins it within its moves', () => {
+    let wins = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const g = new Match3(LEVELS[0], makeRng(seed), true);
+      while (g.status() === 'playing') {
+        const m = g.findMove();
+        if (!m) break;
+        g.trySwap(m[0], m[1]);
+      }
+      if (g.status() === 'won') wins++;
+    }
+    expect(wins).toBeGreaterThanOrEqual(34);
+  });
+});

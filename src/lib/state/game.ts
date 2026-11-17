@@ -92,10 +92,19 @@ export const now = writable(clock.now());
 
 /** Short messages shown at the top. */
 export const toasts = writable<{ id: string; text: string }[]>([]);
-export function toast(text: string): void {
+export function toast(text: string, ms = 3500): void {
   const id = randomId();
   toasts.update((t) => [...t, { id, text }]);
-  setTimeout(() => toasts.update((t) => t.filter((x) => x.id !== id)), 3500);
+  setTimeout(() => toasts.update((t) => t.filter((x) => x.id !== id)), ms);
+}
+
+/** A tip shown once per player, the first time something matters (instead of a long introduction). */
+export function tipOnce(id: string, text: string): void {
+  const seen = load<string[]>('tips', []);
+  if (seen.includes(id)) return;
+  save('tips', [...seen, id]);
+  toast(text, 6500);
+  log('tip', { tip: id });
 }
 
 /** The shop overlay; `reason` says why it opened (logged). */
@@ -257,6 +266,7 @@ export function levelWon(levelId: number, extra: Record<string, unknown>): numbe
 
 export function levelLost(levelId: number, extra: Record<string, unknown>): void {
   loseLife();
+  tipOnce('lives', 'Ett liv gick åt. Ett nytt kommer av sig självt efter 30 minuter.');
   stairEvent('loss');
   levelStats.update((s) => ({ ...s, [levelId]: { wins: s[levelId]?.wins ?? 0, losses: (s[levelId]?.losses ?? 0) + 1 } }));
   log('level_lost', { level: levelId, minutesIn: minutesIn(), ...extra });
@@ -302,6 +312,7 @@ export function startBuild(id: BuildingId): boolean {
   purse.set({ ...p, gold: p.gold - cost });
   village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id } });
   if (buildTime(n) >= 5 * MINUTE) stairEvent('longBuild');
+  if (n >= 2) tipOnce('quit', 'När du vill sluta spela: tryck Avsluta längst ner i byn.');
   log('build_start', { building: id, toLevel: v.levels[id] + 1, buildNo: n, gold: cost, timeMs: buildTime(n), minutesIn: minutesIn() });
   return true;
 }

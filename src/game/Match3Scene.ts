@@ -23,7 +23,7 @@ export class Match3Scene extends Phaser.Scene {
   private busy = false;
   private down: { cell: Cell; x: number; y: number } | null = null;
   private speed = 1;
-  private hintTweens: Phaser.GameObjects.Rectangle[] = [];
+  private hintTweens: Phaser.GameObjects.GameObject[] = [];
   private cursor: Cell = { r: 0, c: 0 };
   private cursorBox?: Phaser.GameObjects.Rectangle;
   private usingKeys = false;
@@ -151,6 +151,11 @@ export class Match3Scene extends Phaser.Scene {
       this.tweens.add({ targets: box, alpha: 0.2, duration: 600, yoyo: true, repeat: -1 });
       this.hintTweens.push(box);
     }
+    // A hand that shows the swipe, as in the big puzzle games.
+    const [a, b] = move.map((c) => this.pos(c));
+    const hand = this.add.text(a.x, a.y, '👆', { fontSize: `${Math.round(this.cell * 0.7)}px` }).setOrigin(0.3, 0).setDepth(5);
+    this.tweens.add({ targets: hand, x: b.x, y: b.y, duration: 900 * (this.speed < 1 ? 2 : 1), ease: 'Sine.easeInOut', yoyo: true, repeat: -1, hold: 200, repeatDelay: 300 });
+    this.hintTweens.push(hand);
   }
 
   /** Keyboard play: arrows move a frame, Enter or Space picks a tile and then its neighbour. */

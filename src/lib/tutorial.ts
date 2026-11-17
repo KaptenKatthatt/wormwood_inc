@@ -1,7 +1,7 @@
 /**
  * The built-in introduction (Jonas 2026-11-17: hand the phone to anyone and
- * explain nothing). A short guided first round: each step points at one thing
- * on screen and either waits for the player to do it or has a Next button.
+ * explain nothing). Each step points at one thing on screen and waits for the
+ * player to do it.
  * Warm and safe in tone. It can be replayed from the settings.
  */
 import { writable, get } from 'svelte/store';
@@ -22,22 +22,23 @@ export interface TutStep {
   text: string;
   /** Wait for this event instead of showing a Next button. */
   waitFor?: TutEvent;
+  /** No bubble at all: the player just plays (Jonas: the sign covered the goal). */
+  silent?: boolean;
   /** Show the move hint on the board. */
   hint?: boolean;
 }
 
+/**
+ * Four steps, played rather than read (Jonas, 2026-11-17: at most 3 to 5
+ * steps, straight into the game). As in the big puzzle games, the first
+ * challenge starts at once with a hand showing the first move; everything
+ * else (lives, gems, quitting) gets a single tip the first time it matters.
+ */
 export const TUT_STEPS: TutStep[] = [
-  { id: 'welcome', tab: 'any', title: 'Välkommen!', text: 'Här bygger du upp en liten by vid havet genom att lösa pussel. Jag visar dig hur, det tar bara en minut.' },
-  { id: 'levels', tab: 'pussel', target: 'map-current', title: 'Kartan', text: 'Vägen går genom skärgården, skogen och fjällen. Varje punkt är en utmaning. Tryck Spela för att börja.', waitFor: 'levelStarted' },
-  { id: 'swap', tab: 'pussel', target: 'board', title: 'Byt plats på två brickor', text: 'Få tre likadana i rad. Tryck på en bricka och sedan på den bredvid, eller dra. De två som blinkar passar bra.', waitFor: 'moved', hint: true },
-  { id: 'goal', tab: 'pussel', target: 'goal', title: 'Målet', text: 'Här står vad utmaningen går ut på och hur nära du är. Siffran till höger är hur många drag du har kvar.' },
-  { id: 'lives', tab: 'pussel', target: 'lives', title: 'Liv', text: 'Hjärtat är dina liv. Klarar du inte en utmaning går ett liv åt, och ett nytt kommer av sig självt efter en stund.' },
-  { id: 'finish', tab: 'pussel', target: 'board', title: 'Spela klart', text: 'Fortsätt byta brickor tills utmaningen är klar eller dragen är slut. Klarar du den får du guld.', waitFor: 'levelEnded' },
-  { id: 'village', tab: 'byn', target: 'to-village|tab-byn', selfNav: true, title: 'Byn', text: 'Gå till byn. Där använder du guldet.', waitFor: 'inVillage' },
-  { id: 'build', tab: 'byn', target: 'build-stugan', title: 'Bygg ditt första hus', text: 'Tryck Bygg vid Stugan. Ett bygge tar en liten stund, och sedan står huset där.', waitFor: 'built' },
-  { id: 'gems', tab: 'byn', target: 'gems', title: 'Ädelstenar', text: 'Ädelstenarna kan användas till genvägar, som extra drag. Tryck här för att se butiken. Pengarna är på låtsas.' },
-  { id: 'quit', tab: 'byn', target: 'quit', title: 'När du vill sluta', text: 'Tryck Avsluta längst ner i byn. Då får du svara på några korta frågor.' },
-  { id: 'home', tab: 'any', target: 'tab-installningar', title: 'Spara på hemskärmen', text: 'Under Inställningar visas hur du lägger spelet på hemskärmen och slår på notiser. Det behövs inte för att spela. Nu är det din tur!' },
+  { id: 'swap', tab: 'pussel', target: 'board', title: 'Byt plats på två brickor', text: 'Få tre likadana i rad. Följ handen.', waitFor: 'moved', hint: true },
+  { id: 'play', tab: 'pussel', silent: true, title: 'Spela', text: '', waitFor: 'levelEnded' },
+  { id: 'village', tab: 'byn', target: 'to-village|tab-byn', selfNav: true, title: 'Till byn', text: 'Använd guldet i byn.', waitFor: 'inVillage' },
+  { id: 'build', tab: 'byn', target: 'build-stugan', title: 'Bygg ditt första hus', text: 'Tryck Bygg vid Stugan.', waitFor: 'built' },
 ];
 
 interface TutState { index: number | null; startedAt: number }

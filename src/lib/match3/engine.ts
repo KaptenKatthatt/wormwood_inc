@@ -108,7 +108,7 @@ export class Match3 {
 
   /** How the director wants new tiles to behave right now. */
   mood(): Mood {
-    if (!this.rigged) return 'neutral';
+    if (!this.rigged || this.level.noRig) return 'neutral';
     const total = this.level.moves + this.extraMoves;
     // Aim to reach the goal on the very last move.
     const expected = Math.min(1, ((this.movesUsed + 1) / total) * this.level.rigTarget);
