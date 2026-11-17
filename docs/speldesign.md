@@ -56,7 +56,7 @@ Stil: en gammal svensk by på fastlandet, med åkrar och skog runt om (inte en �
 | Stugan | Huvudbyggnaden. Dess nivå är taket för de andra byggnadernas nivå. |
 | Sjöboden | Ger mer guld per vunnen bana (+10 % per nivå). |
 | Kasernen | Tränar soldater för guld. |
-| Vakttornet | Försvarar byn vid anfall. |
+| Vakttornen | Fyra torn, ett på varje sida av den samlade byn (norr, öster, söder, väster). Torn 1 finns från start, torn 2–4 låses upp vid Stugan nivå 2, 4 och 6. Varje torn har egna nivåer och följer samma kostnadskurva. |
 | Kapellet | Bybornas humör. Härifrån kommer tjatet och skulden i steg 5. |
 | Kvarnen | Röjs vid Stugan nivå 3. +1 drag per utmaning per 2 nivåer. |
 | Smedjan | Röjs vid Stugan nivå 5. +5 försvar per soldat och nivå. |
@@ -67,7 +67,7 @@ Alla 8 byggnader har 10 nivåer (spelet 0.8.0).
 ### Anfallet (steg 5)
 - En påhittad grannby anfaller runt minut 12. Varning med nedräkning på 60 sekunder.
 - Under nedräkningen kan spelaren köpa sköld (100 ädelstenar) eller träna soldater i kasernen.
-- Utgången avgörs av armén plus vakttornet mot anfallets styrka.
+- Varningen säger från vilken sida anfallet kommer. Armén plus tornet på den sidan (fullt) och de andra tornen (till hälften) mot anfallets styrka avgör utgången. En osäkrad sida lockar till att bygga alla fyra.
 - Utan tillräckligt försvar förlorar byn 30 % av guldet, och en byggnad skadas och måste repareras (tar byggtid, kan köpas bort).
 - Anfallet är inställt på att vara lite för starkt för det spelaren hunnit bygga, så att skölden lockar.
 
