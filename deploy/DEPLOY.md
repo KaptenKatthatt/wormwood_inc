@@ -8,7 +8,7 @@ keys) lives in `/var/lib/wormwood` as plain JSON/NDJSON files.
 ## First time (as root)
 
 ```bash
-useradd --system --home /var/lib/wormwood --shell /usr/sbin/nologin wormwood
+/usr/sbin/useradd --system --home /var/lib/wormwood --shell /usr/sbin/nologin wormwood
 mkdir -p /opt/wormwood /var/lib/wormwood /etc/wormwood
 chown wormwood:wormwood /var/lib/wormwood
 git clone https://github.com/KaptenKatthatt/wormwood_inc.git /opt/wormwood/app

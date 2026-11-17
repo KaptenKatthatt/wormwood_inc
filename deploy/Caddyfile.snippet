@@ -1,5 +1,13 @@
-# Add to the devserver's Caddyfile, then: systemctl reload caddy
+# Add to the devserver's Caddyfile, then: caddy validate && systemctl reload caddy
+# The bind line keeps Caddy off the Tailscale address, where tailscale serve owns 443
+# (same as the other site blocks on the devserver).
+http://wormwood.84.247.143.6.sslip.io {
+	bind 84.247.143.6
+	redir https://{host}{uri} permanent
+}
+
 wormwood.84.247.143.6.sslip.io {
+	bind 84.247.143.6
 	encode gzip zstd
 	reverse_proxy 127.0.0.1:8787
 }
