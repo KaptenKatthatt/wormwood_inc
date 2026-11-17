@@ -1,6 +1,6 @@
 # Speldesign: spelloop, ekonomi och krokar
 
-Designdokument för My Dear Wormwood (förstudietitel "Kära spelare"). Besluten är Jonas, fattade i designpasset 2026-11-17. Dokumentet är byggunderlag, inte rapporttext. Siffrorna är startvärden som balanseras efter användartesterna.
+Designdokument för My Dear Wormwood (förstudietitel "Kära spelare"). Besluten är Jonas, fattade i designpasset 2026-11-17. Dokumentet är byggunderlag, inte rapporttext. Det levande originalet är https://claude.ai/artifact/Mo6ghHMRrEjxGcDtBeGwFv och uppdateras vid varje designbeslut; den här filen hålls i synk med det. Siffrorna är startvärden som balanseras efter användartesterna.
 
 ## 1. Syfte med designen
 
