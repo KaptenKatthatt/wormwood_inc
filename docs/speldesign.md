@@ -40,6 +40,8 @@ Två skärmar: banan och byn. Butik, erbjudanden och dialoger ligger ovanpå dem
 
 **Kartan och de 40 utmaningarna (spelet 0.7.0):** fliken heter Kartan. Vägen går genom skärgård (1–13), skog (14–27) och fjäll (28–40), och efter 40 börjar den om på 1. Utmaning 4–40 byggs av inställningar: målen växlar mellan samla, is och poäng och växer långsamt. Var femte är en riggad topp som slutar strax under målet, och nästa är en vilopaus. Belöning: 100 guld plus 10 per tredje utmaning, och 50 extra på topparna. Kartan är en platshållare ritad i kod tills en kartbild godkänns.
 
+**Kartans utseende (godkänt som start 2026-11-17):** stil "Sommarkartan", en målad spelkarta snett ovanifrån i sommarljus, i Rödfärg och skärgård. Skärgården har utmaning 1–11 på skär med en båtrutt och 12–13 på stranden. Skogen har tjärnar och röda stugor. Fjällen överst är bergiga sommarfjäll med grön och gul fjällhed och nästan ingen snö (inte gröna kullar, inte vinterfjäll). Vägen är målad, och utmaningarna och båtrutten ritas i kod. Sjökortet och Bilderboken valdes bort. Granskningssida: https://claude.ai/artifact/2kyUCde6Y5fZMSzenhgkJJ, filer i /mnt/project-files/kartan/omg2/.
+
 **Pusslets utseende (godkänt 2026-11-17):** stil "Rödfärg och skärgård". Bakgrunden är västkustskär med en röd sjöbod, brädet är 8x8 med rödfärgad träram. Sex målade brickor som går att skilja åt på formen även i gråskala: fisk, ankare, snäcka, fyr, silltunna och grön segelbåt med två segel. Inga godisbrickor. Granskningssida: https://claude.ai/artifact/9w6tdaRRE2s343Dwq3XBzP, bilder i /mnt/project-files/pussel-stil/stil1-v1/.
 
 **Hjälpmedel (beslut):** hammaren tar bort en bricka, blandaren blandar om brädet. En gratis av varje i introduktionen, sedan köps de med ädelstenar.
