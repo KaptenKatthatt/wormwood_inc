@@ -28,6 +28,8 @@ export interface Settings {
   logging: boolean | null;
   notifications: boolean;
   hooks: Record<HookId, boolean>;
+  /** The uncle's letters. Paused by default in dev builds while Jonas tests (2026-11-17). */
+  letters: boolean;
 }
 
 const ALL_HOOKS_ON = Object.fromEntries(HOOKS.map((h) => [h.id, true])) as Record<HookId, boolean>;
@@ -42,11 +44,12 @@ export const settings = writable<Settings>({
   logging: storedSettings.logging ?? null,
   notifications: storedSettings.notifications ?? false,
   hooks: { ...ALL_HOOKS_ON, ...(storedSettings.hooks ?? {}) },
+  letters: storedSettings.letters ?? false,
 });
 settings.subscribe((s) => save('settings', s));
 
 // A build without the dev menu always runs in real time with every hook on.
-if (!DEV_MENU) settings.update((s) => ({ ...s, speed: 1, hooks: { ...ALL_HOOKS_ON } }));
+if (!DEV_MENU) settings.update((s) => ({ ...s, speed: 1, hooks: { ...ALL_HOOKS_ON }, letters: true }));
 if (clock.speed !== get(settings).speed) clock.setSpeed(get(settings).speed);
 
 export const hookOn = (id: HookId): boolean => get(settings).hooks[id] !== false;
@@ -349,7 +352,7 @@ export function say(text: string): void {
 }
 
 function writeLetter(key: keyof typeof LETTERS): void {
-  if (!hookOn('figures')) return;
+  if (!hookOn('figures') || !get(settings).letters) return;
   letter.set({ text: LETTERS[key], key: String(key) });
   logHook('figures', { letter: key }, 'shown');
 }
