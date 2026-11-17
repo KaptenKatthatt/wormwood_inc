@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { millMoves } from '../lib/economy/village';
+  import { effectiveVillage } from '../lib/state/game';
   import GameCanvas from '../game/GameCanvas.svelte';
   import Modal from './Modal.svelte';
   import MapView from './MapView.svelte';
@@ -45,7 +47,8 @@
       return;
     }
     dialog = null;
-    game = new Match3(l, makeRng(Math.floor(Math.random() * 2 ** 31)), hookOn('nearWin'));
+    // Kvarnen (the mill) gives an extra move for every second level.
+    game = new Match3({ ...l, moves: l.moves + millMoves(effectiveVillage()) }, makeRng(Math.floor(Math.random() * 2 ** 31)), hookOn('nearWin'));
     startedReal = Date.now();
     rev++;
     tutEvent('levelStarted');

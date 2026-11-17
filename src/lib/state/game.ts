@@ -14,7 +14,7 @@ import { CHALLENGE_COUNT } from '../match3/levels';
 import { AWAY_ATTACK_AFTER, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
-import { BUILDINGS, START_VILLAGE, buildBlock, buildCost, buildTime, goldMultiplier, skipGems, topUpGems, type BuildingId, type VillageState } from '../economy/village';
+import { BUILDINGS, START_VILLAGE, buildBlock, buildTime, goldMultiplier, priceFor, skipGems, topUpGems, withAllBuildings, type BuildingId, type VillageState } from '../economy/village';
 import { DEV_MENU } from '../config/flags';
 import { HOOKS, type HookId, type HookResponse } from '../hooks';
 import { ATTACK, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
@@ -77,7 +77,7 @@ const startVillage = (): VillageState => ({ ...START_VILLAGE, builds: get(settin
 export const purse = writable<Purse>(load('purse', null) ?? startPurse());
 purse.subscribe((p) => save('purse', p));
 
-export const village = writable<VillageState>(load('village', null) ?? startVillage());
+export const village = writable<VillageState>(withAllBuildings(load('village', null) ?? startVillage()));
 village.subscribe((v) => save('village', v));
 
 export const timers = writable<GameTimer[]>(load('timers', []));
@@ -297,7 +297,7 @@ export function startBuild(id: BuildingId): boolean {
   const block = buildBlock(v, id, p.gold);
   if (block) return false;
   const n = v.builds + 1;
-  const cost = buildCost(n);
+  const cost = priceFor(n, v);
   const t = addTimer('build', BUILDINGS.find((b) => b.id === id)!.name, buildTime(n));
   purse.set({ ...p, gold: p.gold - cost });
   village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id } });
@@ -318,7 +318,7 @@ export function topUpOffered(id: BuildingId, missing: number): void {
 /** Pays gems for the missing gold and starts the build. */
 export function topUpAndBuild(id: BuildingId): boolean {
   const v = get(village);
-  const missing = buildCost(v.builds + 1) - get(purse).gold;
+  const missing = priceFor(v.builds + 1, v) - get(purse).gold;
   if (missing <= 0) return startBuild(id);
   if (!payGems(topUpGems(missing), 'topUpGold', { building: id, missing })) return false;
   addGold(missing);
@@ -505,15 +505,15 @@ function stairTick(): void {
 function startAttack(): void {
   const st = get(stairs);
   const v = effectiveVillage();
-  const strength = attackStrength(defence(st.soldiers, v.levels.vakttornet));
+  const strength = attackStrength(defence(st.soldiers, v.levels.vakttornet, v.levels.smedjan));
   stairs.set({ ...st, attack: { hitsAt: clock.now() + realMs(ATTACK.warningMs), strength } });
   writeLetter(5);
   say(pickLine(BUBBLES.worried));
-  logHook('attack', { strength, defence: defence(st.soldiers, v.levels.vakttornet) }, 'shown');
+  logHook('attack', { strength, defence: defence(st.soldiers, v.levels.vakttornet, v.levels.smedjan) }, 'shown');
 }
 
 export function currentDefence(): number {
-  return defence(get(stairs).soldiers, effectiveVillage().levels.vakttornet);
+  return defence(get(stairs).soldiers, effectiveVillage().levels.vakttornet, effectiveVillage().levels.smedjan);
 }
 
 export function buyShield(): boolean {

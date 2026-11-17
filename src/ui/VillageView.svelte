@@ -4,7 +4,7 @@
   import { bubble, hookOn, now, pressQuit, purse, skipBuild, skipRepair, stairs, startBuild, timers, topUpAndBuild, topUpOffered, village } from '../lib/state/game';
   import { tutEvent } from '../lib/tutorial';
   import { onMount } from 'svelte';
-  import { BUILDINGS, buildBlock, buildCost, buildTime, skipGems, topUpGems } from '../lib/economy/village';
+  import { BUILDINGS, MAX_LEVEL, buildBlock, buildTime, priceFor, skipGems, topUpGems } from '../lib/economy/village';
   import { formatDuration } from '../lib/time/clock';
   import { progress, remaining } from '../lib/time/timers';
 
@@ -14,10 +14,11 @@
   const timer = $derived(constr ? $timers.find((t) => t.id === constr.timerId) : undefined);
   const left = $derived(timer ? remaining(timer, $now) : 0);
   const nextNo = $derived($village.builds + 1);
+  const price = $derived(priceFor(nextNo, $village));
 
   const plots = $derived<PlotView[]>(
     BUILDINGS.map((b) => ({
-      id: b.id, name: b.name, level: $village.levels[b.id],
+      id: b.id, name: b.name, level: $village.levels[b.id], locked: $village.levels.stugan < b.unlock,
       building: constr?.id === b.id, progress: constr?.id === b.id && timer ? progress(timer, $now) : 0,
     })),
   );
@@ -30,12 +31,12 @@
   const figures = $derived(hookOn('figures'));
   const face = $derived(['😢', '🙁', '😐', '🙂', '😊'][Math.min(4, Math.floor($stairs.mood / 20))]);
 
-  const blockText = { busy: 'Ett bygge pågår', cap: 'Bygg ut Stugan först', gold: 'För lite guld' } as const;
+  const blockText = { busy: 'Ett bygge pågår', cap: 'Bygg ut Stugan först', gold: 'För lite guld', max: 'Högsta nivån', locked: '' } as const;
 </script>
 
 <section class="view">
   <div class="canvas">
-    <GameCanvas scene={VillageScene} data={{ plots }} label="Byn på udden med fem byggnader." />
+    <GameCanvas scene={VillageScene} data={{ plots }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
     {#if figures}
       <div class="mood" role="meter" aria-label="Bybornas trivsel" aria-valuemin="0" aria-valuemax="100" aria-valuenow={$stairs.mood}>
         <span class="face" aria-hidden="true">{face}</span>
@@ -57,17 +58,26 @@
         {#if hookOn('skipWait')}<button class="primary" onclick={skipRepair}>Laga nu för 💎 {skipGems(repairLeft)}</button>{/if}
       </div>
     {/if}
-    <p class="next">Nästa bygge: <strong>{buildCost(nextNo) === 0 ? 'gratis' : `${buildCost(nextNo)} guld`}</strong>, tar {formatDuration(buildTime(nextNo))}</p>
+    <p class="next">Nästa bygge: <strong>{price === 0 ? 'gratis' : `${price} guld`}</strong>, tar {formatDuration(buildTime(nextNo))}</p>
     <ul>
       {#each BUILDINGS as b (b.id)}
         {@const block = buildBlock($village, b.id, $purse.gold)}
+        {#if block === 'locked'}
+        <li class="locked">
+          <div>
+            <strong>{b.name}</strong> <span class="lvl">skog</span>
+            <span class="fine">Marken röjs när Stugan når nivå {b.unlock}.</span>
+          </div>
+          <span class="lock" aria-hidden="true">🌲</span>
+        </li>
+        {:else}
         <li>
           <div>
-            <strong>{b.name}</strong> <span class="lvl">{$village.levels[b.id] === 0 ? 'ej byggd' : `nivå ${$village.levels[b.id]}`}</span>
+            <strong>{b.name}</strong> <span class="lvl">{$village.levels[b.id] === 0 ? 'ej byggd' : `nivå ${$village.levels[b.id]} av ${MAX_LEVEL}`}</span>
             <span class="fine">{b.effect}</span>
           </div>
           {#if block === 'gold' && hookOn('topUpGold')}
-            {@const missing = buildCost(nextNo) - $purse.gold}
+            {@const missing = price - $purse.gold}
             {topUpOffered(b.id, missing)}
             <button data-tut={`build-${b.id}`} class="primary topup" onclick={() => topUpAndBuild(b.id)}>
               Fyll på {missing} guld för 💎 {topUpGems(missing)}
@@ -79,6 +89,7 @@
             {#if block}<span class="why" id={`why-${b.id}`}>{blockText[block]}</span>{/if}
           {/if}
         </li>
+        {/if}
       {/each}
     </ul>
     <button class="primary play" onclick={onPlay}>Spela för guld</button>
@@ -101,6 +112,8 @@
   .why { grid-column: 2; font-size: .8rem; color: var(--muted); text-align: right; }
   .play { margin-top: 4px; }
   .quit { margin-top: 8px; }
+  .locked { opacity: .7; }
+  .lock { font-size: 1.4rem; }
   .damaged { background: color-mix(in srgb, var(--falu) 18%, transparent); }
   .mood { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; align-items: center; gap: 8px; background: rgb(243 236 228 / .9); border-radius: 999px; padding: 4px 10px; }
   .face { font-size: 1.3rem; line-height: 1; }

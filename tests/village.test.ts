@@ -38,3 +38,25 @@ describe('topUpGems', () => {
     expect(topUpGems(3)).toBe(1);
   });
 });
+
+import { cleared, millMoves, priceFor, withAllBuildings } from '../src/lib/economy/village';
+describe('the growing village', () => {
+  it('clears land for new buildings as Stugan grows and stops at level 10', () => {
+    const v = { ...START_VILLAGE, levels: { ...START_VILLAGE.levels, stugan: 2 } };
+    expect(cleared(v, 'kvarnen')).toBe(false);
+    expect(buildBlock(v, 'kvarnen', 9999)).toBe('locked');
+    const v3 = { ...v, levels: { ...v.levels, stugan: 3 } };
+    expect(cleared(v3, 'kvarnen')).toBe(true);
+    expect(cleared(v3, 'smedjan')).toBe(false);
+    expect(buildBlock({ ...v3, levels: { ...v3.levels, stugan: 10 } }, 'stugan', 1e9)).toBe('max');
+  });
+  it('Marknaden lowers prices and Kvarnen gives moves', () => {
+    const v = { ...START_VILLAGE, levels: { ...START_VILLAGE.levels, marknaden: 2, kvarnen: 3 } };
+    expect(priceFor(10, v)).toBe(Math.round((buildCost(10) * 0.9) / 10) * 10);
+    expect(millMoves(v)).toBe(1);
+  });
+  it('fills in buildings missing from an old save', () => {
+    const old = { levels: { stugan: 2, sjoboden: 1, kasernen: 0, vakttornet: 0, kapellet: 0 }, builds: 3, construction: null } as never;
+    expect(withAllBuildings(old).levels.marknaden).toBe(0);
+  });
+});

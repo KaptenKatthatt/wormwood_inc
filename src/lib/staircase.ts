@@ -50,8 +50,9 @@ export const ATTACK = {
   repairMs: 5 * MINUTE,
 };
 
-export function defence(soldiers: number, towerLevel: number): number {
-  return soldiers * ATTACK.soldierPower + towerLevel * ATTACK.towerPower;
+/** Smedjan (smithy) adds 5 per soldier for each of its levels. */
+export function defence(soldiers: number, towerLevel: number, smithyLevel = 0): number {
+  return soldiers * (ATTACK.soldierPower + 5 * smithyLevel) + towerLevel * ATTACK.towerPower;
 }
 
 /**
