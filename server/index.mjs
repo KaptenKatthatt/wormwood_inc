@@ -6,6 +6,7 @@ const port = Number(process.env.PORT ?? 8787);
 const host = process.env.HOST ?? '127.0.0.1';
 const app = await createApp({
   distDir: process.env.DIST_DIR ?? new URL('../dist', import.meta.url).pathname,
+  testDistDir: process.env.TEST_DIST_DIR ?? new URL('../dist-test', import.meta.url).pathname,
   dataDir: process.env.DATA_DIR ?? new URL('../data', import.meta.url).pathname,
   webpush,
   contact: process.env.VAPID_CONTACT,

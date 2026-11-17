@@ -42,10 +42,12 @@ const ID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 const MAX_BODY = 64 * 1024;
 
 /**
- * @param {{ distDir: string, dataDir: string, webpush?: any, contact?: string, now?: () => number }} opts
+ * @param {{ distDir: string, testDistDir?: string, dataDir: string, webpush?: any, contact?: string, now?: () => number }} opts
  */
 export async function createApp(opts) {
-  const distDir = resolve(opts.distDir);
+  const devDist = resolve(opts.distDir);
+  // The playtest build (no dev menu) is served to hosts that start with "spela.".
+  const testDist = opts.testDistDir ? resolve(opts.testDistDir) : null;
   const dataDir = resolve(opts.dataDir);
   const now = opts.now ?? Date.now;
   await mkdir(join(dataDir, 'logs'), { recursive: true });
@@ -156,7 +158,8 @@ export async function createApp(opts) {
 
   // ---- static --------------------------------------------------------------
   /** @param {import('node:http').ServerResponse} res @param {string} urlPath */
-  async function serveStatic(res, urlPath) {
+  async function serveStatic(res, urlPath, host = '') {
+    const distDir = testDist && host.startsWith('spela.') ? testDist : devDist;
     let rel = decodeURIComponent(urlPath.split('?')[0]);
     if (rel.endsWith('/')) rel += 'index.html';
     let file = normalize(join(distDir, rel));
@@ -191,7 +194,7 @@ export async function createApp(opts) {
 
     if (!path.startsWith('/api/')) {
       if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405).end(); return; }
-      return serveStatic(res, path);
+      return serveStatic(res, path, String(req.headers.host ?? ''));
     }
     if (limited(ip)) return json(res, 429, { error: 'för många anrop' });
 

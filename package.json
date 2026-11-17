@@ -1,7 +1,7 @@
 {
   "name": "wormwood",
   "private": true,
-  "version": "0.10.1",
+  "version": "0.11.0",
   "type": "module",
   "description": "My Dear Wormwood: ett match-3-spel med by, byggt som PWA (exjobb 2026).",
   "scripts": {

@@ -21,7 +21,9 @@ beforeAll(async () => {
   dataDir = join(dir, 'data');
   await mkdir(join(dir, 'dist'));
   await writeFile(join(dir, 'dist', 'index.html'), '<h1>spel</h1>');
-  app = await createApp({ distDir: join(dir, 'dist'), dataDir, webpush: fakePush, now: () => clock });
+  await mkdir(join(dir, 'dist-test'));
+  await writeFile(join(dir, 'dist-test', 'index.html'), '<h1>testversion</h1>');
+  app = await createApp({ distDir: join(dir, 'dist'), testDistDir: join(dir, 'dist-test'), dataDir, webpush: fakePush, now: () => clock });
   await new Promise<void>((ok) => app.server.listen(0, '127.0.0.1', ok));
   base = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
 });
@@ -35,6 +37,14 @@ describe('server', () => {
     const r = await fetch(base + '/byn');
     expect(await r.text()).toContain('spel');
     expect(r.headers.get('x-robots-tag')).toContain('noindex');
+  });
+
+  it('serves the playtest build to the spela. host', async () => {
+    const http = await import('node:http');
+    const body = await new Promise<string>((ok) => {
+      http.get(base + '/', { headers: { host: 'spela.84.247.143.6.sslip.io' } }, (r) => { let b = ''; r.on('data', (c) => (b += c)); r.on('end', () => ok(b)); });
+    });
+    expect(body).toContain('testversion');
   });
 
   it('stores playtest events as NDJSON', async () => {

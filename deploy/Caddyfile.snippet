@@ -11,3 +11,15 @@ wormwood.84.247.143.6.sslip.io {
 	encode gzip zstd
 	reverse_proxy 127.0.0.1:8787
 }
+
+# The playtest build (no dev menu): same server, chosen by the host name.
+http://spela.84.247.143.6.sslip.io {
+	bind 84.247.143.6
+	redir https://{host}{uri} permanent
+}
+
+spela.84.247.143.6.sslip.io {
+	bind 84.247.143.6
+	encode gzip zstd
+	reverse_proxy 127.0.0.1:8787
+}

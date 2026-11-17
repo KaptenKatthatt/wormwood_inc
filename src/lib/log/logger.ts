@@ -1,3 +1,4 @@
+import { DEV_MENU } from '../config/flags';
 /**
  * Playtest event log. Events are queued and sent in batches to /api/log, and
  * flushed with sendBeacon when the page is hidden. Nothing is sent before the
@@ -27,6 +28,8 @@ export function initLogger(opts: { consent: () => boolean; playerId: () => strin
 
 export function log(name: string, data?: Record<string, unknown>): void {
   if (import.meta.env.DEV) console.debug('[log]', name, data ?? '');
+  // Events from the playtest build are marked, since both builds log to the same place.
+  if (!DEV_MENU) data = { ...data, build: 'test' };
   queue.push({ t: Date.now(), gameT: gameTime(), name, data });
   if (queue.length > 500) queue = queue.slice(-500);
   save('logQueue', queue);

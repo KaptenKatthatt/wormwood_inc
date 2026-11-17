@@ -3,15 +3,17 @@
 # (or the ref given as $1). Run as root. First-time setup: see deploy/DEPLOY.md.
 set -euo pipefail
 REF="${1:-origin/main}"
-# DEV_MENU=false deploy/deploy.sh  -> build for playtesters, without the dev menu
-export VITE_DEV_MENU="${DEV_MENU:-true}"
+# Two builds: dist/ with the dev menu (Jonas), and dist-test/ without it for
+# playtesters, served at https://spela.84.247.143.6.sslip.io/ by the same server.
+export VITE_DEV_MENU=true
 APP=/opt/wormwood/app
 cd "$APP"
 git fetch --quiet origin
 git checkout --quiet --detach "$REF"
 npm ci --no-audit --no-fund
 npm run verify
-chown -R wormwood:wormwood "$APP/dist"
+VITE_DEV_MENU=false npx vite build --outDir dist-test --emptyOutDir
+chown -R wormwood:wormwood "$APP/dist" "$APP/dist-test"
 systemctl restart wormwood
 sleep 1
 # The service needs a moment after the restart; try for up to 10 seconds.
