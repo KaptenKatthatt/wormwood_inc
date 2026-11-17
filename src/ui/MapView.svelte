@@ -9,6 +9,7 @@
   import { tick } from 'svelte';
   import { ALL_LEVELS, LEVELS, WORLDS, goalText, levelAt, worldOf } from '../lib/match3/levels';
   import NODES from '../lib/match3/mapNodes.json';
+  import WORLD_NODES from '../lib/match3/worldNodes.json';
   import { EXPANSION } from '../lib/config/flags';
   import { exp } from '../lib/state/expansion';
   import { hookOn } from '../lib/state/game';
@@ -19,14 +20,10 @@
   // The image is 1024 x 5632 px; the nodes are in its pixels.
   const W = 1024;
   const H = 5632;
-  /** World 1 follows the painted road; worlds 2-5 get a winding road drawn in code until their maps are approved. */
+  /** Every world has its road painted into its map; the nodes are traced on that road, bottom to top. */
   function roadFor(world: number): (readonly [number, number])[] {
-    if (world === 1) return (NODES as number[][]).map(([x, y]) => [x, y] as const);
-    return Array.from({ length: 40 }, (_, i) => {
-      const y = H - 260 - i * ((H - 520) / 39);
-      const x = 512 + Math.sin(i * 0.55 + world) * 300 + Math.sin(i * 1.7) * 40;
-      return [Math.round(x), Math.round(y)] as const;
-    });
+    const list = world === 1 ? (NODES as number[][]) : (WORLD_NODES as Record<string, number[][]>)[String(world)];
+    return list.map(([x, y]) => [x, y] as const);
   }
   let viewWorld = $state(1);
   $effect(() => { viewWorld = EXPANSION ? worldOf(current).id : 1; });
@@ -49,7 +46,6 @@
     return d;
   }
   const boat = $derived(viewWorld === 1 ? curve(pts.slice(0, BOAT_TO)) : '');
-  const road = $derived(viewWorld === 1 ? '' : curve(pts));
   const zone = (n: number) => (n <= 13 ? 'Skärgården' : n <= 27 ? 'Skogen' : 'Fjällen');
 
   let scroller: HTMLDivElement;
@@ -66,12 +62,6 @@
   });
 
   const level = $derived(levelAt(current));
-  const WORLD_ART: Record<number, { sky: string; land: string; deco: string }> = {
-    2: { sky: '#cfe3a0', land: '#e9d36a', deco: '#9cbf5a' },
-    3: { sky: '#b88a5a', land: '#8a6a4a', deco: '#3f5a2f' },
-    4: { sky: '#6f9ab8', land: '#8b8f86', deco: '#3f6d8a' },
-    5: { sky: '#e8f0f7', land: '#ffffff', deco: '#9fb8cc' },
-  };
 </script>
 
 <section class="map" aria-label="Kartan">
@@ -85,24 +75,11 @@
   {/if}
   <div class="scroll" bind:this={scroller}>
     <div class="wrap">
-      {#if viewWorld === 1}
-        <img src="/art/map/karta.webp" width={W} height={H} alt="" decoding="async" />
-      {:else}
-        {@const art = WORLD_ART[viewWorld]}
-        <img class="worldmap" src={`/art/worlds/${viewWorld}/karta.webp`} width={W} height={H} alt="" decoding="async" onerror={(e) => ((e.currentTarget as HTMLImageElement).style.visibility = 'hidden')} />
-        <div class="placeholder" style:background={`linear-gradient(${art.sky}, ${art.land})`} aria-hidden="true">
-          {#each Array.from({ length: 26 }, (_, k) => k) as k}
-            <span style:left={`${(k * 37) % 92}%`} style:top={`${(k * 53) % 96}%`} style:background={art.deco}></span>
-          {/each}
-        </div>
-      {/if}
+      <img src={viewWorld === 1 ? '/art/map/karta.webp' : `/art/worlds/${viewWorld}/karta.webp`} width={W} height={H} alt="" decoding="async" />
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${world.name}: vägen genom utmaning ${world.from} till ${world.to}. Du är på ${level.name}${viewWorld === 1 ? `, i ${zone(current).toLowerCase()}` : ''}.`}>
         {#if viewWorld === 1}
           <path d={boat} fill="none" stroke="#2f6f8a55" stroke-width="26" stroke-linecap="round" />
           <path d={boat} fill="none" stroke="#fff" stroke-width="10" stroke-dasharray="5 24" stroke-linecap="round" />
-        {:else}
-          <path d={road} fill="none" stroke="#7a5a3a" stroke-width="44" stroke-linecap="round" opacity=".55" />
-          <path d={road} fill="none" stroke="#f4e3c0" stroke-width="30" stroke-linecap="round" />
         {/if}
         {#each worldLevels as l, i (l.id)}
           {@const p = pts[i]}
@@ -141,9 +118,6 @@
   .num.light { fill: #fff; font-size: 52px; }
   .stars { font-size: 30px; fill: #f2c230; stroke: #7a2418; stroke-width: 2; }
   .dimstar { fill: #e6dccd; }
-  .worldmap { position: relative; z-index: 1; }
-  .placeholder { position: absolute; inset: 0; overflow: hidden; }
-  .placeholder span { position: absolute; width: 14%; aspect-ratio: 1; border-radius: 50%; opacity: .45; }
   svg { z-index: 2; }
   .worldbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #fff8ec; border-bottom: 3px solid #7a2418; color: var(--deep); }
   .wname { flex: 1; display: grid; text-align: center; line-height: 1.2; }

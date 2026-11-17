@@ -54,6 +54,7 @@
       {#each list as n (n.id)}
         {@const owned = $exp.owned.find((o) => o.id === n.id)}
         <li class:owned={!!owned}>
+          <img class="thumb" src={`/art/neighbours/world${n.world}.webp`} width="64" height="48" alt="" loading="lazy" />
           {#if owned}
             {@const st = storeView(owned)}
             <div>
@@ -125,6 +126,8 @@
   li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; border-bottom: 1px solid var(--line); padding: 6px 0; }
   li div { display: grid; }
   .troops li span { font-variant-numeric: tabular-nums; }
+  .villages li { grid-template-columns: 64px 1fr auto; }
+  .thumb { width: 64px; height: 48px; object-fit: contain; }
   .owned { background: #eef6e8; border-radius: 8px; padding: 6px 8px; }
   .tag { background: #3f8f3a; color: #fff; border-radius: 6px; padding: 0 6px; font-size: .75rem; font-weight: 700; }
   .fine { color: var(--muted); font-size: .85rem; }

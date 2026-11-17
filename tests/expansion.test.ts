@@ -161,3 +161,20 @@ describe('the bigger village', () => {
     expect(cleared({ ...v, world: 2 }, 'gastgiveriet')).toBe(false);
   });
 });
+
+describe('the world maps', () => {
+  it('has 40 nodes on each painted map, inside the image and apart', async () => {
+    const nodes = (await import('../src/lib/match3/worldNodes.json')).default as Record<string, number[][]>;
+    for (const w of ['2', '3', '4', '5']) {
+      const list = nodes[w];
+      expect(list).toHaveLength(40);
+      for (const [x, y] of list) {
+        expect(x).toBeGreaterThan(40);
+        expect(x).toBeLessThan(984);
+        expect(y).toBeGreaterThan(200);
+        expect(y).toBeLessThan(5632 - 60);
+      }
+      for (let i = 1; i < list.length; i++) expect(Math.hypot(list[i][0] - list[i - 1][0], list[i][1] - list[i - 1][1])).toBeGreaterThan(90);
+    }
+  });
+});
