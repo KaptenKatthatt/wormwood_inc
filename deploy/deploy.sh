@@ -14,5 +14,6 @@ npm run verify
 chown -R wormwood:wormwood "$APP/dist"
 systemctl restart wormwood
 sleep 1
-curl -fsS http://127.0.0.1:8787/api/health && echo
+# The service needs a moment after the restart; try for up to 10 seconds.
+for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8787/api/health && echo && break; sleep 0.5; done
 echo "Deployed $(git rev-parse --short HEAD)"
