@@ -247,7 +247,7 @@ export class Match3Scene extends Phaser.Scene {
     const name = kind === BOMB ? 'parla' : special === 'area' ? 'fyrverkeri' : 'raket';
     const glow = this.add.graphics();
     glow.fillStyle(0xffe7a3, 0.8).fillCircle(0, 0, size * 0.5);
-    const big = kind === BOMB ? size : special === 'area' ? size * 0.98 : size * 1.15;
+    const big = kind === BOMB ? size * 1.1 : special === 'area' ? size * 0.98 : size * 1.15;
     const shadow = this.add.image(0, 2 * this.k, `sp-${name}`).setDisplaySize(big, big).setTint(0x000000).setAlpha(0.25);
     const img = this.add.image(0, 0, `sp-${name}`).setDisplaySize(big, big);
     if (special === 'col') { shadow.setAngle(-90); img.setAngle(-90); }
