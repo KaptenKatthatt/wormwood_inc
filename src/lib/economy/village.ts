@@ -56,16 +56,18 @@ export const BUILDINGS: BuildingDef[] = [
 /** The buildings without the expansion's four (the pilot's village). */
 export const BASE_BUILDINGS: BuildingDef[] = BUILDINGS.filter((b) => !b.world);
 
-const COSTS = [0, 0, 150, 400, 900, 1600];
-const TIMES = [5_000, 5_000, MINUTE, 5 * MINUTE, 30 * MINUTE, 2 * HOUR];
-
-/**
- * Gold for build number n (1-based). After the table it grows by 300 a build,
- * so 80 builds (8 buildings, 10 levels) stay within a few hours of play.
+/*
+ * A more generous start (Jonas, 2026-11-18). With 150-250 gold a challenge,
+ * builds 1-10 cost about what ten challenges pay, so the first real wall
+ * (build 11 takes 15 minutes and the lives run out) comes near minute 20.
  */
+const COSTS = [0, 0, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600];
+const TIMES = [5_000, 5_000, 15_000, 20_000, 30_000, 40_000, 45_000, 50_000, 5 * MINUTE, 5 * MINUTE, 15 * MINUTE, 30 * MINUTE];
+
+/** Gold for build number n (1-based). After the table it grows by 150 a build. */
 export function buildCost(n: number): number {
   if (n <= COSTS.length) return COSTS[n - 1];
-  return 1600 + 300 * (n - COSTS.length);
+  return 600 + 150 * (n - COSTS.length);
 }
 
 /** The price with Marknaden's discount, rounded to 10. */
@@ -74,10 +76,11 @@ export function priceFor(n: number, v: VillageState): number {
   return Math.round((buildCost(n) * (1 - discount)) / 10) * 10;
 }
 
-/** Game time for build number n (1-based). After the table: 4 h, 8 h, then 12 h. */
+/** Game time for build number n (1-based). From build 13 it grows about quadratically from 1 to 2 hours. */
 export function buildTime(n: number): number {
   if (n <= TIMES.length) return TIMES[n - 1];
-  return Math.min(12 * HOUR, 2 * HOUR * 2 ** (n - TIMES.length));
+  const k = Math.min(1, (n - 13) / 7);
+  return Math.round((1 + k * k) * HOUR / MINUTE) * MINUTE;
 }
 
 /** Gems to finish a build now: 1 per started game minute, at least 5. */

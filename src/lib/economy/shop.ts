@@ -22,6 +22,7 @@ export const START = { gold: 100, gems: 30, kronor: 100 };
 
 /** Gold for a won level; level 3 pays more. */
 export function levelReward(levelId: number, multiplier: number): number {
-  const base = [100, 100, 150][levelId - 1] ?? 100 + 10 * Math.floor(levelId / 3) + (levelId % 5 === 0 ? 50 : 0);
+  // 150 gold for the first challenge, rising to 250 by the last (Jonas, 2026-11-18: a more generous start)
+  const base = 150 + 10 * Math.floor(((Math.min(levelId, 40) - 1) * 10) / 39);
   return Math.round(base * multiplier);
 }

@@ -12,7 +12,7 @@
   import WORLD_NODES from '../lib/match3/worldNodes.json';
   import { EXPANSION } from '../lib/config/flags';
   import { exp } from '../lib/state/expansion';
-  import { hookOn } from '../lib/state/game';
+  import { bestStars } from '../lib/state/game';
   import WeekStrip from './WeekStrip.svelte';
 
   let { current, countdown = 0, onPlay }: { current: number; countdown?: number; onPlay: () => void } = $props();
@@ -31,7 +31,6 @@
   const pts = $derived(roadFor(viewWorld));
   const worldLevels = $derived(EXPANSION ? ALL_LEVELS.slice(world.from - 1, world.to) : LEVELS);
   const maxWorld = $derived(EXPANSION ? Math.min(WORLDS.length, Math.max($exp.maxWorld, worldOf(current).id) + 1) : 1);
-  const starsShown = (id: number) => (EXPANSION && hookOn('stars') ? ($exp.stars[id] ?? 3) : 3);
   const BOAT_TO = 11;
 
   /** A smooth Catmull-Rom curve through the points. */
@@ -92,7 +91,7 @@
               <circle {r} fill={done ? '#e0b04a' : now ? '#b8382a' : '#f4ead8'} stroke={now ? '#fff' : '#7a2418'} stroke-width={now ? 10 : 6.5} />
               <text y={now ? 18 : 14} text-anchor="middle" class="num" class:light={now}>{l.id}</text>
             </g>
-            {#if done}<text y={-r - 6} text-anchor="middle" class="stars">{'★'.repeat(starsShown(l.id))}<tspan class="dimstar">{'★'.repeat(3 - starsShown(l.id))}</tspan></text>{/if}
+            {#if done || $bestStars[l.id]}{@const n = $bestStars[l.id] ?? 1}<text y={-r - 6} text-anchor="middle" class="stars">{#each [1, 2, 3] as i}<tspan class:off={i > n}>★</tspan>{/each}</text>{/if}
           </g>
         {/each}
       </svg>
@@ -117,7 +116,7 @@
   .num { font: 800 40px 'Baloo 2', system-ui, sans-serif; fill: #5a1d14; }
   .num.light { fill: #fff; font-size: 52px; }
   .stars { font-size: 30px; fill: #f2c230; stroke: #7a2418; stroke-width: 2; }
-  .dimstar { fill: #e6dccd; }
+  .stars .off { fill: #e8dccb; }
   svg { z-index: 2; }
   .worldbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #fff8ec; border-bottom: 3px solid #7a2418; color: var(--deep); }
   .wname { flex: 1; display: grid; text-align: center; line-height: 1.2; }

@@ -11,7 +11,8 @@ export type Step = 1 | 2 | 3 | 4 | 5;
 export const STEP_NAMES: Record<Step, string> = { 1: 'Mild', 2: 'Lockande', 3: 'Begränsande', 4: 'Stressande', 5: 'Skuldbeläggande' };
 
 /** Game minutes after start when a step begins at the latest. */
-export const FALLBACK_MINUTES: Record<Step, number> = { 1: 0, 2: 3, 3: 6, 4: 10, 5: 12 };
+// Stretched for a 20-25 minute first session (Jonas, 2026-11-18); events still lead.
+export const FALLBACK_MINUTES: Record<Step, number> = { 1: 0, 2: 8, 3: 14, 4: 20, 5: 23 };
 
 export type StairEvent =
   | 'loss'          // a level was lost, or the player ran out of moves
@@ -25,7 +26,7 @@ export function nextStep(current: Step, minutesIn: number, event?: StairEvent): 
   for (const k of [2, 3, 4, 5] as Step[]) if (minutesIn >= FALLBACK_MINUTES[k] && s < k) s = k;
   if (event === 'loss' && s < 2) s = 2;
   if ((event === 'longBuild' || event === 'noLives') && s < 3) s = 3;
-  if (event === 'loss' && minutesIn >= 9 && s < 4) s = 4;
+  if (event === 'loss' && minutesIn >= FALLBACK_MINUTES[4] && s < 4) s = 4;
   if (event === 'quit') s = 5;
   return s;
 }

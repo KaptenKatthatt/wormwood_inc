@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOMB, POWER, Match3 } from '../src/lib/match3/engine';
+import { BOMB, POWER, Match3, isRocket, type Special } from '../src/lib/match3/engine';
 import type { Level } from '../src/lib/match3/levels';
 
 const level: Level = { id: 99, name: 'Test', rows: 6, cols: 6, kinds: 6, moves: 10, rigTarget: 1, goal: { type: 'score', score: 1e9 } };
@@ -133,5 +133,57 @@ describe('special tiles', () => {
     const g = new Match3(level, rng, false, b);
     const r = g.trySwap({ r: 1, c: 2 }, { r: 0, c: 2 });
     expect(r.steps[0].made[0].special).toBe('right'); // c=2 of 6: more room to the right
+  });
+
+  describe('two specials swapped together', () => {
+    const setup = (sa: Special, sb: Special) => {
+      const g = new Match3(level, rng, false, base());
+      g.board[2][2] = POWER; g.special[2][2] = sa;
+      g.board[2][3] = POWER; g.special[2][3] = sb;
+      return g;
+    };
+    it('rocket and rocket clear a cross', () => {
+      const g = setup('right', 'down');
+      const step = g.trySwap({ r: 2, c: 2 }, { r: 2, c: 3 }).steps[0];
+      const set = new Set(step.cleared.map((x) => `${x.r},${x.c}`));
+      // b = (2,3): the whole row 2 and column 3
+      for (let i = 0; i < 6; i++) { expect(set.has(`2,${i}`)).toBe(true); expect(set.has(`${i},3`)).toBe(true); }
+    });
+    it('rocket and fireworks clear three rows and three columns', () => {
+      const g = setup('right', 'area');
+      const step = g.trySwap({ r: 2, c: 2 }, { r: 2, c: 3 }).steps[0];
+      expect(step.cleared.length).toBe(36 - 3 * 3); // all but the corners outside rows 1-3 and columns 2-4
+    });
+    it('a shining tile and a rocket turn every tile of its kind into rockets', () => {
+      const g = new Match3(level, rng, false, base());
+      g.special[2][2] = 'all'; // kind 4
+      g.board[2][3] = POWER; g.special[2][3] = 'right';
+      const step = g.trySwap({ r: 2, c: 2 }, { r: 2, c: 3 }).steps[0];
+      expect(step.blasts.filter((x) => isRocket(x.special)).length).toBeGreaterThanOrEqual(5);
+      expect(step.cleared.length).toBeGreaterThan(20);
+    });
+    it('two shining tiles clear the whole board', () => {
+      const g = new Match3(level, rng, false, base());
+      g.special[2][2] = 'all'; g.special[2][3] = 'all';
+      const step = g.trySwap({ r: 2, c: 2 }, { r: 2, c: 3 }).steps[0];
+      expect(step.cleared).toHaveLength(36);
+    });
+  });
+
+  it('stars follow the moves left, and the finale spends them as rockets', () => {
+    const won: Level = { ...level, moves: 10, goal: { type: 'score', score: 1 } };
+    const g = new Match3(won, rng, false, base());
+    g.score = 5; // goal reached with all 10 moves left
+    expect(g.status()).toBe('won');
+    expect(g.stars()).toBe(3);
+    const steps = g.finale();
+    expect(steps).toHaveLength(1);
+    expect(g.leftAtWin).toBe(10);
+    expect(g.movesLeft).toBe(0);
+    expect(g.stars()).toBe(3); // still counted from the moves left at the win
+    expect(steps[0].blasts.length).toBeGreaterThanOrEqual(10);
+    expect(g.finale()).toEqual([]); // only once
+    g.leftAtWin = 2; expect(g.stars()).toBe(2);
+    g.leftAtWin = 0; expect(g.stars()).toBe(1);
   });
 });

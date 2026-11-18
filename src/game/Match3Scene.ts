@@ -454,11 +454,20 @@ export class Match3Scene extends Phaser.Scene {
     this.tiles[b.r][b.c] = ta;
     for (const [i, step] of result.steps.entries()) await this.play(step, i);
     if (result.shuffled) this.build();
+    await this.playFinale();
     this.busy = false;
     this.drawHint();
     this.drawCursor();
     this.game.events.emit('match3:moved', result);
     this.resetIdle();
+  }
+
+  /** After a win, the moves left fly off as rockets (the finale). */
+  private async playFinale(): Promise<void> {
+    const e = this.engine;
+    if (!e || e.status() !== 'won' || e.movesLeft <= 0) return;
+    await new Promise((done) => this.time.delayedCall(250, done));
+    for (const [i, step] of e.finale().entries()) await this.play(step, i + 2);
   }
 
   /** A frozen tile is locked: it only shivers, with the wooden tock. */
@@ -485,6 +494,7 @@ export class Match3Scene extends Phaser.Scene {
     playSound('swap');
     for (const [i, step] of result.steps.entries()) await this.play(step, i);
     if (result.shuffled) this.build();
+    await this.playFinale();
     this.busy = false;
     this.drawHint();
     this.drawCursor();
@@ -505,6 +515,7 @@ export class Match3Scene extends Phaser.Scene {
     const result = e.smash(cell);
     for (const [i, step] of result.steps.entries()) await this.play(step, i);
     if (result.shuffled) this.build();
+    await this.playFinale();
     this.busy = false;
     this.drawCursor();
     this.game.events.emit('match3:smashed', result);

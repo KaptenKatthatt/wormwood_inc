@@ -11,13 +11,14 @@ import { load, randomId, save } from './storage';
 import { log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
 import { CHALLENGE_COUNT, TOTAL_CHALLENGES } from '../match3/levels';
+import { FINALE_GOLD } from '../match3/engine';
 import { AWAY_ATTACK_AFTER, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
 import { BUILDINGS, SIDES, TOWERS, START_VILLAGE, buildBlock, buildTime, goldMultiplier, priceFor, skipGems, topUpGems, withAllBuildings, type BuildingId, type VillageState } from '../economy/village';
 import { DEV_MENU, EXPANSION } from '../config/flags';
 import { HOOKS, type HookId, type HookResponse } from '../hooks';
-import { ATTACK, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
+import { ATTACK, FALLBACK_MINUTES, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
 import { BUBBLES, LETTERS, pickLine } from '../voices';
 import { tutorialActive } from '../tutorial';
 
@@ -261,11 +262,24 @@ export function buyLives(full: boolean): boolean {
 export const challengeNo = writable<number>(load('challengeNo', 1));
 challengeNo.subscribe((n) => save('challengeNo', n));
 
-export function levelWon(levelId: number, extra: Record<string, unknown>, stars = 3): number {
+/** Best stars per challenge (Jonas, 2026-11-18); shown on the map. */
+export const bestStars = writable<Record<number, number>>(load('bestStars', {}));
+bestStars.subscribe((s) => save('bestStars', s));
+/** Extra gold for three stars. */
+export const THREE_STAR_GOLD = 30;
+
+/** What a win paid, for the dialog. */
+export interface WinPay { total: number; base: number; finale: number; starBonus: number; streakBonus: number; stars: number }
+
+export function levelWon(levelId: number, extra: Record<string, unknown>, stars = 1, movesLeft = 0): WinPay {
   challengeNo.set(levelId >= LAST_CHALLENGE ? 1 : levelId + 1);
-  let gold = levelReward(levelId, goldMultiplier(effectiveVillage()) + expansionHooks.goldBonus());
+  bestStars.update((b) => ({ ...b, [levelId]: Math.max(b[levelId] ?? 0, stars) }));
+  let base = levelReward(levelId, goldMultiplier(effectiveVillage()) + expansionHooks.goldBonus());
   const weekend = dayOn('weekend') && weekendEvent(clock.now()).on;
-  if (weekend) gold *= WEEKEND_GOLD;
+  if (weekend) base *= WEEKEND_GOLD;
+  const finale = movesLeft * FINALE_GOLD;
+  const starBonus = stars === 3 ? THREE_STAR_GOLD : 0;
+  const gold = base + finale + starBonus;
   addGold(gold);
   let streakBonus = 0;
   if (dayOn('streak')) {
@@ -281,9 +295,9 @@ export function levelWon(levelId: number, extra: Record<string, unknown>, stars 
   let gems = 0;
   if (Math.random() < 0.15) { gems = 5; purse.update((p) => ({ ...p, gems: p.gems + gems })); }
   levelStats.update((s) => ({ ...s, [levelId]: { wins: (s[levelId]?.wins ?? 0) + 1, losses: s[levelId]?.losses ?? 0 } }));
-  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, stars, minutesIn: minutesIn(), ...extra });
+  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, stars, movesLeft, minutesIn: minutesIn(), ...extra });
   expansionHooks.onWin({ level: levelId, stars, gold });
-  return gold + streakBonus;
+  return { total: gold + streakBonus, base, finale, starBonus, streakBonus, stars };
 }
 
 export function levelLost(levelId: number, extra: Record<string, unknown>): void {
@@ -410,6 +424,7 @@ export function resetAll(): void {
   levelStats.set({});
   freeBoosters.set({ hammer: 1, shuffle: 1 });
   challengeNo.set(1);
+  bestStars.set({});
   daily.set(startDaily(clock.now()));
   awayReport.set(null);
   startedAt = clock.now();
@@ -533,7 +548,7 @@ function stairTick(): void {
   }
   // the attack comes at minute 12 (not when step 5 was reached by trying to quit)
   const s2 = get(stairs);
-  if (s2.step === 5 && !s2.attack && minutesIn() >= 12 && hookOn('attack')) startAttack();
+  if (s2.step === 5 && !s2.attack && minutesIn() >= FALLBACK_MINUTES[5] && hookOn('attack')) startAttack();
   const s3 = get(stairs);
   if (s3.attack && !s3.attack.result && now >= s3.attack.hitsAt) hitAttack();
 }
