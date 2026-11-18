@@ -11,6 +11,8 @@ import { readFileSync } from 'node:fs';
  */
 const DEV = process.env.VITE_DEV_MENU !== 'false';
 const APP_NAME = DEV ? 'Skärgårdsbyn dev' : 'Skärgårdsbyn';
+/** The dev app's icons say DEV (tools/dev-icons.py). */
+const ICONS = DEV ? '/icons/dev' : '/icons';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
@@ -18,7 +20,7 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     svelte(),
-    { name: 'app-name', transformIndexHtml: (html: string) => html.replace('content="Skärgårdsbyn"', `content="${APP_NAME}"`).replace('<title>Skärgårdsbyn</title>', `<title>${APP_NAME}</title>`) },
+    { name: 'app-name', transformIndexHtml: (html: string) => html.replace('/icons/apple-touch-icon.png', `${ICONS}/apple-touch-icon.png`).replace('content="Skärgårdsbyn"', `content="${APP_NAME}"`).replace('<title>Skärgårdsbyn</title>', `<title>${APP_NAME}</title>`) },
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
@@ -47,9 +49,9 @@ export default defineConfig({
         background_color: '#a9d8ec',
         theme_color: '#a9d8ec',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: `${ICONS}/icon-192.png`, sizes: '192x192', type: 'image/png' },
+          { src: `${ICONS}/icon-512.png`, sizes: '512x512', type: 'image/png' },
+          { src: `${ICONS}/icon-maskable-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       devOptions: { enabled: false },
