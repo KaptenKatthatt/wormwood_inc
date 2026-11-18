@@ -55,12 +55,26 @@ describe('server', () => {
     expect(await fetchHost('dev.skargardsbyn.84.247.143.6.sslip.io')).not.toContain('testversion');
   });
 
-  it('stores playtest events as NDJSON', async () => {
-    const r = await post('/api/log', { playerId: 'abcdefgh1234', session: 's1', events: [{ t: 1, name: 'start', data: { a: 1 } }] });
-    expect(r.status).toBe(200);
-    const [file] = await readdir(join(dataDir, 'logs'));
-    const line = JSON.parse((await readFile(join(dataDir, 'logs', file), 'utf8')).trim());
-    expect(line).toMatchObject({ playerId: 'abcdefgh1234', name: 'start', data: { a: 1 } });
+  /** POST with a chosen Host header (fetch does not allow setting it). */
+  const postHost = async (host: string, p: string, body: unknown) => {
+    const http = await import('node:http');
+    const data = JSON.stringify(body);
+    return new Promise<number>((ok, fail) => {
+      const r = http.request(base + p, { method: 'POST', headers: { host, 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } }, (res) => { res.resume(); res.on('end', () => ok(res.statusCode ?? 0)); });
+      r.on('error', fail);
+      r.end(data);
+    });
+  };
+
+  it("stores the playtest site's events in logs/ and the dev site's in logs/dev/", async () => {
+    expect(await postHost('skargardsbyn.84.247.143.6.sslip.io', '/api/log', { playerId: 'abcdefgh1234', session: 's1', events: [{ t: 1, name: 'start', data: { a: 1 } }] })).toBe(200);
+    expect(await postHost('dev.skargardsbyn.84.247.143.6.sslip.io', '/api/log', { playerId: 'devdevdev123', session: 's2', events: [{ t: 2, name: 'devstart' }] })).toBe(200);
+    const files = (await readdir(join(dataDir, 'logs'))).filter((f) => f.endsWith('.ndjson'));
+    const test = (await readFile(join(dataDir, 'logs', files[0]), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
+    expect(test).toHaveLength(1);
+    expect(test[0]).toMatchObject({ playerId: 'abcdefgh1234', name: 'start', data: { a: 1 } });
+    const [devFile] = await readdir(join(dataDir, 'logs', 'dev'));
+    expect(JSON.parse((await readFile(join(dataDir, 'logs', 'dev', devFile), 'utf8')).trim())).toMatchObject({ playerId: 'devdevdev123', name: 'devstart' });
   });
 
   it('rejects bad player ids', async () => {

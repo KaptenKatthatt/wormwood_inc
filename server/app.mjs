@@ -49,6 +49,8 @@ export async function createApp(opts) {
   // The playtest build (no dev menu) is served to the host skargardsbyn.<ip>.sslip.io
   // (and the old spela.<ip>, which Caddy now redirects); dev.skargardsbyn.<ip> gets the dev build.
   const testDist = opts.testDistDir ? resolve(opts.testDistDir) : null;
+  /** The playtest site's host names; everything else is the dev site. */
+  const isTestHost = (/** @type {string} */ host) => /^(skargardsbyn|spela)\./.test(host);
   const dataDir = resolve(opts.dataDir);
   const now = opts.now ?? Date.now;
   await mkdir(join(dataDir, 'logs'), { recursive: true });
@@ -160,7 +162,7 @@ export async function createApp(opts) {
   // ---- static --------------------------------------------------------------
   /** @param {import('node:http').ServerResponse} res @param {string} urlPath */
   async function serveStatic(res, urlPath, host = '') {
-    const distDir = testDist && /^(skargardsbyn|spela)\./.test(host) ? testDist : devDist;
+    const distDir = testDist && isTestHost(host) ? testDist : devDist;
     let rel = decodeURIComponent(urlPath.split('?')[0]);
     if (rel.endsWith('/')) rel += 'index.html';
     let file = normalize(join(distDir, rel));
@@ -226,7 +228,10 @@ export async function createApp(opts) {
         }),
       );
       const day = new Date(received).toISOString().slice(0, 10);
-      const logDir = join(dataDir, 'logs');
+      // Dev and test are kept apart (Jonas, 2026-11-18): the playtest site's
+      // events are the study's data in logs/, the dev site's go to logs/dev/.
+      const testSite = isTestHost(String(req.headers.host ?? ''));
+      const logDir = testSite ? join(dataDir, 'logs') : join(dataDir, 'logs', 'dev');
       await mkdir(logDir, { recursive: true });
       await appendFile(join(logDir, `${day}.ndjson`), lines.join('\n') + '\n');
       return json(res, 200, { ok: true, stored: lines.length });

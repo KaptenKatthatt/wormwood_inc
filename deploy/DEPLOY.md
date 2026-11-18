@@ -37,5 +37,6 @@ Keep that file: new keys make every existing push subscription invalid.
 One file per day, one JSON object per line:
 
 ```bash
-tail -f /var/lib/wormwood/logs/$(date -u +%F).ndjson
+tail -f /var/lib/wormwood/logs/$(date -u +%F).ndjson      # the playtest site (the study's data)
+tail -f /var/lib/wormwood/logs/dev/$(date -u +%F).ndjson  # the dev site
 ```

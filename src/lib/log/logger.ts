@@ -38,7 +38,7 @@ export function log(name: string, data?: Record<string, unknown>): void {
     try { fn(name, data ?? {}); } catch { /* a listener must never stop the log */ }
   }
   if (import.meta.env.DEV) console.debug('[log]', name, data ?? '');
-  // Events from the playtest build are marked, since both builds log to the same place.
+  // Events from the playtest build are marked too (the server also files the two sites apart).
   if (!DEV_MENU) data = { ...data, build: 'test' };
   queue.push({ t: Date.now(), gameT: gameTime(), name, data });
   if (queue.length > 500) queue = queue.slice(-500);
