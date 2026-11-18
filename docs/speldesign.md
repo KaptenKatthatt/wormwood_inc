@@ -262,6 +262,6 @@ Per bana loggas: tid på banan, antal drag (även extra drag), vinst eller förl
 - **Beslut:** efter Avsluta visas en kort enkät i spelet. Varje steg i trappan visas som en bild, och personen skattar pressen 1–5 och svarar ja eller nej på "Hade du slutat här om du spelat på egen hand?". Svaren loggas. Jonas intervjuar efteråt för att fördjupa.
 
 ## 6. Backlogg och senare
-- Testplånbok som betalas ut på riktigt efter testet (Jonas funderar).
+- Testplånbok som betalas ut på riktigt efter testet (Jonas funderar). Om den betalas ut stängs steg 7 i veckotrappan (kistor, lyckohjul, mästardragningar) av för den testpersonen, så att det inte blir spel om pengar (Jonas 2026-11-18).
 - Spelaren anfaller och tar över andra byar.
 - Säsonger och en samling att fylla.
