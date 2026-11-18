@@ -225,7 +225,7 @@
       case 'ice': {
         const cover = regionOf(l.id).cover?.picture;
         if (cover) return `${n} ${{ lera: 'lera', kol: 'kol', nat: 'nät', frost: 'frostlager' }[cover as string] ?? 'is'}`;
-        return regionOf(l.id).id === 'fjall' ? `${n} snölager` : `${n} is`;
+        return regionOf(l.id).id === 'fjall' ? `${n} snölager` : `${n} fisknät`;
       }
       case 'moss': return `${n} mossa`;
       case 'block': {
@@ -243,7 +243,7 @@
   function goalIcon(l: Level): string | null {
     const g = l.goal;
     if (g.type === 'collect') return tileUrl(regionOf(l.id), g.kind);
-    if (g.type === 'ice') return `/art/tiles/${regionOf(l.id).cover?.picture ?? (regionOf(l.id).id === 'fjall' ? 'sno' : 'is')}.webp`;
+    if (g.type === 'ice') return `/art/tiles/${regionOf(l.id).cover?.picture ?? (regionOf(l.id).id === 'fjall' ? 'sno' : 'fisknat')}.webp`;
     if (g.type === 'moss') return '/art/tiles/mossa.webp';
     if (g.type === 'block') return `/art/tiles/${g.block === 'sten' ? (regionOf(l.id).stone ?? 'sten') : g.block}.webp`;
     if (g.type === 'stock') return '/art/tiles/stock.webp';

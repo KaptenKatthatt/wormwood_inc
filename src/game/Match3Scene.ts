@@ -5,6 +5,8 @@ import { REGIONS, regionOf, type Obstacle, type Region } from '../lib/match3/lev
 import { DEEP as DEEP0, FRAME as FRAME0 } from './palette';
 
 /** The obstacle pictures (Jonas approved them 2026-11-18). */
+// The skerries' cover is a fishing net (Jonas, 2026-11-18); its obstacle id stays 'is'.
+const PICTURE: Record<string, string> = { is: 'fisknat', 'is-sprucken': 'fisknat-trasigt' };
 const OBSTACLES = ['is', 'is-sprucken', 'sno', 'sno-tunn', 'mossa', 'tang', 'sten', 'stock', 'lera', 'hobal', 'kol', 'malm', 'nat', 'klapper', 'frost', 'snogubbe'] as const;
 const BLOCK_PICTURE: Record<number, string> = { [TANG]: 'tang', [STEN]: 'sten', [STOCK]: 'stock', [MALM]: 'malm', [KLAPPER]: 'klapper', [HOBAL]: 'hobal' };
 
@@ -52,7 +54,7 @@ export class Match3Scene extends Phaser.Scene {
   preload(): void {
     for (const region of REGIONS) for (const name of region.tiles) this.load.image(`tile-${name}`, `/art/tiles/${name}.${region.ext}`);
     for (const name of ['raket', 'fyrverkeri', 'parla']) this.load.image(`sp-${name}`, `/art/tiles/${name}.png`);
-    for (const name of OBSTACLES) this.load.image(`ob-${name}`, `/art/tiles/${name}.webp`);
+    for (const name of OBSTACLES) this.load.image(`ob-${name}`, `/art/tiles/${PICTURE[name] ?? name}.webp`);
   }
 
   create(): void {
@@ -184,8 +186,8 @@ export class Match3Scene extends Phaser.Scene {
   }
 
   /**
-   * An ice cube (or snow) over a tile. Thick ice that has been hit once is
-   * full of cracks, and deep snow that has been hit once is lower (Jonas, 2026-11-18).
+   * A fishing net (or snow) over a tile. A net that has been hit once is
+   * torn, and deep snow that has been hit once is lower (Jonas, 2026-11-18).
    */
   private makeCover(cell: Cell, layers: number): Phaser.GameObjects.Container {
     const p = this.pos(cell);
@@ -199,7 +201,7 @@ export class Match3Scene extends Phaser.Scene {
       ? this.add.image(0, 0, `ob-${cover.picture}`).setDisplaySize(this.cell * (hit ? 0.84 : 1.02), this.cell * (hit ? 0.84 : 1.02)).setAlpha(hit ? cover.alpha * 0.6 : layers > 1 ? 1 : cover.alpha)
       : this.add.image(0, snow ? -this.cell * 0.04 : 0, snow ? (hit ? 'ob-sno-tunn' : 'ob-sno') : hit ? 'ob-is-sprucken' : 'ob-is')
         .setDisplaySize(this.cell * (snow ? 1.08 : 1.02), this.cell * (snow ? 0.92 : 1.02))
-        .setAlpha(snow ? (layers > 1 ? 1 : 0.95) : 0.9);
+        .setAlpha(snow ? (layers > 1 ? 1 : 0.95) : 1);
     const parts: Phaser.GameObjects.GameObject[] = [pic];
     return this.add.container(p.x, p.y, parts).setDepth(2);
   }

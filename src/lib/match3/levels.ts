@@ -101,7 +101,7 @@ export const KIND_NAMES = REGIONS[0].names;
 
 /** The sentence shown with the arrow the first time an obstacle appears. */
 export const OBSTACLE_TIPS: Record<Obstacle, string> = {
-  is: 'Tjock is! Första träffen spräcker den, den andra krossar den. Matcha bredvid den.',
+  is: 'Fisknät! Brickan under sitter fast men går att matcha. Första träffen river nätet, den andra tar bort det.',
   tang: 'Tången växer om du låter den vara. Matcha bredvid den!',
   mossa: 'Mossan försvinner när du matchar brickan som ligger på den.',
   stock: 'Få ner stockarna till botten av brädet. Rensa under dem!',
@@ -297,7 +297,7 @@ export function goalText(goal: Goal, levelId = 1): string {
   const region = regionOf(levelId);
   switch (goal.type) {
     case 'collect': return `Samla ${goal.count} ${region.names[goal.kind]}`;
-    case 'ice': return ({ fjall: 'Skotta bort all snö', slatten: 'Torka bort all lera', bergslagen: 'Sopa bort allt kol', hogakusten: 'Lossa alla nät', vinter: 'Smält all frost' } as Record<string, string>)[region.id] ?? 'Bryt all is';
+    case 'ice': return ({ fjall: 'Skotta bort all snö', slatten: 'Torka bort all lera', bergslagen: 'Sopa bort allt kol', hogakusten: 'Lossa alla nät', vinter: 'Smält all frost' } as Record<string, string>)[region.id] ?? 'Riv alla fisknät';
     case 'score': return `Nå ${goal.score.toLocaleString('sv-SE')} poäng`;
     case 'moss': return 'Rensa bort all mossa';
     case 'block': {
