@@ -23,6 +23,9 @@
   import AdOverlay from './ui/AdOverlay.svelte';
   import PersonalOffer from './ui/PersonalOffer.svelte';
   import FriendNote from './ui/FriendNote.svelte';
+  import IntroScreen from './ui/IntroScreen.svelte';
+  // The start screen shows each time the app opens (Jonas, 2026-11-18).
+  let intro = $state(true);
 
   type Tab = 'pussel' | 'byn' | 'grannar' | 'installningar';
   const ALL_TABS: { id: Tab; label: string }[] = [
@@ -58,6 +61,9 @@
   }
 </script>
 
+{#if intro}
+<IntroScreen onPlay={() => { intro = false; log('intro_play', {}); }} />
+{:else}
 <div class="app">
   <div class="top"><Hud />{#if !tutStep}<Banners />{/if}</div>
   <main>
@@ -85,6 +91,7 @@
     {#if $adOpen}<AdOverlay />{/if}
   {/if}
 </div>
+{/if}
 
 <style>
   .app { height: 100dvh; width: 100%; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; padding-top: env(safe-area-inset-top); }
