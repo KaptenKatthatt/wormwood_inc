@@ -125,7 +125,7 @@ Varje byggnad får tre utseenden: ett för nivå 1–3, ett för 4–7 och ett f
 
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
-Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efter testet, så att köpen kostar något.
+Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efter testet, så att köpen kostar något. Om plånboken betalas ut på riktigt stängs steg 7 i veckotrappan (kistor, lyckohjul, mästardragningar) av för den testpersonen, så att det inte blir spel om pengar (Jonas 2026-11-18).
 
 ### Butiken och priserna
 **Ädelstenar för kronor (testplånboken):**
