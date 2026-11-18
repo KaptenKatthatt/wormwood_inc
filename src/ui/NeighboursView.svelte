@@ -54,7 +54,7 @@
       {#each list as n (n.id)}
         {@const owned = $exp.owned.find((o) => o.id === n.id)}
         <li class:owned={!!owned}>
-          <img class="thumb" src={`/art/neighbours/world${n.world}.webp`} width="64" height="48" alt="" loading="lazy" />
+          <img class="thumb" src={n.world === 2 ? `/art/neighbours/${n.id}.webp` : `/art/neighbours/world${n.world}.webp`} width="64" height="48" alt="" loading="lazy" />
           {#if owned}
             {@const st = storeView(owned)}
             <div>
