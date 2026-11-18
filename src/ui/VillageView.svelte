@@ -103,7 +103,7 @@
 
 <style>
   .view { display: flex; flex-direction: column; height: 100%; }
-  .canvas { position: relative; flex: 0 0 38%; min-height: 160px; }
+  .canvas { position: relative; flex: 0 0 50%; min-height: 200px; }
   .panel { flex: 1; overflow-y: auto; background: var(--panel); padding: 8px 16px 16px; display: grid; gap: 8px; align-content: start; }
   .building { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: color-mix(in srgb, var(--gold) 25%, transparent); border-radius: 8px; padding: 8px 10px; }
   .building span { flex: 1 1 180px; font-variant-numeric: tabular-nums; }

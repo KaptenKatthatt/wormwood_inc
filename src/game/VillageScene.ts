@@ -1,12 +1,34 @@
 import Phaser from 'phaser';
-import { FALU, GRASS, PAPER, ROCK, SEA } from './palette';
+import ART from './villageArt.json';
 
 export interface PlotView { id: string; name: string; level: number; building: boolean; progress: number; locked?: boolean }
 
-/** Placeholder village on a headland. Svelte puts the plots in the registry as 'plots'. */
+interface Stage { file: string; x: number; y: number; w: number; h: number }
+interface ArtBuilding { anchor: [number, number]; bygge: { kind: 'hus' | 'torn'; scale: number; x: number; y: number }; stages: Record<'1' | '2' | '3', Stage> }
+const BUILDINGS = ART.buildings as unknown as Record<string, ArtBuilding>;
+const BG = ART.background;
+const DIR = '/art/village/';
+
+/** Which picture a building level uses (Jonas, 2026-11-18): 1-3, 4-7 and 8-10. */
+export function stageOf(level: number): '1' | '2' | '3' {
+  return level >= 8 ? '3' : level >= 4 ? '2' : '1';
+}
+
+/**
+ * The painted village on the headland (Jonas approved it 2026-11-18, wall B).
+ * The background holds the empty plots; each building is its own picture laid
+ * on its plot at the manifest's position, in the background's pixels, and it
+ * changes look at levels 4 and 8. Svelte puts the plots in the registry as 'plots'.
+ */
 export class VillageScene extends Phaser.Scene {
   constructor() {
     super('village');
+  }
+
+  preload(): void {
+    this.load.image('v-bg', DIR + BG.file);
+    for (const b of Object.values(BUILDINGS)) for (const s of Object.values(b.stages)) this.load.image(`v-${s.file}`, DIR + s.file);
+    for (const k of ['hus', 'torn'] as const) this.load.image(`v-bygge-${k}`, DIR + ART.bygge[k].file);
   }
 
   create(): void {
@@ -22,60 +44,37 @@ export class VillageScene extends Phaser.Scene {
   private draw(): void {
     const { width, height } = this.scale;
     this.children.removeAll(true);
-    this.add.rectangle(0, 0, width, height, SEA).setOrigin(0);
-    const cx = width / 2;
-    const cy = height * 0.54; // a little down, clear of the mood bar
-    const rx = Math.min(width * 0.47, height * 0.75);
-    const ry = Math.min(height * 0.42, rx * 0.7);
-    this.add.ellipse(cx, cy + ry * 0.12, rx * 2.05, ry * 2.05, ROCK);
-    this.add.ellipse(cx, cy, rx * 1.9, ry * 1.85, GRASS);
+    // The whole width, so the towers at the edges show; vertically centred on
+    // the village (it lies between y 380 and 1100) and always covering the canvas.
+    const s = Math.max(width / BG.w, height / BG.h);
+    const ox = (width - BG.w * s) / 2;
+    const centre = 740;
+    const oy = Math.min(0, Math.max(height - BG.h * s, height / 2 - centre * s));
+    this.add.image(ox, oy, 'v-bg').setOrigin(0).setScale(s);
 
     const plots: PlotView[] = this.registry.get('plots') ?? [];
-    // The first five sit in the middle; the last three on the outer land that is cleared later.
-    // A gathered village with a watchtower on each side (Jonas, 2026-11-17).
-    const SPOTS: Record<string, [number, number]> = {
-      stugan: [0, -0.12], sjoboden: [-0.48, 0.04], kasernen: [0.48, 0.04], kapellet: [-0.24, 0.44], marknaden: [0.24, 0.44],
-      kvarnen: [-0.36, -0.44], smedjan: [0.36, -0.44],
-      vakttornet: [0, -0.7], tornet_o: [0.82, -0.12], tornet_s: [0, 0.7], tornet_v: [-0.82, -0.12],
-      // the expansion's plots, on the edge of the land (one per new world)
-      ladan: [-0.64, 0.42], skolan: [0.64, 0.42], hamnen: [-0.62, -0.5], gastgiveriet: [0.62, -0.5],
-    };
-    const s = Math.min(rx * 0.2, ry * 0.36);
+    const byId = new Map(plots.map((p) => [p.id, p]));
+    // Back to front, so nearer buildings cover the ones behind.
+    const order = Object.keys(BUILDINGS).sort((a, b) => BUILDINGS[a].anchor[1] - BUILDINGS[b].anchor[1]);
     const k = this.registry.get('dpr') ?? 1;
-    const font = `${Math.max(11 * k, Math.round(s * 0.2))}px`;
-    plots.forEach((p, i) => {
-      const [dx, dy] = SPOTS[p.id] ?? [0, 0];
-      const x = cx + dx * rx;
-      const y = cy + dy * ry;
-      const tower = p.id === 'vakttornet' || p.id.startsWith('tornet');
-      const w = tower ? s * 0.5 : s;
-      const h = tower ? s * 0.9 : s * 0.62;
-      if (p.locked) {
-        // forest still standing on the plot
-        for (const [tx, ty] of [[-0.3, 0.1], [0.05, -0.15], [0.32, 0.12], [-0.05, 0.3]]) {
-          const px = x + tx * w;
-          const py = y + ty * h;
-          this.add.triangle(px, py, 0, h * 0.7, w * 0.2, 0, w * 0.4, h * 0.7, 0x3f6d3a).setStrokeStyle(1, 0x24451f);
-        }
-      } else if (p.level === 0 && !p.building) {
-        this.add.rectangle(x, y, w, h, 0x000000, 0.15).setStrokeStyle(2, PAPER, 0.6);
-      } else {
-        const body = p.level > 0 ? FALU : 0x000000;
-        this.add.rectangle(x, y, w, h, body, p.level > 0 ? 1 : 0.15).setStrokeStyle(2, p.level > 0 ? 0x000000 : PAPER, p.level > 0 ? 0.3 : 0.8);
-        if (p.level > 0) {
-          const roof = this.add.graphics();
-          roof.fillStyle(0x3a2f2a, 1);
-          roof.fillTriangle(x - w * 0.6, y - h / 2, x + w * 0.6, y - h / 2, x, y - h / 2 - w * 0.35);
-          this.add.rectangle(x, y + h * 0.18, w * 0.18, h * 0.5, PAPER);
-        }
-        if (p.building) {
-          // scaffold filling up as the build runs
-          this.add.rectangle(x - w / 2 - 6, y + h / 2, 6, h * p.progress, 0xd9a441).setOrigin(0, 1);
-          this.add.rectangle(x, y, w + 12, h + 8).setStrokeStyle(2, 0xd9a441, 0.9);
-        }
+    for (const id of order) {
+      const p = byId.get(id);
+      if (!p || p.locked) continue; // a locked or unknown plot is just the background
+      const b = BUILDINGS[id];
+      if (p.level > 0) {
+        const st = b.stages[stageOf(p.level)];
+        this.add.image(ox + st.x * s, oy + st.y * s, `v-${st.file}`).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1);
       }
-      const label = p.locked ? '' : p.level > 0 ? `${p.name} ${p.level}` : p.name;
-      this.add.text(x, y + h / 2 + 4, label, { fontFamily: 'system-ui, sans-serif', fontSize: font, color: '#f3ece4', fontStyle: 'bold', stroke: '#5a1d14', strokeThickness: 3 * k }).setOrigin(0.5, 0);
-    });
+      if (p.building) {
+        const g = b.bygge;
+        const pic = this.add.image(ox + g.x * s, oy + g.y * s, `v-bygge-${g.kind}`).setOrigin(0).setScale(s * g.scale);
+        // how far the build has come, under the scaffold
+        const bw = pic.displayWidth * 0.8;
+        const bx = pic.x + (pic.displayWidth - bw) / 2;
+        const by = pic.y + pic.displayHeight + 4 * k;
+        this.add.rectangle(bx, by, bw, 6 * k, 0x000000, 0.45).setOrigin(0);
+        this.add.rectangle(bx, by, bw * p.progress, 6 * k, 0xf2c230).setOrigin(0);
+      }
+    }
   }
 }
