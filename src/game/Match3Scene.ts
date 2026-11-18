@@ -175,8 +175,8 @@ export class Match3Scene extends Phaser.Scene {
   private makeCover(cell: Cell, layers: number): Phaser.GameObjects.Container {
     const p = this.pos(cell);
     const snow = this.region.id === 'fjall';
-    const pic = this.add.image(0, snow ? -this.cell * 0.12 : 0, snow ? 'ob-sno' : 'ob-is')
-      .setDisplaySize(this.cell * (snow ? 1.0 : 1.02), this.cell * (snow ? 0.8 : 1.02))
+    const pic = this.add.image(0, snow ? -this.cell * 0.04 : 0, snow ? 'ob-sno' : 'ob-is')
+      .setDisplaySize(this.cell * (snow ? 1.08 : 1.02), this.cell * (snow ? 0.92 : 1.02))
       .setAlpha(layers > 1 ? 1 : snow ? 0.95 : 0.8);
     const parts: Phaser.GameObjects.GameObject[] = [pic];
     if (layers > 1) {
