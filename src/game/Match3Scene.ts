@@ -5,7 +5,7 @@ import { REGIONS, regionOf, type Obstacle, type Region } from '../lib/match3/lev
 import { DEEP as DEEP0, FRAME as FRAME0 } from './palette';
 
 /** The obstacle pictures (Jonas approved them 2026-11-18). */
-const OBSTACLES = ['is', 'sno', 'mossa', 'tang', 'sten', 'stock'] as const;
+const OBSTACLES = ['is', 'is-sprucken', 'sno', 'sno-tunn', 'mossa', 'tang', 'sten', 'stock'] as const;
 const BLOCK_PICTURE: Record<number, string> = { [TANG]: 'tang', [STEN]: 'sten', [STOCK]: 'stock' };
 
 type Tile = Phaser.GameObjects.Container;
@@ -171,20 +171,19 @@ export class Match3Scene extends Phaser.Scene {
     this.drawIntro();
   }
 
-  /** An ice cube (or snow) over a tile; two layers show a "2". */
+  /**
+   * An ice cube (or snow) over a tile. Thick ice that has been hit once is
+   * full of cracks, and deep snow that has been hit once is lower (Jonas, 2026-11-18).
+   */
   private makeCover(cell: Cell, layers: number): Phaser.GameObjects.Container {
     const p = this.pos(cell);
     const snow = this.region.id === 'fjall';
-    const pic = this.add.image(0, snow ? -this.cell * 0.04 : 0, snow ? 'ob-sno' : 'ob-is')
+    const start = this.engine?.level.ice?.find(([r, c]) => r === cell.r && c === cell.c)?.[2] ?? 1;
+    const hit = layers < start;
+    const pic = this.add.image(0, snow ? -this.cell * 0.04 : 0, snow ? (hit ? 'ob-sno-tunn' : 'ob-sno') : hit ? 'ob-is-sprucken' : 'ob-is')
       .setDisplaySize(this.cell * (snow ? 1.08 : 1.02), this.cell * (snow ? 0.92 : 1.02))
-      .setAlpha(layers > 1 ? 1 : snow ? 0.95 : 0.8);
+      .setAlpha(snow ? (layers > 1 ? 1 : 0.95) : 0.9);
     const parts: Phaser.GameObjects.GameObject[] = [pic];
-    if (layers > 1) {
-      const r = this.cell * 0.17;
-      const badge = this.add.circle(this.cell * 0.3, this.cell * 0.3, r, snow ? 0x2c4a62 : 0x2f6c9a).setStrokeStyle(2 * this.k, 0xffffff);
-      const t = this.add.text(this.cell * 0.3, this.cell * 0.3, String(layers), { fontFamily: 'system-ui, sans-serif', fontStyle: 'bold', fontSize: `${Math.round(r * 1.3)}px`, color: '#ffffff' }).setOrigin(0.5);
-      parts.push(badge, t);
-    }
     return this.add.container(p.x, p.y, parts).setDepth(2);
   }
 
@@ -509,7 +508,7 @@ export class Match3Scene extends Phaser.Scene {
       this.frozenNo(cell);
       return;
     }
-    if (this.engine && isFree(this.engine.board[cell.r][cell.c])) {
+    if (this.engine?.fires(cell)) {
       this.select(null);
       void this.fire(cell);
       return;

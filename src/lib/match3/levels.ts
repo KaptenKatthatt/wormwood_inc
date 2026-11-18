@@ -83,11 +83,11 @@ export const KIND_NAMES = REGIONS[0].names;
 
 /** The sentence shown with the arrow the first time an obstacle appears. */
 export const OBSTACLE_TIPS: Record<Obstacle, string> = {
-  is: 'Tjock is! Den spricker i två steg. Matcha bredvid den.',
+  is: 'Tjock is! Första träffen spräcker den, den andra krossar den. Matcha bredvid den.',
   tang: 'Tången växer om du låter den vara. Matcha bredvid den!',
   mossa: 'Mossan försvinner när du matchar brickan som ligger på den.',
   stock: 'Få ner stockarna till botten av brädet. Rensa under dem!',
-  sno: 'Snön försvinner ett lager i taget när du matchar bredvid den.',
+  sno: 'Snön smälter när du matchar bredvid den. Djup snö tar två gånger.',
   sten: 'Stenen spricker bara av specialbrickor. Gör en raket!',
 };
 
