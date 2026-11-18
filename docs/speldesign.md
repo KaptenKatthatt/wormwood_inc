@@ -91,6 +91,27 @@ Kostnaden växer långsamt i början och sedan ungefär i kvadrat med antalet by
 
 **Beslut 2026-11-18 (generösare början):** belöningen per utmaning är 150–250 guld. De första 8 byggena tar under en minut. Den första riktiga väggen (bygge på 15–30 min, liven slut) kommer runt minut 20 i stället för minut 6–9. Stöd: Ascarza m.fl. 2025 (B1), där lättare banor gav mer spelande och mer intäkt totalt. Exakta guldpriser sätts i bygget så att väggen hamnar runt minut 20.
 
+**Backlogg 2026-11-18 (minispel):** Fiska vid bryggan och Segla mellan skären (ett liv var, ger guld) ligger i backloggen. Jonas gillade dem men vill först få det nuvarande spelet riktigt bra. Mockup: https://claude.ai/artifact/VYPeBranLh1qSLmwJmj3co
+
+### Djup i pusslet (beslut 2026-11-18)
+
+**Nytt hinder var femte utmaning, per region.** Första gången visas hindret med en pil och en mening.
+
+- Skärgården: **is** (matchas två gånger) och **tång** (växer till en ny ruta varje drag den inte rensas).
+- Skogen: **mossa** (tas bort med matchning bredvid) och **stockar** (ska ner till botten).
+- Fjällen: **snö** i flera lager och **sten** (spricker bara av specialbrickor).
+
+Nya hinders grafik visas för Jonas och godkänns innan den läggs ut.
+
+**Kombinationer av specialbrickor** (byt plats på två specialbrickor). Spelet förklarar dem inte, spelaren upptäcker dem själv.
+
+- Raket + raket: ett kors, en hel rad och en hel kolumn.
+- Raket + fyrverkeri: tre rader och tre kolumner.
+- Pärla + raket: alla brickor av den färgen blir raketer.
+- Pärla + pärla: hela brädet rensas.
+
+**Stjärnor och slutfest.** Varje utmaning ger 1–3 stjärnor efter antal drag kvar, och en stjärna räcker för att gå vidare. Tre stjärnor ger lite extra guld, och stjärnorna visas på kartan. När målet är klart blir varje drag som är kvar en raket som smäller av och ger bonusguld.
+
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
 Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efter testet, så att köpen kostar något.
