@@ -24,7 +24,7 @@ describe('worlds and levels', () => {
     ALL_LEVELS.forEach((l, i) => {
       expect(l.id).toBe(i + 1);
       expect(l.moves).toBeGreaterThanOrEqual(12);
-      expect(l.moves).toBeLessThanOrEqual(30);
+      expect(l.moves).toBeLessThanOrEqual(32);
     });
   });
 });

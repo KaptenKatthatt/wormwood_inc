@@ -100,7 +100,7 @@
   <div class="next">
     <div>
       <strong>{level.name}</strong>
-      <span>{goalText(level.goal)} på {level.moves} drag</span>
+      <span>{goalText(level.goal, level.id)} på {level.moves} drag</span>
       {#if countdown > 0}<span class="cd" aria-live="polite">Startar om {countdown} …</span>{/if}
     </div>
     <button class="primary" data-tut="map-current" onclick={onPlay}>Spela</button>

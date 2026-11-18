@@ -1,12 +1,12 @@
 <script lang="ts">
   import { millMoves } from '../lib/economy/village';
-  import { effectiveVillage, tipOnce } from '../lib/state/game';
+  import { effectiveVillage, firstTime, tipOnce } from '../lib/state/game';
   import GameCanvas from '../game/GameCanvas.svelte';
   import Modal from './Modal.svelte';
   import MapView from './MapView.svelte';
   import { Match3Scene } from '../game/Match3Scene';
   import { Match3, isRocket, type SwapResult } from '../lib/match3/engine';
-  import { KIND_NAMES, TILES, goalText, levelAt, worldOf, type Level } from '../lib/match3/levels';
+  import { OBSTACLE_TIPS, goalText, levelAt, regionOf, tileUrl, type Level, type Obstacle } from '../lib/match3/levels';
   import { EXPANSION } from '../lib/config/flags';
   import { adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
   import { GATE_SKIP_GEMS, HELPERS_NEEDED } from '../lib/expansion/conquest';
@@ -31,12 +31,13 @@
   let startedReal = 0;
   let tool = $state<null | 'hammer'>(null);
   let mixed = $state(0);
-  /** Placeholder colours for each world until its painted background is approved. */
-  const WORLD_SKY = ['', '', '#e9d77a, #9cbf5a', '#c47a3a, #6b5a4a', '#8ab0c0, #4a6f8a', '#f4f7fb, #b9cfe0'];
   let doubled = $state(false);
+  /** The obstacle shown with an arrow and a sentence, the first time it appears. */
+  let intro = $state<Obstacle | null>(null);
   const hint = $derived($tutorial.index !== null && TUT_STEPS[$tutorial.index]?.hint === true);
 
   const level = $derived(game?.level);
+  const region = $derived(regionOf(level?.id ?? 1));
   const info = $derived.by(() => {
     void rev;
     if (!game) return null;
@@ -63,6 +64,7 @@
     // Kvarnen (the mill) gives an extra move for every second level.
     game = new Match3({ ...l, moves: l.moves + millMoves(effectiveVillage()) }, makeRng(Math.floor(Math.random() * 2 ** 31)), hookOn('nearWin'));
     startedReal = Date.now();
+    intro = l.intro && firstTime(`obstacle-${l.intro}`) ? l.intro : null;
     rev++;
     tutEvent('levelStarted');
     // Lets automated screenshot runs find a legal move; not in tester builds.
@@ -98,6 +100,7 @@
   }
 
   function onMoved(r: SwapResult) {
+    intro = null;
     noteSpecials(r);
     rev++;
     tutEvent('moved');
@@ -214,17 +217,38 @@
     dialog = null;
   }
 
-  const unit = (l: Level, n: number) => (l.goal.type === 'score' ? `${n} poäng` : l.goal.type === 'ice' ? `${n} is` : `${n} ${KIND_NAMES[l.goal.kind]}`);
+  function unit(l: Level, n: number): string {
+    const g = l.goal;
+    switch (g.type) {
+      case 'score': return `${n} poäng`;
+      case 'ice': return regionOf(l.id).id === 'fjall' ? `${n} snölager` : `${n} is`;
+      case 'moss': return `${n} mossa`;
+      case 'block': return g.block === 'tang' ? `${n} tång` : `${n} ${n === 1 ? 'sten' : 'stenar'}`;
+      case 'stock': return `${n} ${n === 1 ? 'stock' : 'stockar'}`;
+      case 'collect': return `${n} ${regionOf(l.id).names[g.kind]}`;
+    }
+  }
+
+  /** The picture beside the goal. */
+  function goalIcon(l: Level): string | null {
+    const g = l.goal;
+    if (g.type === 'collect') return tileUrl(regionOf(l.id), g.kind);
+    if (g.type === 'ice') return `/art/tiles/${regionOf(l.id).id === 'fjall' ? 'sno' : 'is'}.webp`;
+    if (g.type === 'moss') return '/art/tiles/mossa.webp';
+    if (g.type === 'block') return `/art/tiles/${g.block}.webp`;
+    if (g.type === 'stock') return '/art/tiles/stock.webp';
+    return null;
+  }
 </script>
 
 {#if game && level && info}
-  <section class="view" style:background-image={EXPANSION && worldOf(level.id).id > 1 ? `url('/art/worlds/${worldOf(level.id).id}/bakgrund.jpg'), linear-gradient(${WORLD_SKY[worldOf(level.id).id]})` : undefined}>
+  <section class="view" style:background-image={`url('${region.background}')`}>
     <div class="bar top">
       <div class="goal" data-tut="goal">
         <strong class="name">{level.name}</strong>
         <span class="what">
-          {#if level.goal.type === 'collect'}<img src={`/art/tiles/${TILES[level.goal.kind]}.png`} alt="" />{:else if level.goal.type === 'ice'}<span class="iceicon" aria-hidden="true"></span>{/if}
-          {goalText(level.goal)}
+          {#if goalIcon(level)}<img src={goalIcon(level)} alt="" />{/if}
+          {goalText(level.goal, level.id)}
         </span>
         <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(info.progress * 100)} aria-label="Hur nära målet">
           <span style:width={`${info.progress * 100}%`}></span>
@@ -235,7 +259,8 @@
     </div>
     <p class="sr" aria-live="polite">{unit(level, info.remaining)} kvar, {info.moves} drag kvar.</p>
     <div class="canvas" data-tut="board">
-      <GameCanvas interactive scene={Match3Scene} data={{ match3: game, hint, tool, mixed }} on={{ 'match3:moved': onMoved, 'match3:smashed': onSmashed }} label={`Spelplan. ${goalText(level.goal)}. Tryck på två grannbrickor eller dra för att byta plats. Med tangentbord: piltangenter flyttar, Enter väljer.`} />
+      {#if intro}<p class="introtip" class:low={intro === "sno" || intro === "stock"} role="status">{OBSTACLE_TIPS[intro]}</p>{/if}
+      <GameCanvas interactive scene={Match3Scene} data={{ match3: game, hint, tool, mixed, intro }} on={{ 'match3:moved': onMoved, 'match3:smashed': onSmashed }} label={`Spelplan. ${goalText(level.goal, level.id)}. Tryck på två grannbrickor eller dra för att byta plats. Med tangentbord: piltangenter flyttar, Enter väljer.`} />
     </div>
     {#if hookOn('boosters')}
       <div class="boosters">
@@ -340,7 +365,10 @@
   .goal .name { font-size: 1.1rem; line-height: 1.1; font-weight: 800; }
   .what { display: flex; align-items: center; gap: 6px; font-weight: 800; line-height: 1.2; }
   .what img { width: 28px; height: 28px; flex: none; }
-  .iceicon { width: 22px; height: 22px; border-radius: 5px; background: linear-gradient(135deg, #fff, #9fd6f3); border: 2px solid #4b9ac8; flex: none; }
+  .introtip { position: absolute; z-index: 2; left: 50%; top: 6px; transform: translateX(-50%); width: min(92%, 360px); margin: 0; background: #fff8ec; border: 3px solid #7a2418; border-radius: 14px; padding: 8px 12px; box-shadow: 0 3px 0 var(--deep); color: var(--deep); font-weight: 800; font-size: 15px; line-height: 1.3; text-align: center; pointer-events: none; animation: pop .3s ease-out; }
+  .introtip.low { top: auto; bottom: 6px; }
+  @keyframes pop { from { transform: translateX(-50%) scale(.85); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .introtip { animation: none; } }
   .meter { height: 8px; background: #e6d8c2; border-radius: 4px; overflow: hidden; margin-top: 3px; }
   .meter span { display: block; height: 100%; background: #3f8f3a; transition: width .3s; }
   .left { font-size: .85rem; color: #6b3a2e; font-weight: 600; }
