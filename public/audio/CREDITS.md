@@ -6,13 +6,14 @@ Alla ljud valdes av Jonas Olson på lyssningssidan 2026-11-17. Varje fil i
 ## Egna (komponerade för spelet)
 
 Melodier, arrangemang och ljudeffekter skrivna i kod av Claude (Anthropic) för
-det här exjobbet, 2026. Noterna finns i `tools/audio/compose.py` och renderas
+det här exjobbet, 2026. Noterna finns i `tools/audio/compose.py` och `tools/audio/title_tunes.py` och renderas
 med FluidSynth och ljudbanken **FluidR3_GM** (Frank Wen, MIT-licens,
 https://github.com/FluidSynth/fluidsynth/wiki/SoundFont). Effekterna "mynt" är
 syntetiserade direkt i `compose.py`.
 
 | Fil | Används till | Innehåll |
 | --- | --- | --- |
+| `music/title-solsken` | musik på titelskärmen (sjöboden) | "Solsken", glad låt i A-dur, blockflöjt och dragspel (vald 2026-11-18, `tools/audio/title_tunes.py`) |
 | `music/village-udden` | musik i byn och på kartan | "Udden", polskaliknande vals i D-dur, dragspel och klarinett |
 | `music/puzzle-brickor` | musik på udda banor | "Brickor", schottiskänsla i G-dur, marimba och blockflöjt |
 | `sfx/match-0` … `match-7` | matchning och kombo | marimba, ett tonsteg högre för varje kedja |

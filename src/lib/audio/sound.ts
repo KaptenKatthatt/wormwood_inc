@@ -18,7 +18,7 @@ import { load, save } from '../state/storage';
 export type Sfx =
   | 'swap' | 'invalid' | 'win' | 'lose' | 'near' | 'purchase' | 'coins' | 'gems'
   | 'buildStart' | 'buildDone' | 'attack' | 'defended' | 'notify' | 'click';
-export type Music = 'village' | 'puzzle-brickor' | 'puzzle-gem-waltz';
+export type Music = 'title' | 'village' | 'puzzle-brickor' | 'puzzle-gem-waltz';
 
 const SFX_FILES: Record<Sfx, string> = {
   swap: 'swap', invalid: 'invalid', win: 'win', lose: 'lose', near: 'near', purchase: 'purchase',
@@ -26,7 +26,7 @@ const SFX_FILES: Record<Sfx, string> = {
   defended: 'defended', notify: 'notify', click: 'click',
 };
 const MUSIC_FILES: Record<Music, string> = {
-  village: 'village-udden', 'puzzle-brickor': 'puzzle-brickor', 'puzzle-gem-waltz': 'puzzle-gem-waltz',
+  title: 'title-solsken', village: 'village-udden', 'puzzle-brickor': 'puzzle-brickor', 'puzzle-gem-waltz': 'puzzle-gem-waltz',
 };
 /** Cascade steps: match-0 .. match-7 rise through a pentatonic scale. */
 const MATCH_STEPS = 8;
