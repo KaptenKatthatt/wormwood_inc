@@ -1,25 +1,28 @@
 # Add to the devserver's Caddyfile, then: caddy validate && systemctl reload caddy
 # The bind line keeps Caddy off the Tailscale address, where tailscale serve owns 443
 # (same as the other site blocks on the devserver).
-http://wormwood.84.247.143.6.sslip.io {
+#
+# Addresses (Jonas, 2026-11-18: the game is called Skargardsbyn everywhere):
+#   https://dev.skargardsbyn.84.247.143.6.sslip.io/  the dev build (dev menu)
+#   https://skargardsbyn.84.247.143.6.sslip.io/      the playtest build
+# The old wormwood. and spela. addresses redirect there, so old links keep working.
+http://dev.skargardsbyn.84.247.143.6.sslip.io, http://skargardsbyn.84.247.143.6.sslip.io {
 	bind 84.247.143.6
 	redir https://{host}{uri} permanent
 }
 
-wormwood.84.247.143.6.sslip.io {
+dev.skargardsbyn.84.247.143.6.sslip.io, skargardsbyn.84.247.143.6.sslip.io {
 	bind 84.247.143.6
 	encode gzip zstd
 	reverse_proxy 127.0.0.1:8787
 }
 
-# The playtest build (no dev menu): same server, chosen by the host name.
-http://spela.84.247.143.6.sslip.io {
+http://wormwood.84.247.143.6.sslip.io, wormwood.84.247.143.6.sslip.io {
 	bind 84.247.143.6
-	redir https://{host}{uri} permanent
+	redir https://dev.skargardsbyn.84.247.143.6.sslip.io{uri} permanent
 }
 
-spela.84.247.143.6.sslip.io {
+http://spela.84.247.143.6.sslip.io, spela.84.247.143.6.sslip.io {
 	bind 84.247.143.6
-	encode gzip zstd
-	reverse_proxy 127.0.0.1:8787
+	redir https://skargardsbyn.84.247.143.6.sslip.io{uri} permanent
 }

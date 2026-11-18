@@ -39,12 +39,20 @@ describe('server', () => {
     expect(r.headers.get('x-robots-tag')).toContain('noindex');
   });
 
-  it('serves the playtest build to the spela. host', async () => {
+  const fetchHost = async (host: string) => {
     const http = await import('node:http');
-    const body = await new Promise<string>((ok) => {
-      http.get(base + '/', { headers: { host: 'spela.84.247.143.6.sslip.io' } }, (r) => { let b = ''; r.on('data', (c) => (b += c)); r.on('end', () => ok(b)); });
+    return new Promise<string>((ok) => {
+      http.get(base + '/', { headers: { host } }, (r) => { let b = ''; r.on('data', (c) => (b += c)); r.on('end', () => ok(b)); });
     });
-    expect(body).toContain('testversion');
+  };
+
+  it('serves the playtest build to the skargardsbyn. host (and the old spela.)', async () => {
+    expect(await fetchHost('skargardsbyn.84.247.143.6.sslip.io')).toContain('testversion');
+    expect(await fetchHost('spela.84.247.143.6.sslip.io')).toContain('testversion');
+  });
+
+  it('serves the dev build to dev.skargardsbyn.', async () => {
+    expect(await fetchHost('dev.skargardsbyn.84.247.143.6.sslip.io')).not.toContain('testversion');
   });
 
   it('stores playtest events as NDJSON', async () => {

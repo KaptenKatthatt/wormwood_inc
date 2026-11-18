@@ -4,7 +4,7 @@
 set -euo pipefail
 REF="${1:-origin/main}"
 # Two builds: dist/ with the dev menu (Jonas), and dist-test/ without it for
-# playtesters, served at https://spela.84.247.143.6.sslip.io/ by the same server.
+# playtesters, served at https://skargardsbyn.84.247.143.6.sslip.io/ by the same server.
 export VITE_DEV_MENU=true
 APP=/opt/wormwood/app
 cd "$APP"

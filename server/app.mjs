@@ -46,7 +46,8 @@ const MAX_BODY = 64 * 1024;
  */
 export async function createApp(opts) {
   const devDist = resolve(opts.distDir);
-  // The playtest build (no dev menu) is served to hosts that start with "spela.".
+  // The playtest build (no dev menu) is served to the host skargardsbyn.<ip>.sslip.io
+  // (and the old spela.<ip>, which Caddy now redirects); dev.skargardsbyn.<ip> gets the dev build.
   const testDist = opts.testDistDir ? resolve(opts.testDistDir) : null;
   const dataDir = resolve(opts.dataDir);
   const now = opts.now ?? Date.now;
@@ -159,7 +160,7 @@ export async function createApp(opts) {
   // ---- static --------------------------------------------------------------
   /** @param {import('node:http').ServerResponse} res @param {string} urlPath */
   async function serveStatic(res, urlPath, host = '') {
-    const distDir = testDist && host.startsWith('spela.') ? testDist : devDist;
+    const distDir = testDist && /^(skargardsbyn|spela)\./.test(host) ? testDist : devDist;
     let rel = decodeURIComponent(urlPath.split('?')[0]);
     if (rel.endsWith('/')) rel += 'index.html';
     let file = normalize(join(distDir, rel));

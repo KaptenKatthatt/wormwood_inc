@@ -2,7 +2,7 @@
 // Usage: node tools/archive-screenshots.cjs <out-dir/> [url]
 const { chromium, devices } = require('playwright');
 const D = process.argv[2];
-const URL = process.argv[3] ?? 'https://wormwood.84.247.143.6.sslip.io/';
+const URL = process.argv[3] ?? 'https://dev.skargardsbyn.84.247.143.6.sslip.io/';
 
 (async () => {
   const b = await chromium.launch();
