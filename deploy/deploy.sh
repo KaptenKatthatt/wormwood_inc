@@ -12,9 +12,9 @@ git fetch --quiet origin
 git checkout --quiet --detach "$REF"
 npm ci --no-audit --no-fund
 npm run verify
-# The expansion (worlds, week staircase, neighbours) stays out of the tester
-# build until the pilot is over: TEST_EXPANSION=true deploy.sh ... turns it on.
-VITE_DEV_MENU=false VITE_EXPANSION="${TEST_EXPANSION:-false}" npx vite build --outDir dist-test --emptyOutDir
+# The tester build always has the latest version, without the dev menu
+# (Jonas, 2026-11-18). TEST_EXPANSION=false deploy.sh ... leaves the expansion out.
+VITE_DEV_MENU=false VITE_EXPANSION="${TEST_EXPANSION:-true}" npx vite build --outDir dist-test --emptyOutDir
 chown -R wormwood:wormwood "$APP/dist" "$APP/dist-test"
 systemctl restart wormwood
 sleep 1
