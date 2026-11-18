@@ -53,8 +53,9 @@
     if (!game && dialog === null && $tutorial.index !== null && TUT_STEPS[$tutorial.index]?.id === 'swap') start(current);
   });
 
-  function start(l: Level) {
-    if (gateBlocks(l.id)) { gateOpenDialog.set(true); return; }
+  /** dev: true when the dev build's map picks a challenge; it skips the neighbours' gate. */
+  function start(l: Level, dev = false) {
+    if (!dev && gateBlocks(l.id)) { gateOpenDialog.set(true); return; }
     if (!canPlay()) {
       dialog = 'noLives';
       if (hookOn('buyLives')) logHook('buyLives', { price: PRICE.oneLife, full: PRICE.fullLives }, 'shown');
@@ -298,7 +299,7 @@
     {/if}
   </section>
 {:else}
-  <MapView current={current.id} {countdown} onPlay={() => { stopCountdown(); start(current); }} />
+  <MapView current={current.id} {countdown} onPlay={() => { stopCountdown(); start(current); }} onPick={DEV_MENU ? (id) => { stopCountdown(); challengeNo.set(id); start(levelAt(id), true); } : undefined} />
 {/if}
 
 {#if dialog === 'outOfMoves' && game}

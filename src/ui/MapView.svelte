@@ -15,7 +15,8 @@
   import { bestStars } from '../lib/state/game';
   import WeekStrip from './WeekStrip.svelte';
 
-  let { current, countdown = 0, onPlay }: { current: number; countdown?: number; onPlay: () => void } = $props();
+  /** onPick: dev build only (Jonas, 2026-11-18): tap any challenge on the map to play it. */
+  let { current, countdown = 0, onPlay, onPick }: { current: number; countdown?: number; onPlay: () => void; onPick?: (id: number) => void } = $props();
 
   // The image is 1024 x 5632 px; the nodes are in its pixels.
   const W = 1024;
@@ -86,7 +87,9 @@
           {@const done = l.id < current}
           {@const now = l.id === current}
           {@const r = now ? 58 : 42}
-          <g transform={`translate(${p[0]} ${p[1]})`}>
+          <!-- svelte-ignore a11y_no_noninteractive_tabindex (role is button whenever tabindex is set) -->
+          <g transform={`translate(${p[0]} ${p[1]})`} class:pick={!!onPick} role={onPick ? 'button' : undefined} tabindex={onPick ? 0 : undefined} aria-label={onPick ? `Spela utmaning ${l.id}` : undefined}
+            onclick={onPick ? () => onPick(l.id) : undefined} onkeydown={onPick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(l.id); } } : undefined}>
             <ellipse cy={r * 0.42} rx={r} ry={r * 0.55} fill="#00000033" />
             <g class:now>
               <circle {r} fill={done ? '#e0b04a' : now ? '#b8382a' : '#f4ead8'} stroke={now ? '#fff' : '#7a2418'} stroke-width={now ? 10 : 6.5} />
@@ -116,6 +119,9 @@
   svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .num { font: 800 40px 'Baloo 2', system-ui, sans-serif; fill: #5a1d14; }
   .num.light { fill: #fff; font-size: 52px; }
+  .pick { cursor: pointer; }
+  .pick:focus-visible { outline: none; }
+  .pick:focus-visible circle { stroke: #2c5d6e; }
   .stars { font-size: 56px; fill: #f2c230; stroke: #7a2418; stroke-width: 3; paint-order: stroke; }
   .stars .off { fill: #e8dccb; }
   svg { z-index: 2; }
