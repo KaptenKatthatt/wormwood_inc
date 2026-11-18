@@ -14,9 +14,9 @@ const PAID = new Set(['gemPacks', 'topUpGold', 'skipWait', 'buyLives', 'extraMov
 export function initSoundDirector(startTab: string): void {
   initSound();
   // The game opens on the title screen (the boathouse) with its own tune, "Solsken"
-  // (Jonas, 2026-11-18). Browsers only let sound start at the first touch, which is
-  // usually the Play button, so the tune keeps playing over the map after Play and
-  // gives way at the first level or when the player goes to the village.
+  // (Jonas, 2026-11-18), straight away where the browser allows autoplay, otherwise
+  // at the first touch anywhere. It keeps playing over the map after Play and gives
+  // way at the first level or when the player goes to the village.
   let tab = startTab;
   setMusic('title');
 

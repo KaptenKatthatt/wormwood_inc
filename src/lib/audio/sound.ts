@@ -2,10 +2,10 @@
  * Music and sound effects (Jonas picked every sound on 2026-11-17, see
  * public/audio/CREDITS.md and docs on the listening page).
  *
- * - Web Audio, one AudioContext. Browsers only allow sound after the player
- *   has touched the page, so nothing is created or played before the first
- *   pointerdown/keydown (autoplay rules). Music that was asked for earlier
- *   starts at that moment.
+ * - Web Audio, one AudioContext, made when the app opens. Most browsers keep
+ *   it silent until the player first touches the page (autoplay rules); then
+ *   the music already loaded starts. Where the browser allows autoplay (an app
+ *   added to the home screen in Chrome) it plays at once, see tryAutoplay.
  * - Music, the sea ambience and sound effects are switched on and off
  *   separately in Settings (accessibility) and remembered on the device.
  * - Everything pauses when the app is hidden, so it never plays in a pocket.
@@ -74,24 +74,47 @@ function buffer(path: string): Promise<AudioBuffer | null> {
   return p;
 }
 
-/** Called from the first touch or key press. */
+/** Creates the audio graph once. A context made before any touch starts suspended
+ * unless the browser allows autoplay for the site. */
+function ensureContext(): AudioContext | null {
+  if (ctx) return ctx;
+  const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AC) return null;
+  ctx = new AC();
+  ext = pickFormat();
+  musicGain = ctx.createGain();
+  ambienceGain = ctx.createGain();
+  sfxGain = ctx.createGain();
+  for (const g of [musicGain, ambienceGain, sfxGain]) g.connect(ctx.destination);
+  applyVolumes();
+  // Warm the small effects so the first match is not late.
+  for (const f of [...Object.values(SFX_FILES), ...Array.from({ length: MATCH_STEPS }, (_, i) => `match-${i}`)]) void buffer(`sfx/${f}`);
+  return ctx;
+}
+
+/** Called from the first touch or key press anywhere on the page. */
 function unlock(): void {
-  if (!ctx) {
-    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return;
-    ctx = new AC();
-    ext = pickFormat();
-    musicGain = ctx.createGain();
-    ambienceGain = ctx.createGain();
-    sfxGain = ctx.createGain();
-    for (const g of [musicGain, ambienceGain, sfxGain]) g.connect(ctx.destination);
-    applyVolumes();
-    // Warm the small effects so the first match is not late.
-    for (const f of [...Object.values(SFX_FILES), ...Array.from({ length: MATCH_STEPS }, (_, i) => `match-${i}`)]) void buffer(`sfx/${f}`);
-  }
-  if (ctx.state === 'suspended' && document.visibilityState === 'visible') void ctx.resume();
+  const c = ensureContext();
+  if (!c) return;
+  if (c.state === 'suspended' && document.visibilityState === 'visible') void c.resume();
   void syncMusic();
   void syncAmbience();
+}
+
+/**
+ * Tries to start the music the moment the app opens, before any touch (Jonas,
+ * 2026-11-18: the title music starts as soon as the title screen shows). Chrome
+ * allows that for a site added to the home screen and for sites the player often
+ * listens on; otherwise the context stays suspended with the music loaded and
+ * ready, and the first touch anywhere starts it.
+ */
+function tryAutoplay(): void {
+  if (document.visibilityState !== 'visible') return;
+  const c = ensureContext();
+  if (!c) return;
+  void syncMusic();
+  void syncAmbience();
+  if (c.state === 'suspended') void c.resume().catch(() => undefined);
 }
 
 function applyVolumes(): void {
@@ -207,13 +230,17 @@ export function initSound(): void {
   const opts = { capture: true, passive: true } as const;
   window.addEventListener('pointerdown', unlock, opts);
   window.addEventListener('keydown', unlock, opts);
+  tryAutoplay();
   // A soft click for every button in the menus (the board makes its own sounds).
   window.addEventListener('click', (e) => {
     const el = (e.target as Element | null)?.closest?.('button');
     if (el && !el.closest('[data-no-click-sound]')) play('click');
   }, { capture: true });
   document.addEventListener('visibilitychange', () => {
-    if (!ctx) return;
+    if (!ctx) {
+      tryAutoplay();
+      return;
+    }
     if (document.visibilityState === 'hidden') void ctx.suspend();
     else void ctx.resume();
   });
