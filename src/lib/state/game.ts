@@ -17,7 +17,7 @@ import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
 import { BUILDINGS, SIDES, TOWERS, START_VILLAGE, buildBlock, buildTime, goldMultiplier, priceFor, skipGems, topUpGems, withAllBuildings, type BuildingId, type VillageState } from '../economy/village';
 import { DEV_MENU } from '../config/flags';
 import { HOOKS, type HookId, type HookResponse } from '../hooks';
-import { ATTACK, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
+import { ATTACK, FALLBACK_MINUTES, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
 import { BUBBLES, LETTERS, pickLine } from '../voices';
 import { tutorialActive } from '../tutorial';
 
@@ -509,7 +509,7 @@ function stairTick(): void {
   }
   // the attack comes at minute 12 (not when step 5 was reached by trying to quit)
   const s2 = get(stairs);
-  if (s2.step === 5 && !s2.attack && minutesIn() >= 12 && hookOn('attack')) startAttack();
+  if (s2.step === 5 && !s2.attack && minutesIn() >= FALLBACK_MINUTES[5] && hookOn('attack')) startAttack();
   const s3 = get(stairs);
   if (s3.attack && !s3.attack.result && now >= s3.attack.hitsAt) hitAttack();
 }
