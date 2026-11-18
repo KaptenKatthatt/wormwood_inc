@@ -5,7 +5,7 @@ import { REGIONS, regionOf, type Obstacle, type Region } from '../lib/match3/lev
 import { DEEP as DEEP0, FRAME as FRAME0 } from './palette';
 
 /** The obstacle pictures (Jonas approved them 2026-11-18). */
-const OBSTACLES = ['is', 'is-sprucken', 'sno', 'sno-tunn', 'mossa', 'tang', 'sten', 'stock', 'lera', 'hobal', 'kol', 'malm', 'nat', 'klapper', 'frost', 'snogubbe'] as const;
+const OBSTACLES = ['is', 'is-sprucken', 'sno', 'sno-tunn', 'mossa', 'tang', 'sten', 'stock', 'lera', 'hobal', 'kol', 'malm', 'nat', 'klapper', 'frost', 'snogubbe', 'sand'] as const;
 const BLOCK_PICTURE: Record<number, string> = { [TANG]: 'tang', [STEN]: 'sten', [STOCK]: 'stock', [MALM]: 'malm', [KLAPPER]: 'klapper', [HOBAL]: 'hobal' };
 
 type Tile = Phaser.GameObjects.Container;
@@ -216,7 +216,7 @@ export class Match3Scene extends Phaser.Scene {
     if (!e || !what) return;
     const has = (p: Cell): boolean => {
       const k = e.board[p.r][p.c];
-      if (what === 'is' || what === 'sno' || what === 'lera' || what === 'kol' || what === 'nat' || what === 'frost') return e.ice[p.r][p.c] > 0;
+      if (what === 'is' || what === 'sno' || what === 'lera' || what === 'kol' || what === 'nat' || what === 'sand' || what === 'frost') return e.ice[p.r][p.c] > 0;
       if (what === 'mossa') return e.moss[p.r][p.c];
       return k === { tang: TANG, sten: STEN, stock: STOCK, snogubbe: STEN, malm: MALM, klapper: KLAPPER, hobal: HOBAL }[what];
     };

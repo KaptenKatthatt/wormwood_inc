@@ -224,7 +224,7 @@
       case 'score': return `${n} poäng`;
       case 'ice': {
         const cover = regionOf(l.id).cover?.picture;
-        if (cover) return `${n} ${{ lera: 'lera', kol: 'kol', nat: 'nät', frost: 'frostlager' }[cover as string] ?? 'is'}`;
+        if (cover) return `${n} ${{ lera: 'lera', kol: 'kol', nat: 'nät', sand: 'sand', frost: 'frostlager' }[cover as string] ?? 'is'}`;
         return regionOf(l.id).id === 'fjall' ? `${n} snölager` : `${n} is`;
       }
       case 'moss': return `${n} mossa`;

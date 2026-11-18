@@ -19,7 +19,7 @@ export type Goal =
 /** An obstacle the player meets for the first time with an arrow and one sentence. */
 export type Obstacle = 'is' | 'tang' | 'mossa' | 'stock' | 'sno' | 'sten'
   // worlds 2-5 (2026-11-18): four covers that work like ice, two blocks like stone and seaweed, three new
-  | 'lera' | 'hobal' | 'kol' | 'malm' | 'nat' | 'klapper' | 'frost' | 'snogubbe';
+  | 'lera' | 'hobal' | 'kol' | 'malm' | 'nat' | 'klapper' | 'frost' | 'snogubbe' | 'sand';
 
 export interface Level {
   id: number;
@@ -85,7 +85,7 @@ export const REGIONS: Region[] = [
   // Worlds 2-5 (Jonas approved tiles, frames and obstacles 2026-11-18; mapping in pussel-stil/regioner/README.md).
   { id: 'slatten', first: 41, tiles: ['raps', 'vallmo', 'blaklint', 'apple', 'trasko', 'gas'], ext: 'webp', names: ['rapsblommor', 'vallmor', 'blåklintar', 'äpplen', 'träskor', 'gäss'], background: '/art/worlds/2/bakgrund.jpg', frame: 0xb07a24, light: 0xd29a3e, dark: 0x6e4a12, cover: { picture: 'lera', alpha: 0.9 } },
   { id: 'bergslagen', first: 81, tiles: ['lingon', 'gultlov', 'lykta', 'kristall', 'grankvist', 'ekollon'], ext: 'webp', names: ['lingon', 'höstlöv', 'gruvlyktor', 'kristaller', 'grankvistar', 'ekollon'], background: '/art/worlds/3/bakgrund.jpg', frame: 0x7a4630, light: 0x9c6446, dark: 0x4a2818, cover: { picture: 'kol', alpha: 0.92 } },
-  { id: 'hogakusten', first: 121, tiles: ['sjostjarna', 'mussla', 'krabba', 'flote', 'fjader', 'korg'], ext: 'webp', names: ['sjöstjärnor', 'blåmusslor', 'krabbor', 'glasflöten', 'måsfjädrar', 'fiskekorgar'], background: '/art/worlds/4/bakgrund.jpg', frame: 0x2f6c6c, light: 0x4b8d8c, dark: 0x18403f, cover: { picture: 'nat', alpha: 0.85 } },
+  { id: 'hogakusten', first: 121, tiles: ['sjostjarna', 'mussla', 'krabba', 'flote', 'fjader', 'korg'], ext: 'webp', names: ['sjöstjärnor', 'blåmusslor', 'krabbor', 'glasflöten', 'måsfjädrar', 'fiskekorgar'], background: '/art/worlds/4/bakgrund.jpg', frame: 0x2f6c6c, light: 0x4b8d8c, dark: 0x18403f, cover: { picture: 'sand', alpha: 1 } },
   { id: 'vinter', first: 161, tiles: ['pepparkaka', 'halmbock', 'julkula', 'vante', 'julgran', 'paket'], ext: 'webp', names: ['pepparkakor', 'halmbockar', 'julkulor', 'vantar', 'julgranar', 'paket'], background: '/art/worlds/5/bakgrund.jpg', frame: 0x7a3550, light: 0x9c4f6c, dark: 0x4a1c30, cover: { picture: 'frost', alpha: 0.75 }, stone: 'snogubbe' },
 ];
 export function regionOf(levelId: number): Region {
@@ -112,6 +112,7 @@ export const OBSTACLE_TIPS: Record<Obstacle, string> = {
   kol: 'Kolet sopas bort ett lager i taget när du matchar på det eller bredvid.',
   malm: 'Malmen tål två träffar. Matcha bredvid den två gånger.',
   nat: 'Brickor under nät sitter fast. Matcha dem där de ligger!',
+  sand: 'Sanden täcker brickan. Matcha på den eller bredvid den så blåser den bort!',
   klapper: 'Klapperstenen tål tre träffar. Matcha bredvid den tre gånger!',
   frost: 'Frosten smälter i två steg. Matcha på den eller bredvid den.',
   snogubbe: 'Snögubben smälter bara av specialbrickor. Gör en raket!',
@@ -275,7 +276,7 @@ const WORLD_OBSTACLES: Record<number, { cover: Obstacle; block: Obstacle; layers
     blockAt: [[[3, 2], [3, 5], [4, 2], [4, 5]], [[2, 3], [2, 4], [5, 3], [5, 4]], [[3, 1], [3, 6], [5, 2], [5, 5]], [[2, 2], [2, 5], [5, 2], [5, 5]]],
   },
   4: {
-    cover: 'nat', block: 'klapper', layers: () => 1, blockField: 'klapper', blockMoves: 24,
+    cover: 'sand', block: 'klapper', layers: () => 1, blockField: 'klapper', blockMoves: 24,
     blockGoal: (count) => ({ type: 'block', block: 'klapper', count }),
     blockAt: [[[3, 3], [3, 4], [4, 3], [4, 4]], [[5, 1], [5, 2], [5, 5], [5, 6]], [[2, 3], [3, 3], [4, 4], [5, 4]], [[3, 1], [3, 6], [4, 1], [4, 6]]],
   },
@@ -297,7 +298,7 @@ export function goalText(goal: Goal, levelId = 1): string {
   const region = regionOf(levelId);
   switch (goal.type) {
     case 'collect': return `Samla ${goal.count} ${region.names[goal.kind]}`;
-    case 'ice': return ({ fjall: 'Skotta bort all snö', slatten: 'Torka bort all lera', bergslagen: 'Sopa bort allt kol', hogakusten: 'Lossa alla nät', vinter: 'Smält all frost' } as Record<string, string>)[region.id] ?? 'Bryt all is';
+    case 'ice': return ({ fjall: 'Skotta bort all snö', slatten: 'Torka bort all lera', bergslagen: 'Sopa bort allt kol', hogakusten: 'Sopa bort all sand', vinter: 'Smält all frost' } as Record<string, string>)[region.id] ?? 'Bryt all is';
     case 'score': return `Nå ${goal.score.toLocaleString('sv-SE')} poäng`;
     case 'moss': return 'Rensa bort all mossa';
     case 'block': {
