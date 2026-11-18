@@ -32,6 +32,8 @@ export type Rocket = 'left' | 'right' | 'up' | 'down';
 export type Special = Rocket | 'area' | 'all' | null;
 /** The flame behind a rocket burns the rest of its line (Jonas, 2026-11-17). */
 export const ROCKET_BOTH_WAYS = true;
+/** Bonus gold per move left when a challenge is won. */
+export const FINALE_GOLD = 5;
 export const isRocket = (s: Special | 'bomb'): s is Rocket => s === 'left' || s === 'right' || s === 'up' || s === 'down';
 export interface Made { cell: Cell; kind: number; special: Special }
 export interface Step {
@@ -69,6 +71,8 @@ export class Match3 {
   collected = 0;
   iceTotal: number;
   rigged: boolean;
+  /** Moves left when the goal was reached, kept for the stars after the finale spends them. */
+  leftAtWin = -1;
   private rng: Rng;
 
   constructor(level: Level, rng: Rng, rigged: boolean, board?: number[][]) {
@@ -153,7 +157,9 @@ export class Match3 {
     this.movesUsed++;
     const steps: Step[] = [];
     let chain = 1;
-    if (free) {
+    if (this.fires(a) && this.fires(b)) {
+      steps.push(this.combo(a, b, chain++));
+    } else if (free) {
       const allAt = this.special[a.r][a.c] === 'all' ? a : this.special[b.r][b.c] === 'all' ? b : null;
       const bombAt = ka === BOMB ? a : kb === BOMB ? b : null;
       if (allAt) {
@@ -186,6 +192,86 @@ export class Match3 {
       shuffled = true;
     }
     return { valid: true, steps, shuffled };
+  }
+
+  private sortOf(p: Cell): 'rocket' | 'area' | 'all' | null {
+    const sp = this.special[p.r][p.c];
+    if (this.board[p.r][p.c] === BOMB || sp === 'all') return 'all';
+    if (sp === 'area') return 'area';
+    if (isRocket(sp)) return 'rocket';
+    return null;
+  }
+
+  /**
+   * Two specials swapped together (Jonas, 2026-11-18, no explanation in the
+   * game): rocket + rocket clears a cross, rocket + fireworks three rows and
+   * three columns, two fireworks a 5x5 square, a shining tile turns every
+   * tile of its kind into the other special and sets them all off, and two
+   * shining tiles clear the whole board. The combo goes off where the moved
+   * tile landed (b).
+   */
+  private combo(a: Cell, b: Cell, chain: number): Step {
+    const sa = this.sortOf(a);
+    const sb = this.sortOf(b);
+    const pair = (x: string, y: string) => (sa === x && sb === y) || (sa === y && sb === x);
+    const kindOfAll = (p: Cell) => (this.board[p.r][p.c] === BOMB ? this.commonKind() : this.board[p.r][p.c]);
+    const blasts: Step['blasts'] = [];
+    const hit: Cell[] = [a, b];
+    // the two specials are used up by the combo, not by their own effects
+    this.special[a.r][a.c] = null;
+    this.special[b.r][b.c] = null;
+    const row = (r: number) => { if (r >= 0 && r < this.rows) { for (let c = 0; c < this.cols; c++) hit.push({ r, c }); blasts.push({ cell: { r, c: b.c }, special: 'right' }); } };
+    const col = (c: number) => { if (c >= 0 && c < this.cols) { for (let r = 0; r < this.rows; r++) hit.push({ r, c }); blasts.push({ cell: { r: b.r, c }, special: 'down' }); } };
+    if (sa === 'all' && sb === 'all') {
+      hit.push(...this.allCells());
+      blasts.push({ cell: b, special: 'bomb' });
+    } else if (sa === 'all' || sb === 'all') {
+      const allAt = sa === 'all' ? a : b;
+      const other = allAt === a ? sb : sa;
+      const kind = kindOfAll(allAt);
+      const cells = this.cellsOf(kind);
+      // every tile of the kind becomes the other special, then they all go off
+      cells.forEach((x, i) => { this.special[x.r][x.c] = other === 'area' ? 'area' : i % 2 ? 'down' : 'right'; });
+      hit.push(...cells);
+      blasts.push({ cell: allAt, special: 'bomb' });
+    } else if (pair('rocket', 'rocket')) {
+      row(b.r); col(b.c);
+    } else if (pair('rocket', 'area')) {
+      for (const d of [-1, 0, 1]) { row(b.r + d); col(b.c + d); }
+    } else {
+      for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) hit.push({ r: b.r + dr, c: b.c + dc });
+      blasts.push({ cell: b, special: 'area' });
+    }
+    return this.resolve(hit, chain, [], blasts);
+  }
+
+  /**
+   * Stars for a won challenge (Jonas, 2026-11-18): one for winning, two with
+   * at least 15 % of the moves left, three with at least 30 %.
+   */
+  stars(): number {
+    const left = this.leftAtWin >= 0 ? this.leftAtWin : this.movesLeft;
+    const f = left / this.level.moves;
+    return f >= 0.3 ? 3 : f >= 0.15 ? 2 : 1;
+  }
+
+  /**
+   * The finale after a win: each move left becomes a rocket on a random tile,
+   * and they all go off (bonus gold is paid per move, see FINALE_GOLD).
+   */
+  finale(): Step[] {
+    if (this.status() !== 'won' || this.leftAtWin >= 0) return [];
+    this.leftAtWin = this.movesLeft;
+    const spots = this.allCells().filter(({ r, c }) => !this.ice[r][c] && !this.fires({ r, c }));
+    const picked: Cell[] = [];
+    for (let i = 0; i < Math.min(this.movesLeft, 12, spots.length); i++) {
+      const j = Math.floor(this.rng() * spots.length);
+      const p = spots.splice(j, 1)[0];
+      this.special[p.r][p.c] = this.rng() < 0.5 ? 'right' : 'down';
+      picked.push(p);
+    }
+    this.movesLeft = 0;
+    return picked.length ? [this.resolve(picked, 1)] : [];
   }
 
   /** Tapping a special sets it off where it stands, for one move. */

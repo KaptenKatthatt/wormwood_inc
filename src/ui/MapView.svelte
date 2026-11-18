@@ -9,6 +9,7 @@
   import { tick } from 'svelte';
   import { LEVELS, goalText } from '../lib/match3/levels';
   import NODES from '../lib/match3/mapNodes.json';
+  import { bestStars } from '../lib/state/game';
 
   let { current, countdown = 0, onPlay }: { current: number; countdown?: number; onPlay: () => void } = $props();
 
@@ -64,7 +65,7 @@
               <circle {r} fill={done ? '#e0b04a' : now ? '#b8382a' : '#f4ead8'} stroke={now ? '#fff' : '#7a2418'} stroke-width={now ? 10 : 6.5} />
               <text y={now ? 18 : 14} text-anchor="middle" class="num" class:light={now}>{l.id}</text>
             </g>
-            {#if done}<text y={-r - 6} text-anchor="middle" class="stars">★★★</text>{/if}
+            {#if done || $bestStars[l.id]}{@const n = $bestStars[l.id] ?? 1}<text y={-r - 6} text-anchor="middle" class="stars">{#each [1, 2, 3] as i}<tspan class:off={i > n}>★</tspan>{/each}</text>{/if}
           </g>
         {/each}
       </svg>
@@ -89,6 +90,7 @@
   .num { font: 800 40px 'Baloo 2', system-ui, sans-serif; fill: #5a1d14; }
   .num.light { fill: #fff; font-size: 52px; }
   .stars { font-size: 30px; fill: #f2c230; stroke: #7a2418; stroke-width: 2; }
+  .stars .off { fill: #e8dccb; }
   g.now { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
   @keyframes pulse { 50% { transform: scale(1.12); } }
   .next { display: flex; align-items: center; gap: 12px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: #fff8ec; border-top: 3px solid #7a2418; color: var(--deep); }

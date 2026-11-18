@@ -11,6 +11,7 @@ import { load, randomId, save } from './storage';
 import { log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
 import { CHALLENGE_COUNT } from '../match3/levels';
+import { FINALE_GOLD } from '../match3/engine';
 import { AWAY_ATTACK_AFTER, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
@@ -240,11 +241,24 @@ export function buyLives(full: boolean): boolean {
 export const challengeNo = writable<number>(load('challengeNo', 1));
 challengeNo.subscribe((n) => save('challengeNo', n));
 
-export function levelWon(levelId: number, extra: Record<string, unknown>): number {
+/** Best stars per challenge (Jonas, 2026-11-18); shown on the map. */
+export const bestStars = writable<Record<number, number>>(load('bestStars', {}));
+bestStars.subscribe((s) => save('bestStars', s));
+/** Extra gold for three stars. */
+export const THREE_STAR_GOLD = 30;
+
+/** What a win paid, for the dialog. */
+export interface WinPay { total: number; base: number; finale: number; starBonus: number; streakBonus: number; stars: number }
+
+export function levelWon(levelId: number, extra: Record<string, unknown>, stars = 1, movesLeft = 0): WinPay {
   challengeNo.set(levelId >= CHALLENGE_COUNT ? 1 : levelId + 1);
-  let gold = levelReward(levelId, goldMultiplier(effectiveVillage()));
+  bestStars.update((b) => ({ ...b, [levelId]: Math.max(b[levelId] ?? 0, stars) }));
+  let base = levelReward(levelId, goldMultiplier(effectiveVillage()));
   const weekend = dayOn('weekend') && weekendEvent(clock.now()).on;
-  if (weekend) gold *= WEEKEND_GOLD;
+  if (weekend) base *= WEEKEND_GOLD;
+  const finale = movesLeft * FINALE_GOLD;
+  const starBonus = stars === 3 ? THREE_STAR_GOLD : 0;
+  const gold = base + finale + starBonus;
   addGold(gold);
   let streakBonus = 0;
   if (dayOn('streak')) {
@@ -260,8 +274,8 @@ export function levelWon(levelId: number, extra: Record<string, unknown>): numbe
   let gems = 0;
   if (Math.random() < 0.15) { gems = 5; purse.update((p) => ({ ...p, gems: p.gems + gems })); }
   levelStats.update((s) => ({ ...s, [levelId]: { wins: (s[levelId]?.wins ?? 0) + 1, losses: s[levelId]?.losses ?? 0 } }));
-  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, minutesIn: minutesIn(), ...extra });
-  return gold + streakBonus;
+  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, stars, movesLeft, minutesIn: minutesIn(), ...extra });
+  return { total: gold + streakBonus, base, finale, starBonus, streakBonus, stars };
 }
 
 export function levelLost(levelId: number, extra: Record<string, unknown>): void {
@@ -387,6 +401,7 @@ export function resetAll(): void {
   levelStats.set({});
   freeBoosters.set({ hammer: 1, shuffle: 1 });
   challengeNo.set(1);
+  bestStars.set({});
   daily.set(startDaily(clock.now()));
   awayReport.set(null);
   startedAt = clock.now();

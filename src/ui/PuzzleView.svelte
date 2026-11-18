@@ -13,6 +13,7 @@
   import { nextLifeIn } from '../lib/time/lives';
   import {
     buyExtraMoves, buyLives, canAffordBooster, challengeNo, canPlay, freeBoosters, hookOn, payBooster, levelLost, levelStats, levelWon, lives, logHook, now, purse, stairEvent, stairs,
+    type WinPay,
   } from '../lib/state/game';
   import { log } from '../lib/log/logger';
   import { DEV_MENU } from '../lib/config/flags';
@@ -23,7 +24,7 @@
   let game = $state<Match3 | null>(null);
   let rev = $state(0); // bumps after every move so the counters re-read the engine
   let dialog = $state<null | 'outOfMoves' | 'won' | 'lost' | 'noLives'>(null);
-  let reward = $state(0);
+  let reward = $state<WinPay | null>(null);
   let startedReal = 0;
   let tool = $state<null | 'hammer'>(null);
   let mixed = $state(0);
@@ -97,7 +98,7 @@
     if (!g) return;
     const s = g.status();
     if (s === 'won') {
-      reward = levelWon(g.level.id, endInfo());
+      reward = levelWon(g.level.id, endInfo(), g.stars(), g.leftAtWin > 0 ? g.leftAtWin : 0);
       dialog = 'won';
       tutEvent('levelEnded');
       
@@ -270,7 +271,11 @@
   </Modal>
 {:else if dialog === 'won' && game}
   <Modal title="Utmaningen klarad!">
-    <p class="big">+{reward} guld 🪙</p>
+    <p class="stars" aria-label={`${reward?.stars ?? 1} av 3 stjärnor`}>{#each [1, 2, 3] as i}<span class:on={i <= (reward?.stars ?? 1)}>★</span>{/each}</p>
+    <p class="big">+{reward?.total ?? 0} guld 🪙</p>
+    {#if reward && (reward.finale || reward.starBonus)}
+      <p class="fine">{reward.base} för utmaningen{#if reward.finale}, {reward.finale} för dragen som blev över{/if}{#if reward.starBonus}, {reward.starBonus} för tre stjärnor{/if}.</p>
+    {/if}
     <div class="buttons">
       <button class="primary" onclick={() => toMap(true)}>Vidare</button>
       <button class="ghost" data-tut="to-village" onclick={onVillage}>Till byn</button>
@@ -326,4 +331,6 @@
   .lbl { background: rgb(255 248 236 / .95); border: 2px solid #7a2418; border-radius: 10px; padding: 1px 6px 0; color: var(--deep); font-weight: 800; font-size: 13px; line-height: 1.15; text-align: center; box-shadow: 0 2px 0 var(--deep); }
   .fine { color: var(--muted); font-size: .9rem; }
   .big { font-size: 1.25rem; }
+  .stars { margin: 0; font-size: 2.6rem; line-height: 1; letter-spacing: .08em; color: #d8ccc0; -webkit-text-stroke: 1.5px #7a2418; }
+  .stars .on { color: #f2c230; }
 </style>
