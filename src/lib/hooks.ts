@@ -40,7 +40,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'league', step: 6, name: 'Veckoliga', what: 'Byn tävlar mot nio påhittade grannbyar om stjärnor. Topp 3 får ädelstenar, de tre sista flyttas ner. Lexikonet: Topplistor.' },
   { id: 'askHelp', step: 6, name: 'Be grannarna om liv', what: 'Utan liv kan spelaren be grannarna om liv och skicka gåvor tillbaka. Lexikonet: Be om hjälp.' },
   { id: 'album', step: 6, name: 'Samlaralbum', what: 'Sex set med sex bilder; en bild per vinst, de sista är sällsynta. Lexikonet: Samla alla.' },
-  { id: 'ads', step: 6, name: 'Belönad reklam', what: 'En påhittad reklamfilm på 5 sekunder ger ett liv eller dubbelt guld. Lexikonet: Belönad reklam.' },
+  { id: 'ads', step: 6, name: 'Belönad reklam', what: 'En påhittad reklamfilm på 10 sekunder ger ett liv eller dubbelt guld. Lexikonet: Belönad reklam.' },
   { id: 'pass', step: 6, name: 'Veckopasset', what: '20 nivåer under 7 dagar; Guldpasset för 120 ädelstenar ger mer. Det som inte hämtats försvinner. Lexikonet: Säsongspass.' },
   { id: 'chests', step: 7, name: 'Kistor', what: 'Kistor med slumpat innehåll efter vinst; öppnas efter väntan eller direkt för ädelstenar. Lexikonet: Lootboxar.' },
   { id: 'wheel', step: 7, name: 'Lyckohjulet', what: 'En gratis snurr om dagen, fler för ädelstenar; stannar ofta precis bredvid storvinsten. Lexikonet: Snurr.' },

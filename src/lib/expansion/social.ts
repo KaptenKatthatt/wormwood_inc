@@ -123,7 +123,7 @@ export function helpLives(rng: Rng): number {
   return 1 + Math.floor(rng() * 3);
 }
 
-export const AD_SECONDS = 5;
+export const AD_SECONDS = 10; // Jonas, 2026-11-18 (was 5)
 export const ADS_PER_DAY = 5;
 /** Made-up products for the pretend ads (no real brands). */
 export const AD_TEXTS = [

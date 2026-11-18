@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** A pretend rewarded ad (step 6): five seconds of a made-up product, then the reward. */
+  /** A pretend rewarded ad (step 6): ten seconds of a made-up product, then the reward. */
   import { adClosed, adOpen, adWatched } from '../lib/state/expansion';
   import { AD_SECONDS, AD_TEXTS } from '../lib/expansion/social';
 
