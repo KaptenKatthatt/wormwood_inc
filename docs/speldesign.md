@@ -112,7 +112,16 @@ Nya hinders grafik visas för Jonas och godkänns innan den läggs ut.
 
 **Stjärnor och slutfest.** Varje utmaning ger 1–3 stjärnor efter antal drag kvar, och en stjärna räcker för att gå vidare. Tre stjärnor ger 30 extra guld, och stjärnorna visas på kartan. När målet är klart blir varje drag som är kvar en raket som smäller av och ger 5 guld (byggt i 0.20.0).
 
-**Brädet per region och värld (Jonas 2026-11-18):** varje region och värld har egen bakgrund, sex egna brickor, egen ramfärg och sina två hinder. Skärgården, Skogen och Fjällen är godkända och skickade till bygget. Den nya isen och värld 2–5 väntar på Jonas ja. Mappningen finns i /mnt/project-files/pussel-stil/regioner/README.md, och granskningssidan är https://claude.ai/artifact/1mk7hqiYTf6p5RY4m9hGtN
+**Brädet per region och värld (Jonas 2026-11-18):** varje region och värld har egen bakgrund, sex egna brickor, egen ramfärg och sina två hinder. Skärgården, Skogen och Fjällen är godkända och skickade till bygget. Den nya isen (en iskub) godkändes kl. 10.50. Värld 2–5 väntar på Jonas ja. Mappningen finns i /mnt/project-files/pussel-stil/regioner/README.md, och granskningssidan är https://claude.ai/artifact/1mk7hqiYTf6p5RY4m9hGtN
+
+**Byns utseende (Jonas godkände 2026-11-18 kl. 10.36):** byvyn är målad från 3D-skissen (/mnt/project-files/byns-utseende/3d/byvy3.png), och tonen ska vara ljusare och gladare framöver. Alla 11 byggnader har plats:
+
+- Stugan, Kapellet, Kasernen, Smedjan och Marknaden står innanför muren runt ett torg med en brunn.
+- Sjöboden står på strandhällen vid bryggan.
+- Kvarnen står på ängen norr om muren.
+- Fyra vakttorn står vid portarna i norr, öster, söder och väster.
+
+Varje byggnad får tre utseenden: ett för nivå 1–3, ett för 4–7 och ett för 8–10. Medan den byggs står en byggställning. Låsta tomter täcks av snår eller skog tills de låses upp. Layouten finns i /mnt/project-files/byns-utseende/3d/village3.json.
 
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
