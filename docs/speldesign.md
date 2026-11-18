@@ -97,7 +97,7 @@ Kostnaden växer långsamt i början och sedan ungefär i kvadrat med antalet by
 
 **Nytt hinder var femte utmaning, per region.** Första gången visas hindret med en pil och en mening.
 
-- Skärgården: **is** (matchas två gånger) och **tång** (växer till en ny ruta varje drag den inte rensas).
+- Skärgården: **fisknät** (brickan sitter fast i ett nät, första matchningen river upp det och den andra tar bort det; ersatte isen 2026-11-18) och **tång** (växer till en ny ruta varje drag den inte rensas).
 - Skogen: **mossa** (tas bort med matchning bredvid) och **stockar** (ska ner till botten).
 - Fjällen: **snö** i flera lager och **sten** (spricker bara av specialbrickor).
 
