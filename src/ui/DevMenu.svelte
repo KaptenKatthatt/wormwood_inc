@@ -1,6 +1,6 @@
 <script lang="ts">
   /** Developer menu: only in builds made without VITE_DEV_MENU=false. */
-  import { SPEEDS, clock, daily, dayHooksOn, devAway, devGive, devNewDay, devStep, minutesIn, now, playerId, purse, resetAll, setHook, setSpeed, settings, stairs, toast } from '../lib/state/game';
+  import { SPEEDS, clock, daily, dayHooksOn, devAway, devGive, devMissDay, devNewDay, devStep, minutesIn, now, playerId, purse, resetAll, setHook, setSpeed, settings, stairs, toast } from '../lib/state/game';
   import { STEP_NAMES, type Step } from '../lib/staircase';
   import { HOOKS } from '../lib/hooks';
   import { formatKr } from '../lib/economy/wallet';
@@ -71,7 +71,7 @@
 
   <fieldset>
     <legend>Dagskrokar (hemveckan)</legend>
-    <p>Nu {dayOn ? 'på' : 'av'}. Första dagen {$daily.firstDay}, gåvor {$daily.claimed} av 7, svit {$daily.streak}.</p>
+    <p>Nu {dayOn ? 'på' : 'av'}. Första dagen {$daily.firstDay}, gåvor {$daily.claimed} av 7, svit {$daily.streak}, svitskydd {$daily.shields ?? 0}, vinster i dag {$daily.winsDay === new Date($now).toLocaleDateString('sv-SE') ? $daily.winsToday : 0}.</p>
     {#each [['auto', 'Från dag 2', 'första passet har bara trappan'], ['on', 'Alltid på', 'för att testa nu'], ['off', 'Av', '']] as [m, name, why]}
       <label class="row">
         <input type="radio" name="daymode" checked={$settings.dayMode === m} onchange={() => settings.update((s) => ({ ...s, dayMode: m as 'auto' | 'on' | 'off' }))} />
@@ -81,6 +81,7 @@
     <div class="buttons">
       <button class="ghost" onclick={devNewDay}>Ny dag</button>
       <button class="ghost" onclick={devAway}>Borta i 24 h</button>
+      <button class="ghost" onclick={devMissDay}>Missa en dag (sviten bryts)</button>
     </div>
   </fieldset>
 

@@ -12,7 +12,7 @@ import { log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
 import { CHALLENGE_COUNT, TOTAL_CHALLENGES } from '../match3/levels';
 import { FINALE_GOLD } from '../match3/engine';
-import { AWAY_ATTACK_AFTER, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
+import { AWAY_ATTACK_AFTER, SHIELD_GEMS, SHIELD_MAX, THREAT_PUSH_AFTER, WEEKEND_GOLD, claim, canClaim, countWin, declineRepair, repairOffer, repairStreak, tiredFactor, dayHooksActive, dayKey, nextReminder, recordWin, startDaily, weekendEvent, type DailyState, type DayMode, type Gift } from '../daily';
 import { formatKr } from '../economy/wallet';
 import { GEM_PACKS, PRICE, START, levelReward } from '../economy/shop';
 import { BUILDINGS, SIDES, TOWERS, START_VILLAGE, buildBlock, buildTime, goldMultiplier, priceFor, skipGems, topUpGems, withAllBuildings, type BuildingId, type VillageState } from '../economy/village';
@@ -278,7 +278,8 @@ bestStars.subscribe((s) => save('bestStars', s));
 export const THREE_STAR_GOLD = 30;
 
 /** What a win paid, for the dialog. */
-export interface WinPay { total: number; base: number; finale: number; starBonus: number; streakBonus: number; stars: number }
+/** tired: the share of gold this win paid (1 = full; diminishing rewards). */
+export interface WinPay { total: number; base: number; finale: number; starBonus: number; streakBonus: number; stars: number; tired: number }
 
 export function levelWon(levelId: number, extra: Record<string, unknown>, stars = 1, movesLeft = 0): WinPay {
   challengeNo.set(levelId >= LAST_CHALLENGE ? 1 : levelId + 1);
@@ -286,14 +287,27 @@ export function levelWon(levelId: number, extra: Record<string, unknown>, stars 
   let base = levelReward(levelId, goldMultiplier(effectiveVillage()) + expansionHooks.goldBonus());
   const weekend = dayOn('weekend') && weekendEvent(clock.now()).on;
   if (weekend) base *= WEEKEND_GOLD;
-  const finale = movesLeft * FINALE_GOLD;
+  let finale = movesLeft * FINALE_GOLD;
+  // Diminishing rewards: after the day's first wins each win pays less.
+  const w = countWin(get(daily), clock.now());
+  daily.set(w.state);
+  const tired = dayOn('diminishing') ? tiredFactor(w.n) : 1;
+  if (tired < 1) {
+    base = Math.round(base * tired);
+    finale = Math.round(finale * tired);
+    logHook('diminishing', { win: w.n, share: tired }, 'shown');
+  }
   const starBonus = stars === 3 ? THREE_STAR_GOLD : 0;
   const gold = base + finale + starBonus;
   addGold(gold);
   let streakBonus = 0;
   if (dayOn('streak')) {
-    const r = recordWin(get(daily), clock.now());
+    const r = recordWin(get(daily), clock.now(), dayOn('streakShield'));
     daily.set(r.state);
+    if (r.shielded) {
+      toast(`Svitskyddet räddade din svit! ${r.state.streak} dagar i rad.`, 5000);
+      logHook('streakShield', { used: true, streak: r.state.streak, left: r.state.shields }, 'shown');
+    }
     if (r.bonus > 0) {
       streakBonus = r.bonus;
       addGold(r.bonus);
@@ -304,9 +318,9 @@ export function levelWon(levelId: number, extra: Record<string, unknown>, stars 
   let gems = 0;
   if (Math.random() < 0.15) { gems = 5; purse.update((p) => ({ ...p, gems: p.gems + gems })); }
   levelStats.update((s) => ({ ...s, [levelId]: { wins: (s[levelId]?.wins ?? 0) + 1, losses: s[levelId]?.losses ?? 0 } }));
-  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, stars, movesLeft, minutesIn: minutesIn(), ...extra });
+  log('level_won', { level: levelId, gold, gems, weekend, streakBonus, stars, movesLeft, tired, minutesIn: minutesIn(), ...extra });
   expansionHooks.onWin({ level: levelId, stars, gold });
-  return { total: gold + streakBonus, base, finale, starBonus, streakBonus, stars };
+  return { total: gold + streakBonus, base, finale, starBonus, streakBonus, stars, tired };
 }
 
 export function levelLost(levelId: number, extra: Record<string, unknown>): void {
@@ -680,13 +694,51 @@ export function dayOn(id: HookId): boolean {
   return dayHooksOn() && hookOn(id);
 }
 
+/** The broken streak that can be repaired today (streak protection), shown before the calendar. */
+export const streakRepair = writable<null | { streak: number; price: number }>(null);
+
 /** Opens the calendar when today's gift is waiting (not during the introduction). */
 export function offerCalendar(): void {
-  if (tutorialActive() || get(calendarOpen)) return;
+  if (tutorialActive() || get(calendarOpen) || get(streakRepair)) return;
+  if (dayOn('streak') && dayOn('streakShield')) {
+    const o = repairOffer(get(daily), clock.now());
+    if (o) {
+      streakRepair.set(o);
+      logHook('streakShield', { repair: true, ...o }, 'shown');
+      return;
+    }
+  }
   if (dayOn('calendar') && canClaim(get(daily), clock.now())) {
     calendarOpen.set(true);
     logHook('calendar', { day: get(daily).claimed + 1 }, 'shown');
   }
+}
+
+/** Answers the repair offer; returns false when the gems are not enough. */
+export function answerRepair(pay: boolean): boolean {
+  const o = get(streakRepair);
+  if (!o) return true;
+  if (pay) {
+    if (!payGems(o.price, 'streakShield', { repair: true, ...o })) return false;
+    daily.set(repairStreak(get(daily), clock.now()));
+    toast(`Sviten är lagad: ${o.streak} dagar i rad. Klara en utmaning i dag så fortsätter den.`, 5000);
+  } else {
+    daily.set(declineRepair(get(daily), clock.now()));
+    logHook('streakShield', { repair: true, ...o }, 'no');
+  }
+  streakRepair.set(null);
+  offerCalendar();
+  return true;
+}
+
+/** Buys a streak shield ahead (at most SHIELD_MAX in store). */
+export function buyStreakShield(): boolean {
+  const d = get(daily);
+  if ((d.shields ?? 0) >= SHIELD_MAX) return false;
+  if (!payGems(SHIELD_GEMS, 'streakShield', { buy: true, had: d.shields ?? 0 })) return false;
+  daily.update((x) => ({ ...x, shields: (x.shields ?? 0) + 1 }));
+  toast('Svitskydd köpt. Det räddar sviten om du missar en dag.');
+  return true;
 }
 
 export function claimGift(): Gift | null {
@@ -742,11 +794,20 @@ export function devAway(): void {
   welcomeBack();
 }
 
+/** Dev menu: pretend the player missed yesterday (the streak breaks; repair or shield). */
+export function devMissDay(): void {
+  daily.update((d) => {
+    const two = dayKey(clock.now() - 48 * HOUR);
+    return { ...d, firstDay: two < d.firstDay ? two : d.firstDay, lastClaimDay: null, lastWinDay: d.lastWinDay ? two : null, repairAsked: null, streak: Math.max(d.streak, 3) };
+  });
+  offerCalendar();
+}
+
 /** Dev menu: pretend a new day began (the calendar gift is waiting again, day hooks on). */
 export function devNewDay(): void {
   daily.update((d) => {
     const y = dayKey(clock.now() - 24 * HOUR);
-    return { ...d, firstDay: d.firstDay === dayKey(clock.now()) ? y : d.firstDay, lastClaimDay: null, lastWinDay: d.lastWinDay ? y : null };
+    return { ...d, firstDay: d.firstDay === dayKey(clock.now()) ? y : d.firstDay, lastClaimDay: null, lastWinDay: d.lastWinDay ? y : null, winsDay: null, winsToday: 0, repairAsked: null };
   });
   offerCalendar();
 }

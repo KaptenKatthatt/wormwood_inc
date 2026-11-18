@@ -1,8 +1,8 @@
 <script lang="ts">
   /** The seven-day gift calendar (day hook). Today's gift is the highlighted one. */
   import Modal from './Modal.svelte';
-  import { calendarOpen, claimGift, daily, logHook, now } from '../lib/state/game';
-  import { CALENDAR, canClaim, giftText, liveStreak } from '../lib/daily';
+  import { buyStreakShield, calendarOpen, claimGift, daily, dayOn, logHook, now } from '../lib/state/game';
+  import { CALENDAR, SHIELD_GEMS, SHIELD_MAX, canClaim, giftText, liveStreak } from '../lib/daily';
 
   let got = $state<string | null>(null);
   const ready = $derived(canClaim($daily, $now));
@@ -39,6 +39,12 @@
     <p>Nästa gåva kommer i morgon.</p>
   {/if}
   {#if streak > 0}<p class="fine">Svit: {streak} {streak === 1 ? 'dag' : 'dagar'} i rad med en klarad utmaning.</p>{/if}
+  {#if streak > 0 && dayOn('streak') && dayOn('streakShield')}
+    <div class="shield">
+      <p><strong>🛡️ Svitskydd: {$daily.shields ?? 0} av {SHIELD_MAX}</strong><br /><span class="fine">Räddar sviten om du missar en dag.</span></p>
+      {#if ($daily.shields ?? 0) < SHIELD_MAX}<button class="ghost" onclick={buyStreakShield}>Köp för 💎 {SHIELD_GEMS}</button>{/if}
+    </div>
+  {/if}
   <div class="buttons">
     {#if ready && !got}<button class="primary" onclick={take}>Hämta</button>{/if}
     <button class="ghost" onclick={close}>{got ? 'Tack!' : 'Stäng'}</button>
@@ -55,4 +61,7 @@
   .g { font-weight: 800; font-size: .9rem; }
   .big { font-size: 1.2rem; font-weight: 800; }
   .fine { color: var(--muted); font-size: .9rem; }
+  .shield { display: flex; gap: 10px; align-items: center; justify-content: space-between; border: 2px dashed var(--line); border-radius: 10px; padding: 8px 10px; }
+  .shield p { margin: 0; }
+  .shield button { white-space: nowrap; flex: none; }
 </style>

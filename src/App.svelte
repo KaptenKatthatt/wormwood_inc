@@ -4,7 +4,7 @@
   import VillageView from './ui/VillageView.svelte';
   import SettingsView from './ui/SettingsView.svelte';
   import Consent from './ui/Consent.svelte';
-  import { awayReport, calendarOpen, offerOpen, quitFlow, settings, shopOpen, toasts } from './lib/state/game';
+  import { awayReport, calendarOpen, streakRepair, offerOpen, quitFlow, settings, shopOpen, toasts } from './lib/state/game';
   import Letter from './ui/Letter.svelte';
   import Offer from './ui/Offer.svelte';
   import Banners from './ui/Banners.svelte';
@@ -24,6 +24,7 @@
   import PersonalOffer from './ui/PersonalOffer.svelte';
   import FriendNote from './ui/FriendNote.svelte';
   import IntroScreen from './ui/IntroScreen.svelte';
+  import StreakRepair from './ui/StreakRepair.svelte';
   // The start screen shows each time the app opens (Jonas, 2026-11-18).
   let intro = $state(true);
 
@@ -78,7 +79,7 @@
     {#each $toasts as t (t.id)}<div class="toast">{t.text}</div>{/each}
   </div>
   {#if $offerOpen && !tutStep}<Offer />{/if}
-  {#if $awayReport && !tutStep}<AwayReport />{:else if $calendarOpen && !tutStep}<Calendar />{/if}
+  {#if $awayReport && !tutStep}<AwayReport />{:else if $streakRepair && !tutStep}<StreakRepair />{:else if $calendarOpen && !tutStep}<Calendar />{/if}
   {#if $shopOpen}<Shop />{/if}
   <Coach />
   {#if !tutStep}<Letter />{/if}

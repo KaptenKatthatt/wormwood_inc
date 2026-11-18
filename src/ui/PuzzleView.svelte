@@ -316,6 +316,9 @@
   <Modal title="Utmaningen klarad!">
     <p class="stars" aria-label={`${reward?.stars ?? 1} av 3 stjärnor`}>{#each [1, 2, 3] as i}<span class:on={i <= (reward?.stars ?? 1)}>★</span>{/each}</p>
     <p class="big">+{reward?.total ?? 0} guld 🪙</p>
+    {#if reward && reward.tired < 1}
+      <p class="fine tired">Byborna är trötta efter alla vinster i dag: {Math.round(reward.tired * 100)} % guld. Fullt igen i morgon.</p>
+    {/if}
     {#if reward && (reward.finale || reward.starBonus)}
       <p class="fine">{reward.base} för utmaningen{#if reward.finale}, {reward.finale} för dragen som blev över{/if}{#if reward.starBonus}, {reward.starBonus} för tre stjärnor{/if}.</p>
     {/if}
