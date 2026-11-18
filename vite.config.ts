@@ -19,8 +19,10 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // The art and the font are precached too, so the game also works offline.
         globPatterns: ['**/*.{js,css,html,png,jpg,webp,woff2,svg,webmanifest}'],
-        // The pilot build has no worlds 2-5, so their art is not downloaded there.
-        globIgnores: process.env.VITE_EXPANSION === 'false' ? ['**/art/worlds/**'] : [],
+        // Worlds 2-5 (3 MB of maps and boards) are not precached: an update then
+        // only downloads the first world, so it finishes before the player
+        // leaves the app. Their art is cached the first time it is shown (sw.ts).
+        globIgnores: ['**/art/worlds/**'],
       },
       manifest: {
         id: '/',

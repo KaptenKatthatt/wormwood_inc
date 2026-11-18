@@ -29,6 +29,17 @@ registerRoute(
     return res;
   },
 );
+// The art of worlds 2-5: shown from the cache at once and refreshed behind it.
+registerRoute(
+  ({ url }) => url.origin === self.location.origin && url.pathname.startsWith('/art/worlds/'),
+  async ({ request }) => {
+    const cache = await caches.open('worlds-art-v1');
+    const hit = await cache.match(request);
+    const fresh = fetch(request).then((res) => { if (res.ok) void cache.put(request, res.clone()); return res; });
+    if (hit) { fresh.catch(() => {}); return hit; }
+    return fresh;
+  },
+);
 registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/api\//] }));
 
 self.addEventListener('message', (e) => {
