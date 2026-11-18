@@ -57,6 +57,16 @@ export class Match3Scene extends Phaser.Scene {
 
   create(): void {
     this.speed = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.35 : 1;
+    if (!this.textures.exists('spark')) {
+      // a soft round spark and a four-pointed star for the effects
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      for (let i = 8; i > 0; i--) g.fillStyle(0xffffff, i === 1 ? 1 : 0.12).fillCircle(16, 16, i * 2);
+      g.generateTexture('spark', 32, 32);
+      g.clear();
+      g.fillStyle(0xffffff, 1).fillTriangle(16, 0, 20, 16, 12, 16).fillTriangle(16, 32, 20, 16, 12, 16).fillTriangle(0, 16, 16, 12, 16, 20).fillTriangle(32, 16, 16, 12, 16, 20);
+      g.generateTexture('star4', 32, 32);
+      g.destroy();
+    }
     this.engine = this.registry.get('match3');
     this.build();
     this.scale.on('resize', this.build, this);
@@ -363,23 +373,109 @@ export class Match3Scene extends Phaser.Scene {
   private flash(step: Step): number {
     const e = this.engine;
     if (!e || step.blasts.length === 0) return 0;
-    const bw = this.cell * e.cols;
-    const bh = this.cell * e.rows;
     const ms = 260 / Math.max(this.speed, 0.6);
     let wait = ms;
     for (const b of step.blasts) {
-      const p = this.pos(b.cell);
-      if (isRocket(b.special)) {
-        wait = Math.max(wait, this.rocketFlight(b.cell, b.special));
-      } else if (b.special === 'area') {
-        const ring = this.add.circle(p.x, p.y, this.cell * 0.4).setStrokeStyle(this.cell * 0.18, 0xffffff, 0.95).setDepth(4);
-        void this.tween(ring, { radius: this.cell * 1.6, alpha: 0 }, ms + 120).then(() => ring.destroy());
-      } else {
-        const glow = this.add.circle(p.x, p.y, this.cell * 0.5, 0xffe58a, 0.9).setDepth(4);
-        void this.tween(glow, { radius: Math.max(bw, bh), alpha: 0 }, ms + 200).then(() => glow.destroy());
-      }
+      if (isRocket(b.special)) wait = Math.max(wait, this.rocketFlight(b.cell, b.special));
+      else if (b.special === 'area') wait = Math.max(wait, this.fireworks(b.cell));
+      else wait = Math.max(wait, this.shine(b.cell, step.cleared));
     }
     return wait;
+  }
+
+  /** Calm mode (reduced motion) keeps the effects but drops the shaking and flashing. */
+  private get calm(): boolean { return this.speed < 1; }
+
+  private shake(ms: number, strength: number): void {
+    if (!this.calm) this.cameras.main.shake(ms, strength);
+  }
+
+  /** A one-off burst of sparks. */
+  private sparks(x: number, y: number, o: { count: number; colors: number[]; speed: [number, number]; life: number; gravity?: number; size?: number; texture?: string }): void {
+    const n = Math.round(o.count * (this.calm ? 0.4 : 1));
+    const em = this.add.particles(x, y, o.texture ?? 'spark', {
+      speed: { min: o.speed[0] * this.k, max: o.speed[1] * this.k },
+      angle: { min: 0, max: 360 },
+      lifespan: { min: o.life * 0.6, max: o.life },
+      scale: { start: (o.size ?? 0.5) * this.k, end: 0 },
+      alpha: { start: 1, end: 0.2 },
+      gravityY: (o.gravity ?? 0) * this.k,
+      rotate: { min: 0, max: 360 },
+      tint: o.colors,
+      emitting: false,
+    }).setDepth(8);
+    em.explode(n);
+    this.time.delayedCall(o.life + 100, () => em.destroy());
+  }
+
+  /**
+   * Fireworks (Jonas, 2026-11-18: more spectacular): a white flash over the
+   * 3x3, two shock rings, a shower of coloured sparks that fall, and three
+   * small shells that go off around it a moment later.
+   */
+  private fireworks(cell: Cell): number {
+    const p = this.pos(cell);
+    const colors = [0xff2e2e, 0xffc21f, 0x1fa8ff, 0x3ccf2e, 0xff3ccf, 0x8a4dff];
+    const box = this.add.rectangle(p.x, p.y, this.cell * 3, this.cell * 3, 0xfff6d0, 0.95).setDepth(7);
+    this.tweens.add({ targets: box, alpha: 0, scale: 1.15, duration: 260, onComplete: () => box.destroy() });
+    for (const [delay, color] of [[0, 0xffffff], [90, 0xffd34d]] as const) {
+      const ring = this.add.circle(p.x, p.y, this.cell * 0.3).setStrokeStyle(this.cell * 0.16, color, 1).setDepth(7);
+      this.tweens.add({ targets: ring, radius: this.cell * 2.3, alpha: 0, delay, duration: 420, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+    }
+    this.sparks(p.x, p.y, { count: 80, colors, speed: [150, 480], life: 1000, gravity: 420, size: 0.85 });
+    this.sparks(p.x, p.y, { count: 16, colors: [0xffc21f, 0xff2e2e], speed: [60, 220], life: 800, size: 1.3, texture: 'star4' });
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + Math.random();
+      const x = p.x + Math.cos(a) * this.cell * 1.6;
+      const y = p.y + Math.sin(a) * this.cell * 1.6;
+      this.time.delayedCall(180 + i * 110, () => {
+        this.sparks(x, y, { count: 30, colors: [colors[(i * 2) % colors.length], colors[(i * 2 + 1) % colors.length]], speed: [80, 260], life: 750, gravity: 250, size: 0.7 });
+        playSound('swap');
+      });
+    }
+    this.shake(260, 0.012);
+    return 300 / Math.max(this.speed, 0.6);
+  }
+
+  /**
+   * A shining tile (Jonas, 2026-11-18: more spectacular): the board dims, a
+   * beam of light shoots from it to every tile it takes, and each of those
+   * flares up in a burst of gold stars.
+   */
+  private shine(cell: Cell, targets: Cell[]): number {
+    const e = this.engine!;
+    const p = this.pos(cell);
+    const bw = this.cell * e.cols;
+    const bh = this.cell * e.rows;
+    const dim = this.add.rectangle(this.origin.x + bw / 2, this.origin.y + bh / 2, bw, bh, 0x1a1030, 0.45).setDepth(6);
+    this.tweens.add({ targets: dim, alpha: 0, delay: 500, duration: 300, onComplete: () => dim.destroy() });
+    const halo = this.add.circle(p.x, p.y, this.cell * 0.6, 0xfff1a8, 1).setDepth(7);
+    this.tweens.add({ targets: halo, scale: 2.4, alpha: 0, duration: 650, ease: 'Quad.easeOut', onComplete: () => halo.destroy() });
+    const rays = this.add.graphics().setDepth(7).setPosition(p.x, p.y);
+    for (let i = 0; i < 12; i++) {
+      const a0 = (i * Math.PI) / 6 - 0.07;
+      const a1 = (i * Math.PI) / 6 + 0.07;
+      const R = this.cell * 2.2;
+      rays.fillStyle(0xffe27a, 0.8).fillTriangle(0, 0, Math.cos(a0) * R, Math.sin(a0) * R, Math.cos(a1) * R, Math.sin(a1) * R);
+    }
+    this.tweens.add({ targets: rays, angle: 90, alpha: 0, scale: 1.6, duration: 700, onComplete: () => rays.destroy() });
+    const others = targets.filter((t) => t.r !== cell.r || t.c !== cell.c);
+    others.forEach((t, i) => {
+      const q = this.pos(t);
+      const beam = this.add.graphics().setDepth(7);
+      const delay = 60 + i * 35;
+      this.time.delayedCall(delay, () => {
+        beam.lineStyle(this.cell * 0.22, 0xffd34d, 0.55).lineBetween(p.x, p.y, q.x, q.y);
+        beam.lineStyle(this.cell * 0.08, 0xffffff, 1).lineBetween(p.x, p.y, q.x, q.y);
+        this.tweens.add({ targets: beam, alpha: 0, duration: 380, onComplete: () => beam.destroy() });
+        const glow = this.add.circle(q.x, q.y, this.cell * 0.45, 0xfff1a8, 0.95).setDepth(7);
+        this.tweens.add({ targets: glow, scale: 1.8, alpha: 0, duration: 380, onComplete: () => glow.destroy() });
+        this.sparks(q.x, q.y, { count: 12, colors: [0xffc21f, 0xff9a1f, 0xffe27a], speed: [70, 230], life: 600, size: 1.1, texture: 'star4' });
+      });
+    });
+    this.sparks(p.x, p.y, { count: 44, colors: [0xffc21f, 0xff9a1f, 0xffe27a], speed: [120, 420], life: 900, size: 1.3, texture: 'star4' });
+    this.shake(320, 0.01);
+    return (420 + others.length * 35) / Math.max(this.speed, 0.6);
   }
 
   /**
@@ -402,6 +498,21 @@ export class Match3Scene extends Phaser.Scene {
     const size = this.cell * 0.86 * 1.15;
     const angle = { right: 0, down: 90, left: 180, up: -90 }[nose];
     const rocket = this.add.image(from.x, from.y, 'sp-raket').setDisplaySize(size, size).setAngle(angle).setDepth(6);
+    // a launch flash, a shake, and a tail of sparks and smoke that follows it
+    const launch = this.add.circle(from.x, from.y, this.cell * 0.7, 0xfff1a8, 1).setDepth(7);
+    this.tweens.add({ targets: launch, scale: 2, alpha: 0, duration: 260, onComplete: () => launch.destroy() });
+    this.shake(220, 0.008);
+    const back = { right: 180, down: 270, left: 0, up: 90 }[nose];
+    const trail = this.add.particles(0, 0, 'spark', {
+      follow: rocket,
+      frequency: this.calm ? 40 : 12,
+      speed: { min: 40 * this.k, max: 160 * this.k },
+      angle: { min: back - 25, max: back + 25 },
+      lifespan: { min: 300, max: 600 },
+      scale: { start: 1.0 * this.k, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint: [0xffc21f, 0xff8a1f, 0xff4d1f, 0xffe27a],
+    }).setDepth(5);
     // the flame: a fiery tail from the rocket back along the line; it reaches
     // the far edge behind the rocket and burns those tiles too (whole line)
     const backSteps = across ? (dir > 0 ? cell.c : e.cols - 1 - cell.c) : dir > 0 ? cell.r : e.rows - 1 - cell.r;
@@ -442,6 +553,8 @@ export class Match3Scene extends Phaser.Scene {
       this.time.delayedCall(t, () => this.burst(at));
     }
     this.time.delayedCall(ms, () => {
+      trail.stop();
+      this.time.delayedCall(600, () => trail.destroy());
       rocket.destroy();
       this.tweens.add({ targets: flame, alpha: 0, duration: 200, onComplete: () => flame.destroy() });
     });
@@ -455,6 +568,7 @@ export class Match3Scene extends Phaser.Scene {
     const p = this.pos(at);
     const puff = this.add.circle(p.x, p.y, this.cell * 0.3, burnt ? 0x5a4a40 : 0xfff3c4, burnt ? 0.6 : 0.9).setDepth(5);
     this.tweens.add({ targets: puff, scale: 1.8, alpha: 0, duration: 220, onComplete: () => puff.destroy() });
+    this.sparks(p.x, p.y, { count: burnt ? 10 : 16, colors: burnt ? [0xff8a1f, 0xff4d1f, 0x5a4a40] : [0xffc21f, 0xff8a1f, 0xff4d1f], speed: [80, 280], life: 520, gravity: 360, size: 0.7 });
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2 + Math.random() * 0.5;
       const bit = this.add.rectangle(p.x, p.y, this.cell * 0.12, this.cell * 0.12, i % 2 ? 0xff8a1f : 0xffd34d, 1).setDepth(5).setAngle(Math.random() * 90);
