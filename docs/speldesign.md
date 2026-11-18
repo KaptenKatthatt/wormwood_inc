@@ -75,7 +75,7 @@ Alla 8 byggnader har 10 nivåer (spelet 0.8.0).
 - Utan tillräckligt försvar förlorar byn 30 % av guldet, och en byggnad skadas och måste repareras (tar byggtid, kan köpas bort).
 - Anfallet är inställt på att vara lite för starkt för det spelaren hunnit bygga, så att skölden lockar.
 
-**Försvaret (spelet 0.13.0):** soldater × (10 + 5 × Smedjans nivå) + 30 per nivå på tornet på anfallssidan + 15 per nivå på de andra tornen. Sidan slumpas, även för anfall när spelaren är borta. Testversionen: https://spela.84.247.143.6.sslip.io/.
+**Försvaret (spelet 0.13.0):** soldater × (10 + 5 × Smedjans nivå) + 30 per nivå på tornet på anfallssidan + 15 per nivå på de andra tornen. Sidan slumpas, även för anfall när spelaren är borta. Testversionen: https://skargardsbyn.84.247.143.6.sslip.io/ (dev med dev-meny: https://dev.skargardsbyn.84.247.143.6.sslip.io/).
 
 ### Kostnadskurvan
 Kostnaden växer långsamt i början och sedan ungefär i kvadrat med antalet byggen.
