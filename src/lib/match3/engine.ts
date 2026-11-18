@@ -50,6 +50,10 @@ export interface Step {
   iceBroken: (Cell & { left: number })[];
   /** Cells whose moss went. */
   mossGone: Cell[];
+  /** Hard blocks (ore, beach stones) that took a hit and still stand, with the hits left. */
+  blockHit?: (Cell & { left: number })[];
+  /** Hay bales that rolled one step; `out` when they rolled off the board. */
+  rolled?: { from: Cell; to: Cell; out: boolean }[];
   falls: Fall[];
   spawns: Spawn[];
   score: number;
@@ -73,7 +77,15 @@ export const isFree = (k: number): boolean => k === BOMB || k === POWER;
 export const TANG = 97;
 export const STEN = 96;
 export const STOCK = 95;
-export const isBlock = (k: number): boolean => k === TANG || k === STEN || k === STOCK;
+/** The later worlds' blocks (2026-11-18): ore takes two hits, beach stones three, a hay bale rolls. */
+export const MALM = 94;
+export const KLAPPER = 93;
+export const HOBAL = 92;
+export const isBlock = (k: number): boolean => k === TANG || k === STEN || k === STOCK || k === MALM || k === KLAPPER || k === HOBAL;
+/** Hits a hard block takes before it breaks. */
+export const BLOCK_HITS: Record<number, number> = { [MALM]: 2, [KLAPPER]: 3 };
+/** The board value of each block a goal can name. */
+export const BLOCK_OF = { tang: TANG, sten: STEN, malm: MALM, klapper: KLAPPER, hobal: HOBAL } as const;
 /** An ordinary tile of some kind, which can match. */
 export const isTile = (k: number): boolean => k >= 0 && k < 90;
 
@@ -85,6 +97,8 @@ export class Match3 {
   ice: number[][];
   moss: boolean[][];
   mossTotal: number;
+  /** Hits left on each hard block (0 elsewhere). */
+  hp: number[][];
   /** Seaweed or stones cleared, for the block goal. */
   blocksCleared = 0;
   /** Logs that reached the bottom. */
@@ -114,6 +128,7 @@ export class Match3 {
     this.mossTotal = (level.moss ?? []).length;
     this.special = Array.from({ length: level.rows }, () => Array(level.cols).fill(null));
     this.board = board ?? this.freshBoard();
+    this.hp = this.board.map((row) => row.map((k) => BLOCK_HITS[k] ?? 0));
   }
 
   // ---------------------------------------------------------------- queries
@@ -140,7 +155,7 @@ export class Match3 {
     if (g.type === 'collect') return Math.min(1, this.collected / g.count);
     if (g.type === 'ice') return this.iceTotal === 0 ? 1 : 1 - this.iceLeft() / this.iceTotal;
     if (g.type === 'moss') return this.mossTotal === 0 ? 1 : 1 - this.mossLeft() / this.mossTotal;
-    if (g.type === 'block') return this.countOf(g.block === 'tang' ? TANG : STEN) === 0 ? 1 : Math.min(1, this.blocksCleared / g.count);
+    if (g.type === 'block') return this.countOf(BLOCK_OF[g.block]) === 0 ? 1 : Math.min(1, this.blocksCleared / g.count);
     if (g.type === 'stock') return Math.min(1, this.stocksOut / g.count);
     return Math.min(1, this.score / g.score);
   }
@@ -151,7 +166,7 @@ export class Match3 {
     if (g.type === 'collect') return Math.max(0, g.count - this.collected);
     if (g.type === 'ice') return this.iceLeft();
     if (g.type === 'moss') return this.mossLeft();
-    if (g.type === 'block') return this.countOf(g.block === 'tang' ? TANG : STEN) === 0 ? 0 : Math.max(0, g.count - this.blocksCleared);
+    if (g.type === 'block') return this.countOf(BLOCK_OF[g.block]) === 0 ? 0 : Math.max(0, g.count - this.blocksCleared);
     if (g.type === 'stock') return Math.max(0, g.count - this.stocksOut);
     return Math.max(0, g.score - this.score);
   }
@@ -575,6 +590,18 @@ export class Match3 {
       iceBroken.push({ ...p, left: this.ice[p.r][p.c] });
       return this.ice[p.r][p.c];
     };
+    const blockHit: NonNullable<Step['blockHit']> = [];
+    const rolled: NonNullable<Step['rolled']> = [];
+    /** Hard blocks already hit in this step (one hit per step). Returns true while the block still stands. */
+    const hitOnce = new Set<number>();
+    const hitBlock = (r: number, c: number): boolean => {
+      const key = r * this.cols + c;
+      if (hitOnce.has(key)) return this.hp[r][c] > 0;
+      hitOnce.add(key);
+      this.hp[r][c] = Math.max(0, this.hp[r][c] - 1);
+      if (this.hp[r][c] > 0) { blockHit.push({ r, c, left: this.hp[r][c] }); return true; }
+      return false;
+    };
     const queue = [...first];
     while (queue.length) {
       const { r, c } = queue.shift()!;
@@ -586,6 +613,8 @@ export class Match3 {
       if (k === STOCK && !(collectLogs && r === this.rows - 1)) continue;
       // a tile under two layers stays; the hit only takes a layer
       if (this.ice[r][c] > 1) { chip({ r, c }); continue; }
+      // a hard block hit by a special loses one hit and stays until the last
+      if (BLOCK_HITS[k] && hitBlock(r, c)) continue;
       matched.push({ r, c });
       const sp = this.special[r][c];
       if (sp === 'right') for (let cc = c + 1; cc < this.cols; cc++) queue.push({ r, c: cc });
@@ -614,21 +643,45 @@ export class Match3 {
     // frozen tile itself stays (Jonas, 2026-11-17).
     const gone = new Set(matched.map(({ r, c }) => r * this.cols + c));
     const tang: Cell[] = [];
+    const rolledFrom = new Set<number>();
     for (const { r, c } of matched) {
       if (!isTile(this.board[r][c]) && !isFree(this.board[r][c])) continue;
       for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const n = { r: r + dr, c: c + dc };
         if (!this.inside(n) || gone.has(n.r * this.cols + n.c)) continue;
+        const nk = this.board[n.r][n.c];
         if (this.ice[n.r][n.c]) chip(n);
-        else if (this.board[n.r][n.c] === TANG) { gone.add(n.r * this.cols + n.c); tang.push(n); }
+        else if (nk === TANG) { gone.add(n.r * this.cols + n.c); tang.push(n); }
+        else if (BLOCK_HITS[nk] && !hitBlock(n.r, n.c)) { gone.add(n.r * this.cols + n.c); tang.push(n); }
+        else if (nk === HOBAL && !rolledFrom.has(n.r * this.cols + n.c)) {
+          // the bale rolls one step away from the match; off the edge it is gone
+          const to = { r: n.r + dr, c: n.c + dc };
+          if (!this.inside(to)) {
+            rolledFrom.add(n.r * this.cols + n.c);
+            gone.add(n.r * this.cols + n.c);
+            tang.push(n);
+            rolled.push({ from: n, to, out: true });
+          } else {
+            const tk = this.board[to.r][to.c];
+            const free = (isTile(tk) || isFree(tk)) && !this.ice[to.r][to.c] && !gone.has(to.r * this.cols + to.c);
+            if (free) {
+              this.board[n.r][n.c] = tk;
+              this.special[n.r][n.c] = this.special[to.r][to.c];
+              this.board[to.r][to.c] = HOBAL;
+              this.special[to.r][to.c] = null;
+              rolledFrom.add(to.r * this.cols + to.c);
+              rolled.push({ from: n, to, out: false });
+            }
+          }
+        }
       }
     }
     matched.push(...tang);
     for (const { r, c } of matched) {
       const k = this.board[r][c];
       if (goal.type === 'collect' && k === goal.kind) this.collected++;
-      if (k === TANG || k === STEN) {
-        if (goal.type === 'block' && k === (goal.block === 'tang' ? TANG : STEN)) this.blocksCleared++;
+      if (k === TANG || k === STEN || k === MALM || k === KLAPPER || k === HOBAL) {
+        if (goal.type === 'block' && k === BLOCK_OF[goal.block]) this.blocksCleared++;
         if (k === TANG) this.tangThisMove++;
       }
       if (k === STOCK) this.stocksOut++;
@@ -650,7 +703,7 @@ export class Match3 {
     // gravity: a frozen tile stays put, so each column falls in stretches
     // between frozen tiles
     const falls: Fall[] = [];
-    const frozen = (r: number, c: number) => (this.ice[r][c] > 0 && this.board[r][c] !== EMPTY) || this.board[r][c] === TANG || this.board[r][c] === STEN;
+    const frozen = (r: number, c: number) => (this.ice[r][c] > 0 && this.board[r][c] !== EMPTY) || (isBlock(this.board[r][c]) && this.board[r][c] !== STOCK);
     for (let c = 0; c < this.cols; c++) {
       let write = this.rows - 1;
       for (let r = this.rows - 1; r >= 0; r--) {
@@ -685,7 +738,8 @@ export class Match3 {
         bottom = top - 2; // skip the frozen tile above this stretch
       }
     }
-    return { cleared: matched, iceBroken, mossGone, falls, spawns, score, made, blasts };
+    for (const { r, c } of matched) this.hp[r][c] = 0;
+    return { cleared: matched, iceBroken, mossGone, falls, spawns, score, made, blasts, blockHit, rolled };
   }
 
   /** Would `kind` at (r, c) complete a line of three with tiles already placed? */
@@ -719,6 +773,9 @@ export class Match3 {
         for (const [r, c] of this.level.tang ?? []) b[r][c] = TANG;
         for (const [r, c] of this.level.sten ?? []) b[r][c] = STEN;
         for (const [r, c] of this.level.stock ?? []) b[r][c] = STOCK;
+        for (const [r, c] of this.level.malm ?? []) b[r][c] = MALM;
+        for (const [r, c] of this.level.klapper ?? []) b[r][c] = KLAPPER;
+        for (const [r, c] of this.level.hobal ?? []) b[r][c] = HOBAL;
       }
       this.board = b;
       for (let r = 0; r < this.rows; r++) {

@@ -1,12 +1,12 @@
 import { play as playSound, playMatch } from '../lib/audio/sound';
 import Phaser from 'phaser';
-import { BOMB, ROCKET_BOTH_WAYS, STEN, STOCK, TANG, isBlock, isFree, isRocket, type Cell, type Rocket, type Match3, type Special, type Step } from '../lib/match3/engine';
+import { BOMB, HOBAL, KLAPPER, MALM, ROCKET_BOTH_WAYS, STEN, STOCK, TANG, isBlock, isFree, isRocket, type Cell, type Rocket, type Match3, type Special, type Step } from '../lib/match3/engine';
 import { REGIONS, regionOf, type Obstacle, type Region } from '../lib/match3/levels';
 import { DEEP as DEEP0, FRAME as FRAME0 } from './palette';
 
 /** The obstacle pictures (Jonas approved them 2026-11-18). */
-const OBSTACLES = ['is', 'sno', 'mossa', 'tang', 'sten', 'stock'] as const;
-const BLOCK_PICTURE: Record<number, string> = { [TANG]: 'tang', [STEN]: 'sten', [STOCK]: 'stock' };
+const OBSTACLES = ['is', 'sno', 'mossa', 'tang', 'sten', 'stock', 'lera', 'hobal', 'kol', 'malm', 'nat', 'klapper', 'frost', 'snogubbe'] as const;
+const BLOCK_PICTURE: Record<number, string> = { [TANG]: 'tang', [STEN]: 'sten', [STOCK]: 'stock', [MALM]: 'malm', [KLAPPER]: 'klapper', [HOBAL]: 'hobal' };
 
 type Tile = Phaser.GameObjects.Container;
 
@@ -163,6 +163,8 @@ export class Match3Scene extends Phaser.Scene {
       }),
     );
     this.tiles = e.board.map((row, r) => row.map((kind, c) => this.makeTile(kind, this.pos({ r, c }), e.special[r][c])));
+    // hard blocks show the hits they take
+    e.hp.forEach((row, r) => row.forEach((n, c) => { if (n > 0 && this.tiles[r][c]) this.hitsBadge(this.tiles[r][c]!, n); }));
     // Ice (snow in the fells) lies over the tile it locks.
     this.iceGfx = e.ice.map((row, r) => row.map((n, c) => (n ? this.makeCover({ r, c }, n) : null)));
     this.hintTweens = [];
@@ -175,9 +177,12 @@ export class Match3Scene extends Phaser.Scene {
   private makeCover(cell: Cell, layers: number): Phaser.GameObjects.Container {
     const p = this.pos(cell);
     const snow = this.region.id === 'fjall';
-    const pic = this.add.image(0, snow ? -this.cell * 0.12 : 0, snow ? 'ob-sno' : 'ob-is')
-      .setDisplaySize(this.cell * (snow ? 1.0 : 1.02), this.cell * (snow ? 0.8 : 1.02))
-      .setAlpha(layers > 1 ? 1 : snow ? 0.95 : 0.8);
+    const cover = this.region.cover;
+    const pic = cover
+      ? this.add.image(0, 0, `ob-${cover.picture}`).setDisplaySize(this.cell * 1.02, this.cell * 1.02).setAlpha(layers > 1 ? 1 : cover.alpha)
+      : this.add.image(0, snow ? -this.cell * 0.12 : 0, snow ? 'ob-sno' : 'ob-is')
+        .setDisplaySize(this.cell * (snow ? 1.0 : 1.02), this.cell * (snow ? 0.8 : 1.02))
+        .setAlpha(layers > 1 ? 1 : snow ? 0.95 : 0.8);
     const parts: Phaser.GameObjects.GameObject[] = [pic];
     if (layers > 1) {
       const r = this.cell * 0.17;
@@ -200,9 +205,9 @@ export class Match3Scene extends Phaser.Scene {
     if (!e || !what) return;
     const has = (p: Cell): boolean => {
       const k = e.board[p.r][p.c];
-      if (what === 'is' || what === 'sno') return e.ice[p.r][p.c] > 0;
+      if (what === 'is' || what === 'sno' || what === 'lera' || what === 'kol' || what === 'nat' || what === 'frost') return e.ice[p.r][p.c] > 0;
       if (what === 'mossa') return e.moss[p.r][p.c];
-      return k === { tang: TANG, sten: STEN, stock: STOCK }[what];
+      return k === { tang: TANG, sten: STEN, stock: STOCK, snogubbe: STEN, malm: MALM, klapper: KLAPPER, hobal: HOBAL }[what];
     };
     let at: Cell | null = null;
     for (let r = 0; r < e.rows && !at; r++) for (let c = 0; c < e.cols && !at; c++) if (has({ r, c })) at = { r, c };
@@ -308,11 +313,21 @@ export class Match3Scene extends Phaser.Scene {
     this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3 * this.k, this.deep, 1).setDepth(3);
   }
 
+  /** The number of hits a hard block (ore, beach stones) still takes, in a small round badge. */
+  private hitsBadge(t: Tile, left: number): void {
+    t.list.filter((o) => o.name === 'hits').forEach((o) => o.destroy());
+    const rr = this.cell * 0.17;
+    const badge = this.add.circle(this.cell * 0.3, this.cell * 0.3, rr, this.deep).setStrokeStyle(2 * this.k, 0xffffff).setName('hits');
+    const txt = this.add.text(this.cell * 0.3, this.cell * 0.3, String(left), { fontFamily: 'system-ui, sans-serif', fontStyle: 'bold', fontSize: `${Math.round(rr * 1.3)}px`, color: '#ffffff' }).setOrigin(0.5).setName('hits');
+    t.add([badge, txt]);
+  }
+
   private makeTile(kind: number, at: { x: number; y: number }, special: Special = null): Tile {
     const size = this.cell * 0.86;
     if (isBlock(kind)) {
       const big = this.cell * (kind === STOCK ? 0.92 : 0.98);
-      const img = this.add.image(0, 0, `ob-${BLOCK_PICTURE[kind]}`).setDisplaySize(big, big);
+      const name = kind === STEN && this.region.stone ? this.region.stone : BLOCK_PICTURE[kind];
+      const img = this.add.image(0, 0, `ob-${name}`).setDisplaySize(big, big);
       return this.add.container(at.x, at.y, [img]).setDepth(1);
     }
     if (!isFree(kind) && special === 'all') return this.shining(kind, at, size);
@@ -645,7 +660,6 @@ export class Match3Scene extends Phaser.Scene {
     // let the sweep be seen before the tiles go
     const wait = this.flash(step);
     if (wait) await new Promise((done) => this.time.delayedCall(wait * 0.8, done));
-    const cleared = step.cleared.map(({ r, c }) => this.tiles[r][c]!).filter(Boolean);
     for (const { r, c, left } of step.iceBroken) {
       const ice = this.iceGfx[r]?.[c];
       if (!ice) continue;
@@ -659,6 +673,32 @@ export class Match3Scene extends Phaser.Scene {
         void this.tween(ice, { alpha: 0, scale: 1.3 }, 200).then(() => ice.destroy());
       }
     }
+    for (const { r, c, left } of step.blockHit ?? []) {
+      // a hard block shakes, sheds chips and shows how many hits are left
+      const t = this.tiles[r][c];
+      if (!t) continue;
+      this.chips({ r, c }, 0xb8b0a4);
+      this.hitsBadge(t, left);
+      void this.tween(t, { angle: 8 }, 60).then(() => this.tween(t, { angle: 0 }, 80));
+    }
+    const rolls: Promise<void>[] = [];
+    for (const { from, to, out } of step.rolled ?? []) {
+      const bale = this.tiles[from.r][from.c];
+      if (!bale) continue;
+      if (out) {
+        // off the edge: it rolls out of the frame and is gone (it is in `cleared` too)
+        this.tiles[from.r][from.c] = null;
+        rolls.push(this.tween(bale, { x: this.pos(to).x, y: this.pos(to).y, angle: 180, alpha: 0 }, 260).then(() => bale.destroy()));
+        continue;
+      }
+      const other = this.tiles[to.r][to.c];
+      this.tiles[to.r][to.c] = bale;
+      this.tiles[from.r][from.c] = other;
+      rolls.push(this.tween(bale, { x: this.pos(to).x, y: this.pos(to).y, angle: bale.angle + 90 }, 220));
+      if (other) rolls.push(this.tween(other, { x: this.pos(from).x, y: this.pos(from).y }, 220));
+    }
+    await Promise.all(rolls);
+    const cleared = step.cleared.map(({ r, c }) => this.tiles[r][c]!).filter(Boolean);
     for (const { r, c } of step.mossGone) {
       const moss = this.mossGfx[r]?.[c];
       if (moss) { this.mossGfx[r][c] = null; void this.tween(moss, { alpha: 0, scale: 0.6 }, 220).then(() => moss.destroy()); }

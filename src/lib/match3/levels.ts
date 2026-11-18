@@ -12,12 +12,14 @@ export type Goal =
   /** Clear all the moss under the tiles. */
   | { type: 'moss' }
   /** Clear `count` seaweed or stones. */
-  | { type: 'block'; block: 'tang' | 'sten'; count: number }
+  | { type: 'block'; block: 'tang' | 'sten' | 'malm' | 'klapper' | 'hobal'; count: number }
   /** Bring every log down to the bottom of the board. */
   | { type: 'stock'; count: number };
 
 /** An obstacle the player meets for the first time with an arrow and one sentence. */
-export type Obstacle = 'is' | 'tang' | 'mossa' | 'stock' | 'sno' | 'sten';
+export type Obstacle = 'is' | 'tang' | 'mossa' | 'stock' | 'sno' | 'sten'
+  // worlds 2-5 (2026-11-18): four covers that work like ice, two blocks like stone and seaweed, three new
+  | 'lera' | 'hobal' | 'kol' | 'malm' | 'nat' | 'klapper' | 'frost' | 'snogubbe';
 
 export interface Level {
   id: number;
@@ -44,6 +46,12 @@ export interface Level {
   sten?: [number, number][];
   /** Logs: they fall like tiles and are collected at the bottom row. */
   stock?: [number, number][];
+  /** Ore: a block that takes two hits from clears beside it. */
+  malm?: [number, number][];
+  /** Beach stones: a block that takes three hits. */
+  klapper?: [number, number][];
+  /** Hay bales: a clear beside one rolls it a step away; off the edge it is gone. */
+  hobal?: [number, number][];
   /** The obstacle this challenge introduces, shown with an arrow the first time. */
   intro?: Obstacle;
 }
@@ -54,7 +62,7 @@ export interface Level {
  * Tile file names are in kind order, with their Swedish plural.
  */
 export interface Region {
-  id: 'skargard' | 'skog' | 'fjall';
+  id: 'skargard' | 'skog' | 'fjall' | 'slatten' | 'bergslagen' | 'hogakusten' | 'vinter';
   first: number;
   tiles: readonly string[];
   /** The file extension of the tile pictures. */
@@ -65,14 +73,24 @@ export interface Region {
   frame: number;
   light: number;
   dark: number;
+  /** The picture on cells under the `ice` layers, and how opaque one layer is (the first world: is or sno). */
+  cover?: { picture: Obstacle; alpha: number };
+  /** The picture for stone blocks (a snowman in the winter market). */
+  stone?: Obstacle;
 }
 export const REGIONS: Region[] = [
   { id: 'skargard', first: 1, tiles: ['fisk', 'ankare', 'snacka', 'fyr', 'tunna', 'bat'], ext: 'png', names: ['fiskar', 'ankare', 'snäckor', 'fyrar', 'tunnor', 'båtar'], background: '/art/bakgrund.jpg', frame: 0x8b2a1e, light: 0xc9473a, dark: 0x5a1d14 },
   { id: 'skog', first: 14, tiles: ['kotte', 'kantarell', 'blabar', 'lov', 'smultron', 'ljung'], ext: 'webp', names: ['kottar', 'kantareller', 'blåbär', 'löv', 'smultron', 'ljungkvistar'], background: '/art/bakgrund-skog.jpg', frame: 0x4f6b34, light: 0x6f8f4a, dark: 0x2f4220 },
   { id: 'fjall', first: 28, tiles: ['hjortron', 'fjallsippa', 'ryggsack', 'kasa', 'blaklocka', 'talt'], ext: 'webp', names: ['hjortron', 'fjällsippor', 'ryggsäckar', 'kåsor', 'blåklockor', 'tält'], background: '/art/bakgrund-fjall.jpg', frame: 0x4a6f8c, light: 0x6a92b2, dark: 0x2c4a62 },
+  // Worlds 2-5 (Jonas approved tiles, frames and obstacles 2026-11-18; mapping in pussel-stil/regioner/README.md).
+  { id: 'slatten', first: 41, tiles: ['raps', 'vallmo', 'blaklint', 'apple', 'trasko', 'gas'], ext: 'webp', names: ['rapsblommor', 'vallmor', 'blåklintar', 'äpplen', 'träskor', 'gäss'], background: '/art/worlds/2/bakgrund.jpg', frame: 0xb07a24, light: 0xd29a3e, dark: 0x6e4a12, cover: { picture: 'lera', alpha: 0.9 } },
+  { id: 'bergslagen', first: 81, tiles: ['lingon', 'gultlov', 'lykta', 'kristall', 'grankvist', 'ekollon'], ext: 'webp', names: ['lingon', 'höstlöv', 'gruvlyktor', 'kristaller', 'grankvistar', 'ekollon'], background: '/art/worlds/3/bakgrund.jpg', frame: 0x7a4630, light: 0x9c6446, dark: 0x4a2818, cover: { picture: 'kol', alpha: 0.92 } },
+  { id: 'hogakusten', first: 121, tiles: ['sjostjarna', 'mussla', 'krabba', 'flote', 'fjader', 'korg'], ext: 'webp', names: ['sjöstjärnor', 'blåmusslor', 'krabbor', 'glasflöten', 'måsfjädrar', 'fiskekorgar'], background: '/art/worlds/4/bakgrund.jpg', frame: 0x2f6c6c, light: 0x4b8d8c, dark: 0x18403f, cover: { picture: 'nat', alpha: 0.85 } },
+  { id: 'vinter', first: 161, tiles: ['pepparkaka', 'halmbock', 'julkula', 'vante', 'julgran', 'paket'], ext: 'webp', names: ['pepparkakor', 'halmbockar', 'julkulor', 'vantar', 'julgranar', 'paket'], background: '/art/worlds/5/bakgrund.jpg', frame: 0x7a3550, light: 0x9c4f6c, dark: 0x4a1c30, cover: { picture: 'frost', alpha: 0.75 }, stone: 'snogubbe' },
 ];
 export function regionOf(levelId: number): Region {
-  const n = ((levelId - 1) % 40) + 1;
+  // challenges 41-200 have their own worlds; anything past the road starts over
+  const n = ((levelId - 1) % 200) + 1;
   return [...REGIONS].reverse().find((r) => n >= r.first)!;
 }
 export const tileUrl = (region: Region, kind: number): string => `/art/tiles/${region.tiles[kind]}.${region.ext}`;
@@ -89,6 +107,14 @@ export const OBSTACLE_TIPS: Record<Obstacle, string> = {
   stock: 'Få ner stockarna till botten av brädet. Rensa under dem!',
   sno: 'Snön försvinner ett lager i taget när du matchar bredvid den.',
   sten: 'Stenen spricker bara av specialbrickor. Gör en raket!',
+  lera: 'Leran torkar bort när du matchar på den eller bredvid den.',
+  hobal: 'Matcha bredvid höbalen så rullar den undan. Rulla ut den ur brädet!',
+  kol: 'Kolet sopas bort ett lager i taget när du matchar på det eller bredvid.',
+  malm: 'Malmen tål två träffar. Matcha bredvid den två gånger.',
+  nat: 'Brickor under nät sitter fast. Matcha dem där de ligger!',
+  klapper: 'Klapperstenen tål tre träffar. Matcha bredvid den tre gånger!',
+  frost: 'Frosten smälter i två steg. Matcha på den eller bredvid den.',
+  snogubbe: 'Snögubben smälter bara av specialbrickor. Gör en raket!',
 };
 
 function block(r0: number, r1: number, c0: number, c1: number): [number, number][] {
@@ -194,12 +220,22 @@ export function worldOf(n: number): World {
  */
 export function makeLaterChallenge(n: number): Level {
   const w = worldOf(n);
-  const inWorld = (n - w.from) / 39; // 0 to 1 across the world
+  const k = n - w.from; // 0 to 39 inside the world
+  const inWorld = k / 39; // 0 to 1 across the world
   const peak = n % 5 === 0;
   const breather = n % 5 === 1;
   const base0 = 0.45 + 0.1 * (w.id - 2); // world 2 starts at 0.45, world 5 at 0.75
   const hard = Math.min(1.35, base0 + 0.45 * inWorld + (peak ? 0.25 : 0) - (breather ? 0.2 : 0));
   const base = { id: n, name: `Utmaning ${n}`, rows: 8, cols: 8, kinds: 6, rigTarget: peak ? 0.93 : 1 };
+  const obs = WORLD_OBSTACLES[w.id];
+  // the world's block: introduced in its tenth challenge, back in the 20th, 30th and 40th
+  if (obs && (k === 9 || k === 19 || k === 29 || k === 39)) {
+    const placed = obs.blockAt[(k - 9) / 10];
+    const lvl: Level = { ...base, rigTarget: 1, moves: Math.round(obs.blockMoves + 2 * hard), goal: obs.blockGoal(placed.length), [obs.blockField]: placed };
+    if (k === 9) lvl.intro = obs.block;
+    if (k === 39) lvl.ice = row8(0).map(([r, c]) => [r, c, obs.layers(c)]);
+    return lvl;
+  }
   switch (n % 3) {
     case 1: {
       const count = Math.round(10 + 12 * hard);
@@ -207,7 +243,11 @@ export function makeLaterChallenge(n: number): Level {
     }
     case 2: {
       const [r0, r1, c0, c1] = ICE_SHAPES[(n + w.id) % ICE_SHAPES.length];
-      return { ...base, moves: Math.round(22 + 5 * hard), goal: { type: 'ice' }, ice: block(r0, r1, c0, c1) };
+      const cells = block(r0, r1, c0, c1);
+      const lvl: Level = { ...base, moves: Math.round(22 + 5 * hard), goal: { type: 'ice' }, ice: obs ? cells.map(([r, c]) => [r, c, obs.layers(c)]) : cells };
+      // the first cover of a world is shown with an arrow and a sentence
+      if (obs && k <= 3) lvl.intro = obs.cover;
+      return lvl;
     }
     default: {
       const score = Math.round((2800 + 2600 * hard) / 100) * 100;
@@ -215,6 +255,36 @@ export function makeLaterChallenge(n: number): Level {
     }
   }
 }
+
+const row8 = (r: number): [number, number][] => block(r, r, 0, 7);
+type BlockField = 'hobal' | 'malm' | 'klapper' | 'sten';
+/**
+ * Each later world's two obstacles (approved 2026-11-18): a cover that works
+ * like ice with its own picture and layers, and a block.
+ */
+const WORLD_OBSTACLES: Record<number, { cover: Obstacle; block: Obstacle; layers: (c: number) => number; blockField: BlockField; blockMoves: number; blockGoal: (count: number) => Goal; blockAt: [number, number][][] }> = {
+  2: {
+    cover: 'lera', block: 'hobal', layers: () => 1, blockField: 'hobal', blockMoves: 24,
+    blockGoal: (count) => ({ type: 'block', block: 'hobal', count }),
+    // bales near the edges, so two or three rolls take them out
+    blockAt: [[[1, 1], [1, 6], [6, 3]], [[1, 2], [6, 1], [6, 6]], [[0, 3], [3, 0], [3, 7], [7, 4]], [[1, 1], [1, 6], [6, 1], [6, 6]]],
+  },
+  3: {
+    cover: 'kol', block: 'malm', layers: (c) => (c % 3 === 1 ? 2 : 1), blockField: 'malm', blockMoves: 22,
+    blockGoal: (count) => ({ type: 'block', block: 'malm', count }),
+    blockAt: [[[3, 2], [3, 5], [4, 2], [4, 5]], [[2, 3], [2, 4], [5, 3], [5, 4]], [[3, 1], [3, 6], [5, 2], [5, 5]], [[2, 2], [2, 5], [5, 2], [5, 5]]],
+  },
+  4: {
+    cover: 'nat', block: 'klapper', layers: () => 1, blockField: 'klapper', blockMoves: 24,
+    blockGoal: (count) => ({ type: 'block', block: 'klapper', count }),
+    blockAt: [[[3, 3], [3, 4], [4, 3], [4, 4]], [[5, 1], [5, 2], [5, 5], [5, 6]], [[2, 3], [3, 3], [4, 4], [5, 4]], [[3, 1], [3, 6], [4, 1], [4, 6]]],
+  },
+  5: {
+    cover: 'frost', block: 'snogubbe', layers: () => 2, blockField: 'sten', blockMoves: 24,
+    blockGoal: (count) => ({ type: 'block', block: 'sten', count }),
+    blockAt: [[[3, 2], [3, 5], [4, 2], [4, 5]], [[2, 3], [2, 4], [5, 3], [5, 4]], [[3, 1], [3, 6], [5, 3], [5, 4]], [[2, 2], [2, 5], [5, 2], [5, 5]]],
+  },
+};
 
 export const ALL_LEVELS: Level[] = [...LEVELS, ...Array.from({ length: TOTAL_CHALLENGES - CHALLENGE_COUNT }, (_, i) => makeLaterChallenge(CHALLENGE_COUNT + i + 1))];
 
@@ -227,10 +297,13 @@ export function goalText(goal: Goal, levelId = 1): string {
   const region = regionOf(levelId);
   switch (goal.type) {
     case 'collect': return `Samla ${goal.count} ${region.names[goal.kind]}`;
-    case 'ice': return region.id === 'fjall' ? 'Skotta bort all snö' : 'Bryt all is';
+    case 'ice': return ({ fjall: 'Skotta bort all snö', slatten: 'Torka bort all lera', bergslagen: 'Sopa bort allt kol', hogakusten: 'Lossa alla nät', vinter: 'Smält all frost' } as Record<string, string>)[region.id] ?? 'Bryt all is';
     case 'score': return `Nå ${goal.score.toLocaleString('sv-SE')} poäng`;
     case 'moss': return 'Rensa bort all mossa';
-    case 'block': return goal.block === 'tang' ? `Rensa ${goal.count} tång` : `Spräck ${goal.count} stenar`;
+    case 'block': {
+      if (goal.block === 'sten' && region.stone === 'snogubbe') return `Smält ${goal.count} snögubbar`;
+      return { tang: `Rensa ${goal.count} tång`, sten: `Spräck ${goal.count} stenar`, malm: `Bryt ${goal.count} malmblock`, klapper: `Rensa ${goal.count} klapperstenar`, hobal: `Rulla bort ${goal.count} höbalar` }[goal.block];
+    }
     case 'stock': return `Få ner ${goal.count} stockar`;
   }
 }
