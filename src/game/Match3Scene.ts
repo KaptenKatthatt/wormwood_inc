@@ -1,8 +1,12 @@
 import { play as playSound, playMatch } from '../lib/audio/sound';
 import Phaser from 'phaser';
-import { BOMB, ROCKET_BOTH_WAYS, isFree, isRocket, type Cell, type Rocket, type Match3, type Special, type Step } from '../lib/match3/engine';
-import { TILES } from '../lib/match3/levels';
-import { DEEP, FRAME } from './palette';
+import { BOMB, ROCKET_BOTH_WAYS, STEN, STOCK, TANG, isBlock, isFree, isRocket, type Cell, type Rocket, type Match3, type Special, type Step } from '../lib/match3/engine';
+import { REGIONS, regionOf, type Obstacle, type Region } from '../lib/match3/levels';
+import { DEEP as DEEP0, FRAME as FRAME0 } from './palette';
+
+/** The obstacle pictures (Jonas approved them 2026-11-18). */
+const OBSTACLES = ['is', 'sno', 'mossa', 'tang', 'sten', 'stock'] as const;
+const BLOCK_PICTURE: Record<number, string> = { [TANG]: 'tang', [STEN]: 'sten', [STOCK]: 'stock' };
 
 type Tile = Phaser.GameObjects.Container;
 
@@ -15,7 +19,13 @@ type Tile = Phaser.GameObjects.Container;
 export class Match3Scene extends Phaser.Scene {
   private engine?: Match3;
   private tiles: (Tile | null)[][] = [];
-  private iceGfx: (Phaser.GameObjects.Rectangle | null)[][] = [];
+  private iceGfx: (Phaser.GameObjects.Container | null)[][] = [];
+  private mossGfx: (Phaser.GameObjects.Image | null)[][] = [];
+  private region: Region = REGIONS[0];
+  /** The frame colours of this region's board. */
+  private frame = FRAME0;
+  private deep = DEEP0;
+  private introArrow: Phaser.GameObjects.GameObject[] = [];
   private cell = 48;
   /** Device pixels per CSS pixel; the board is drawn in device pixels. */
   private k = 1;
@@ -40,8 +50,9 @@ export class Match3Scene extends Phaser.Scene {
   }
 
   preload(): void {
-    for (const name of TILES) this.load.image(`tile-${name}`, `/art/tiles/${name}.png`);
+    for (const region of REGIONS) for (const name of region.tiles) this.load.image(`tile-${name}`, `/art/tiles/${name}.${region.ext}`);
     for (const name of ['raket', 'fyrverkeri', 'parla']) this.load.image(`sp-${name}`, `/art/tiles/${name}.png`);
+    for (const name of OBSTACLES) this.load.image(`ob-${name}`, `/art/tiles/${name}.webp`);
   }
 
   create(): void {
@@ -53,7 +64,9 @@ export class Match3Scene extends Phaser.Scene {
     this.registry.events.on('changedata-hint', this.drawHint, this);
     // Svelte sets 'mixed' to a new number after it has shuffled the engine.
     this.registry.events.on('changedata-mixed', this.mixBoard, this);
+    this.registry.events.on('changedata-intro', this.drawIntro, this);
     this.events.once('shutdown', () => {
+      this.registry.events.off('changedata-intro', this.drawIntro, this);
       this.scale.off('resize', this.build, this);
       this.registry.events.off('changedata-match3', this.onEngine, this);
       this.registry.events.off('changedata-hint', this.drawHint, this);
@@ -112,7 +125,13 @@ export class Match3Scene extends Phaser.Scene {
     const { width, height } = this.scale;
     const e = this.engine;
     if (!e) return;
-    // The approved look: a falu red wooden frame, a white list and light wooden cells.
+    // The approved look: a wooden frame in the region's colour (falu red at sea),
+    // a white list and light wooden cells.
+    this.region = regionOf(e.level.id);
+    this.frame = this.region.frame;
+    this.deep = this.region.dark;
+    const FRAME = this.frame;
+    const DEEP = this.deep;
     const k = (this.k = this.registry.get('dpr') ?? 1);
     const pad = 16 * k;
     this.cell = Math.floor(Math.min((width - 2 * pad) / e.cols, (height - 2 * pad) / e.rows));
@@ -135,18 +154,72 @@ export class Match3Scene extends Phaser.Scene {
     g.lineStyle(k, 0x5a4632, 0.18);
     for (let i = 1; i < e.cols; i++) g.lineBetween(ox + i * this.cell, oy, ox + i * this.cell, oy + bh);
     for (let i = 1; i < e.rows; i++) g.lineBetween(ox, oy + i * this.cell, ox + bw, oy + i * this.cell);
-    this.tiles = e.board.map((row, r) => row.map((kind, c) => this.makeTile(kind, this.pos({ r, c }), e.special[r][c])));
-    // Ice is a pale blue see-through layer over the tile.
-    this.iceGfx = e.ice.map((row, r) =>
+    // moss lies under the tiles
+    this.mossGfx = e.moss.map((row, r) =>
       row.map((has, c) => {
         if (!has) return null;
         const p = this.pos({ r, c });
-        return this.add.rectangle(p.x, p.y, this.cell - 4 * k, this.cell - 4 * k, 0xbfe6fa, 0.55).setStrokeStyle(2 * k, 0xffffff, 0.95).setDepth(2);
+        return this.add.image(p.x, p.y, 'ob-mossa').setDisplaySize(this.cell * 1.06, this.cell * 1.06).setDepth(0.5);
       }),
     );
+    this.tiles = e.board.map((row, r) => row.map((kind, c) => this.makeTile(kind, this.pos({ r, c }), e.special[r][c])));
+    // Ice (snow in the fells) lies over the tile it locks.
+    this.iceGfx = e.ice.map((row, r) => row.map((n, c) => (n ? this.makeCover({ r, c }, n) : null)));
     this.hintTweens = [];
     this.drawHint();
     this.drawCursor();
+    this.drawIntro();
+  }
+
+  /** An ice cube (or snow) over a tile; two layers show a "2". */
+  private makeCover(cell: Cell, layers: number): Phaser.GameObjects.Container {
+    const p = this.pos(cell);
+    const snow = this.region.id === 'fjall';
+    const pic = this.add.image(0, snow ? -this.cell * 0.12 : 0, snow ? 'ob-sno' : 'ob-is')
+      .setDisplaySize(this.cell * (snow ? 1.0 : 1.02), this.cell * (snow ? 0.8 : 1.02))
+      .setAlpha(layers > 1 ? 1 : snow ? 0.95 : 0.8);
+    const parts: Phaser.GameObjects.GameObject[] = [pic];
+    if (layers > 1) {
+      const r = this.cell * 0.17;
+      const badge = this.add.circle(this.cell * 0.3, this.cell * 0.3, r, snow ? 0x2c4a62 : 0x2f6c9a).setStrokeStyle(2 * this.k, 0xffffff);
+      const t = this.add.text(this.cell * 0.3, this.cell * 0.3, String(layers), { fontFamily: 'system-ui, sans-serif', fontStyle: 'bold', fontSize: `${Math.round(r * 1.3)}px`, color: '#ffffff' }).setOrigin(0.5);
+      parts.push(badge, t);
+    }
+    return this.add.container(p.x, p.y, parts).setDepth(2);
+  }
+
+  /**
+   * The first time an obstacle appears (Jonas, 2026-11-18): an arrow bounces
+   * over it while Svelte shows one sentence; it goes with the first move.
+   */
+  private drawIntro(): void {
+    for (const o of this.introArrow) o.destroy();
+    this.introArrow = [];
+    const e = this.engine;
+    const what = this.registry.get('intro') as Obstacle | null;
+    if (!e || !what) return;
+    const has = (p: Cell): boolean => {
+      const k = e.board[p.r][p.c];
+      if (what === 'is' || what === 'sno') return e.ice[p.r][p.c] > 0;
+      if (what === 'mossa') return e.moss[p.r][p.c];
+      return k === { tang: TANG, sten: STEN, stock: STOCK }[what];
+    };
+    let at: Cell | null = null;
+    for (let r = 0; r < e.rows && !at; r++) for (let c = 0; c < e.cols && !at; c++) if (has({ r, c })) at = { r, c };
+    if (!at) return;
+    const p = this.pos(at);
+    // point down at it, or up from below when it sits on the top row
+    const up = at.r === 0;
+    const y = up ? p.y + this.cell * 0.95 : p.y - this.cell * 0.95;
+    const g = this.add.graphics().setDepth(7);
+    const s = this.cell * 0.32;
+    const dir = up ? -1 : 1;
+    // drawn pointing down, with a white edge, and turned round when it points up
+    g.fillStyle(0xffffff, 1).fillRect(-0.5 * s, -1.38 * s, s, 1.45 * s).fillTriangle(-1.1 * s, -0.1 * s, 1.1 * s, -0.1 * s, 0, 1.25 * s);
+    g.fillStyle(this.frame, 1).fillRect(-0.32 * s, -1.2 * s, 0.64 * s, 1.2 * s).fillTriangle(-0.85 * s, 0, 0.85 * s, 0, 0, s);
+    g.setPosition(p.x, y).setAngle(up ? 180 : 0);
+    this.tweens.add({ targets: g, y: y + dir * this.cell * 0.18, duration: 450, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.introArrow.push(g);
   }
 
   /** Two blinking frames around a legal move (used by the introduction). */
@@ -186,7 +259,7 @@ export class Match3Scene extends Phaser.Scene {
     if (!move) return;
     for (const cell of move) {
       const p = this.pos(cell);
-      const box = this.add.rectangle(p.x, p.y, this.cell - 2 * this.k, this.cell - 2 * this.k).setStrokeStyle(4 * this.k, FRAME, 1).setDepth(3);
+      const box = this.add.rectangle(p.x, p.y, this.cell - 2 * this.k, this.cell - 2 * this.k).setStrokeStyle(4 * this.k, this.frame, 1).setDepth(3);
       this.tweens.add({ targets: box, alpha: 0.2, duration: 600, yoyo: true, repeat: -1 });
       this.hintTweens.push(box);
     }
@@ -232,15 +305,20 @@ export class Match3Scene extends Phaser.Scene {
     this.cursorBox = undefined;
     if (!this.usingKeys || !this.engine) return;
     const p = this.pos(this.cursor);
-    this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3 * this.k, DEEP, 1).setDepth(3);
+    this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3 * this.k, this.deep, 1).setDepth(3);
   }
 
   private makeTile(kind: number, at: { x: number; y: number }, special: Special = null): Tile {
     const size = this.cell * 0.86;
+    if (isBlock(kind)) {
+      const big = this.cell * (kind === STOCK ? 0.92 : 0.98);
+      const img = this.add.image(0, 0, `ob-${BLOCK_PICTURE[kind]}`).setDisplaySize(big, big);
+      return this.add.container(at.x, at.y, [img]).setDepth(1);
+    }
     if (!isFree(kind) && special === 'all') return this.shining(kind, at, size);
     if (!isFree(kind)) {
-      const shadow = this.add.image(0, 2 * this.k, `tile-${TILES[kind]}`).setDisplaySize(size, size).setTint(0x000000).setAlpha(0.25);
-      const img = this.add.image(0, 0, `tile-${TILES[kind]}`).setDisplaySize(size, size);
+      const shadow = this.add.image(0, 2 * this.k, `tile-${this.region.tiles[kind]}`).setDisplaySize(size, size).setTint(0x000000).setAlpha(0.25);
+      const img = this.add.image(0, 0, `tile-${this.region.tiles[kind]}`).setDisplaySize(size, size);
       return this.add.container(at.x, at.y, [shadow, img]).setDepth(1);
     }
     // Option A (Jonas, 2026-11-17): specials are their own pictures, with no kind.
@@ -273,10 +351,10 @@ export class Match3Scene extends Phaser.Scene {
         .fillTriangle(0, 0, Math.cos(a0) * R * 1.12, Math.sin(a0) * R * 1.12, Math.cos(a1) * R * 1.12, Math.sin(a1) * R * 1.12);
     }
     const ring = this.add.graphics();
-    ring.fillStyle(DEEP, 1).fillCircle(0, 0, R * 0.9);
+    ring.fillStyle(this.deep, 1).fillCircle(0, 0, R * 0.9);
     ring.fillStyle(0xffce46, 1).fillCircle(0, 0, R * 0.85);
     ring.fillStyle(0xfff8e1, 1).fillCircle(0, 0, R * 0.78);
-    const img = this.add.image(0, 0, `tile-${TILES[kind]}`).setDisplaySize(size * 0.74, size * 0.74);
+    const img = this.add.image(0, 0, `tile-${this.region.tiles[kind]}`).setDisplaySize(size * 0.74, size * 0.74);
     this.tweens.add({ targets: rays, angle: 360, duration: 9000, repeat: -1 });
     return this.add.container(at.x, at.y, [rays, ring, img]).setDepth(1);
   }
@@ -385,13 +463,32 @@ export class Match3Scene extends Phaser.Scene {
     }
   }
 
+  /** Bits of ice or snow flying off a cell. */
+  private chips(at: Cell, color: number): void {
+    const p = this.pos(at);
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + Math.random() * 0.6;
+      const bit = this.add.rectangle(p.x, p.y, this.cell * 0.1, this.cell * 0.1, color, 1).setStrokeStyle(this.k, 0x7fb8d8).setDepth(5).setAngle(45);
+      this.tweens.add({ targets: bit, x: p.x + Math.cos(a) * this.cell * 0.6, y: p.y + Math.sin(a) * this.cell * 0.6, alpha: 0, duration: 300, ease: 'Quad.easeOut', onComplete: () => bit.destroy() });
+    }
+  }
+
+  /** Seaweed takes a tile beside it after a move that cleared none. */
+  private async grow(at: Cell | undefined): Promise<void> {
+    if (!at || !this.engine) return;
+    this.tiles[at.r][at.c]?.destroy();
+    const t = this.makeTile(this.engine.board[at.r][at.c], this.pos(at)).setScale(0.2);
+    this.tiles[at.r][at.c] = t;
+    await this.tween(t, { scale: 1 }, 260);
+  }
+
   private select(cell: Cell | null): void {
     this.selected = cell;
     this.selBox?.destroy();
     this.selBox = undefined;
     if (cell) {
       const p = this.pos(cell);
-      this.selBox = this.add.rectangle(p.x, p.y, this.cell - 2 * this.k, this.cell - 2 * this.k).setStrokeStyle(4 * this.k, DEEP, 1).setDepth(3);
+      this.selBox = this.add.rectangle(p.x, p.y, this.cell - 2 * this.k, this.cell - 2 * this.k).setStrokeStyle(4 * this.k, this.deep, 1).setDepth(3);
     }
   }
 
@@ -407,7 +504,7 @@ export class Match3Scene extends Phaser.Scene {
       void this.swap(s, cell);
       return;
     }
-    if (this.engine?.ice[cell.r][cell.c]) {
+    if (this.engine?.locked(cell)) {
       this.select(null);
       this.frozenNo(cell);
       return;
@@ -432,7 +529,7 @@ export class Match3Scene extends Phaser.Scene {
     const e = this.engine;
     if (!e || this.busy || e.status() !== 'playing') return;
     if (b.r < 0 || b.c < 0 || b.r >= e.rows || b.c >= e.cols) return;
-    if (e.ice[a.r][a.c] || e.ice[b.r][b.c]) { this.frozenNo(e.ice[a.r][a.c] ? a : b); return; }
+    if (e.locked(a) || e.locked(b)) { this.frozenNo(e.locked(a) ? a : b); return; }
     this.busy = true;
     for (const h of this.hintTweens) h.destroy();
     this.hintTweens = [];
@@ -453,6 +550,7 @@ export class Match3Scene extends Phaser.Scene {
     this.tiles[a.r][a.c] = tb;
     this.tiles[b.r][b.c] = ta;
     for (const [i, step] of result.steps.entries()) await this.play(step, i);
+    await this.grow(result.grew);
     if (result.shuffled) this.build();
     await this.playFinale();
     this.busy = false;
@@ -493,6 +591,7 @@ export class Match3Scene extends Phaser.Scene {
     if (!result.valid) { if (t) t.setScale(1); this.busy = false; return; }
     playSound('swap');
     for (const [i, step] of result.steps.entries()) await this.play(step, i);
+    await this.grow(result.grew);
     if (result.shuffled) this.build();
     await this.playFinale();
     this.busy = false;
@@ -547,9 +646,22 @@ export class Match3Scene extends Phaser.Scene {
     const wait = this.flash(step);
     if (wait) await new Promise((done) => this.time.delayedCall(wait * 0.8, done));
     const cleared = step.cleared.map(({ r, c }) => this.tiles[r][c]!).filter(Boolean);
-    for (const { r, c } of step.iceBroken) {
+    for (const { r, c, left } of step.iceBroken) {
       const ice = this.iceGfx[r]?.[c];
-      if (ice) { void this.tween(ice, { alpha: 0, scale: 1.3 }, 200); this.iceGfx[r][c] = null; }
+      if (!ice) continue;
+      this.iceGfx[r][c] = null;
+      this.chips({ r, c }, this.region.id === 'fjall' ? 0xffffff : 0xcdeefc);
+      if (left > 0) {
+        // one layer left: the cube is redrawn thinner
+        ice.destroy();
+        this.iceGfx[r][c] = this.makeCover({ r, c }, left);
+      } else {
+        void this.tween(ice, { alpha: 0, scale: 1.3 }, 200).then(() => ice.destroy());
+      }
+    }
+    for (const { r, c } of step.mossGone) {
+      const moss = this.mossGfx[r]?.[c];
+      if (moss) { this.mossGfx[r][c] = null; void this.tween(moss, { alpha: 0, scale: 0.6 }, 220).then(() => moss.destroy()); }
     }
     await this.tween(cleared, { scale: 0, alpha: 0 }, 160);
     cleared.forEach((t) => t.destroy());

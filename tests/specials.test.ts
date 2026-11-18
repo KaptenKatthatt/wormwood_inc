@@ -90,7 +90,7 @@ describe('special tiles', () => {
     expect(g.trySwap({ r: 3, c: 3 }, { r: 3, c: 4 }).valid).toBe(false);
     expect(g.trySwap({ r: 2, c: 3 }, { r: 3, c: 3 }).valid).toBe(false);
     g.smash({ r: 4, c: 3 });
-    expect(g.ice[3][3]).toBe(false); // thawed by the clear beside it
+    expect(g.ice[3][3]).toBe(0); // thawed by the clear beside it
   });
 
   it('tiles above a frozen tile do not fall through it', () => {
@@ -98,7 +98,7 @@ describe('special tiles', () => {
     const g = new Match3(iced, rng, false, base());
     const kind = g.board[3][3];
     const step = g.smash({ r: 5, c: 3 }).steps[0];
-    expect(g.ice[3][3]).toBe(true);
+    expect(g.ice[3][3]).toBe(1);
     expect(g.board[3][3]).toBe(kind);
     expect(step.falls.every((f) => !(f.from.r < 3 && f.to.r > 3))).toBe(true);
     expect(g.board.flat().every((k) => k >= 0)).toBe(true);

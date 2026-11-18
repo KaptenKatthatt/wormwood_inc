@@ -20,6 +20,14 @@
  * and never match. Five in a row leaves a shining tile that keeps its kind
  * and clears every tile of that kind. A special goes off when it is tapped
  * (one move), swapped with any neighbour, or cleared by anything else.
+ *
+ * Obstacles (Jonas, 2026-11-18, option C), two for each region. Ice and snow
+ * cover a tile in one or two layers and lock it; each match on it or clear
+ * beside it takes a layer. Moss lies under a tile and goes when that tile is
+ * cleared. Seaweed, stones and logs are blocks in place of a tile: seaweed
+ * goes when something beside it is cleared and grows by one cell after each
+ * move that clears none; stones break only from specials (and the hammer);
+ * logs fall like tiles and are collected when they reach the bottom row.
  */
 import type { Goal, Level } from './levels';
 import { pick, type Rng } from './rng';
@@ -38,7 +46,10 @@ export const isRocket = (s: Special | 'bomb'): s is Rocket => s === 'left' || s 
 export interface Made { cell: Cell; kind: number; special: Special }
 export interface Step {
   cleared: Cell[];
-  iceBroken: Cell[];
+  /** Cells whose ice or snow lost a layer, with the layers left. */
+  iceBroken: (Cell & { left: number })[];
+  /** Cells whose moss went. */
+  mossGone: Cell[];
   falls: Fall[];
   spawns: Spawn[];
   score: number;
@@ -47,7 +58,7 @@ export interface Step {
   /** Specials that went off, for the effects. */
   blasts: { cell: Cell; special: Special | 'bomb' }[];
 }
-export interface SwapResult { valid: boolean; steps: Step[]; shuffled: boolean }
+export interface SwapResult { valid: boolean; steps: Step[]; shuffled: boolean; /** Where seaweed grew after the move. */ grew?: Cell }
 export type Status = 'playing' | 'won' | 'out-of-moves';
 export type Mood = 'warm' | 'cool' | 'neutral';
 
@@ -58,12 +69,27 @@ export const BOMB = 99;
 export const POWER = 98;
 /** A tile with no kind of its own: it goes off instead of matching. */
 export const isFree = (k: number): boolean => k === BOMB || k === POWER;
+/** Blocks that stand in place of a tile. */
+export const TANG = 97;
+export const STEN = 96;
+export const STOCK = 95;
+export const isBlock = (k: number): boolean => k === TANG || k === STEN || k === STOCK;
+/** An ordinary tile of some kind, which can match. */
+export const isTile = (k: number): boolean => k >= 0 && k < 90;
 
 export class Match3 {
   readonly level: Level;
   board: number[][];
   special: Special[][];
-  ice: boolean[][];
+  /** Layers of ice or snow on each cell (0 for none). */
+  ice: number[][];
+  moss: boolean[][];
+  mossTotal: number;
+  /** Seaweed or stones cleared, for the block goal. */
+  blocksCleared = 0;
+  /** Logs that reached the bottom. */
+  stocksOut = 0;
+  private tangThisMove = 0;
   movesLeft: number;
   movesUsed = 0;
   extraMoves = 0;
@@ -80,9 +106,12 @@ export class Match3 {
     this.rng = rng;
     this.rigged = rigged;
     this.movesLeft = level.moves;
-    this.ice = Array.from({ length: level.rows }, () => Array(level.cols).fill(false));
-    for (const [r, c] of level.ice ?? []) this.ice[r][c] = true;
-    this.iceTotal = (level.ice ?? []).length;
+    this.ice = Array.from({ length: level.rows }, () => Array(level.cols).fill(0));
+    for (const [r, c, n] of level.ice ?? []) this.ice[r][c] = n ?? 1;
+    this.iceTotal = this.iceLeft();
+    this.moss = Array.from({ length: level.rows }, () => Array(level.cols).fill(false));
+    for (const [r, c] of level.moss ?? []) this.moss[r][c] = true;
+    this.mossTotal = (level.moss ?? []).length;
     this.special = Array.from({ length: level.rows }, () => Array(level.cols).fill(null));
     this.board = board ?? this.freshBoard();
   }
@@ -93,7 +122,16 @@ export class Match3 {
   get cols(): number { return this.level.cols; }
 
   iceLeft(): number {
-    return this.ice.reduce((n, row) => n + row.filter(Boolean).length, 0);
+    return this.ice.reduce((n, row) => n + row.reduce((a, b) => a + b, 0), 0);
+  }
+
+  mossLeft(): number {
+    return this.moss.reduce((n, row) => n + row.filter(Boolean).length, 0);
+  }
+
+  /** How many cells hold this block. */
+  countOf(block: number): number {
+    return this.board.reduce((n, row) => n + row.filter((k) => k === block).length, 0);
   }
 
   /** 0..1 of the way to the goal. */
@@ -101,6 +139,9 @@ export class Match3 {
     const g = this.level.goal;
     if (g.type === 'collect') return Math.min(1, this.collected / g.count);
     if (g.type === 'ice') return this.iceTotal === 0 ? 1 : 1 - this.iceLeft() / this.iceTotal;
+    if (g.type === 'moss') return this.mossTotal === 0 ? 1 : 1 - this.mossLeft() / this.mossTotal;
+    if (g.type === 'block') return this.countOf(g.block === 'tang' ? TANG : STEN) === 0 ? 1 : Math.min(1, this.blocksCleared / g.count);
+    if (g.type === 'stock') return Math.min(1, this.stocksOut / g.count);
     return Math.min(1, this.score / g.score);
   }
 
@@ -109,6 +150,9 @@ export class Match3 {
     const g = this.level.goal;
     if (g.type === 'collect') return Math.max(0, g.count - this.collected);
     if (g.type === 'ice') return this.iceLeft();
+    if (g.type === 'moss') return this.mossLeft();
+    if (g.type === 'block') return this.countOf(g.block === 'tang' ? TANG : STEN) === 0 ? 0 : Math.max(0, g.count - this.blocksCleared);
+    if (g.type === 'stock') return Math.max(0, g.count - this.stocksOut);
     return Math.max(0, g.score - this.score);
   }
 
@@ -142,7 +186,7 @@ export class Match3 {
   }
 
   trySwap(a: Cell, b: Cell): SwapResult {
-    if (this.status() !== 'playing' || !this.isAdjacent(a, b) || !this.inside(a) || !this.inside(b) || this.ice[a.r][a.c] || this.ice[b.r][b.c]) {
+    if (this.status() !== 'playing' || !this.isAdjacent(a, b) || !this.inside(a) || !this.inside(b) || this.locked(a) || this.locked(b)) {
       return { valid: false, steps: [], shuffled: false };
     }
     this.swapCells(a, b);
@@ -155,6 +199,7 @@ export class Match3 {
     }
     this.movesLeft--;
     this.movesUsed++;
+    this.tangThisMove = 0;
     const steps: Step[] = [];
     let chain = 1;
     if (this.fires(a) && this.fires(b)) {
@@ -181,17 +226,55 @@ export class Match3 {
     }
     while (this.status() !== 'won') {
       const groups = this.findGroups();
-      if (groups.length === 0) break;
+      if (groups.length === 0) {
+        const logs = this.logsAtBottom();
+        if (logs.length === 0) break;
+        steps.push(this.resolve(logs, chain++, [], [], true));
+        continue;
+      }
       // a special from the player's own swap lands where the tile was moved to
       steps.push(this.resolveGroups(groups, chain, chain === 1 ? [b, a] : []));
       chain++;
     }
+    return { valid: true, steps, ...this.afterMove() };
+  }
+
+  /** A frozen, snowed-in or block cell cannot be moved. */
+  locked(p: Cell): boolean {
+    return this.ice[p.r][p.c] > 0 || isBlock(this.board[p.r][p.c]);
+  }
+
+  /** Logs standing on the bottom row, ready to be collected. */
+  private logsAtBottom(): Cell[] {
+    const r = this.rows - 1;
+    return this.allCells().filter((p) => p.r === r && this.board[p.r][p.c] === STOCK);
+  }
+
+  /** After a move: seaweed grows if none was cleared, and a stuck board is shuffled. */
+  private afterMove(): { shuffled: boolean; grew?: Cell } {
+    let grew: Cell | undefined;
+    if (this.status() === 'playing' && this.tangThisMove === 0) grew = this.growTang();
     let shuffled = false;
     if (this.status() === 'playing' && !this.hasMove()) {
       this.shuffle();
       shuffled = true;
     }
-    return { valid: true, steps, shuffled };
+    return grew ? { shuffled, grew } : { shuffled };
+  }
+
+  /** Seaweed takes one ordinary tile beside it. */
+  private growTang(): Cell | undefined {
+    const options: Cell[] = [];
+    for (const p of this.cellsOf(TANG)) {
+      for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = { r: p.r + dr, c: p.c + dc };
+        if (this.inside(n) && isTile(this.board[n.r][n.c]) && !this.special[n.r][n.c] && !this.ice[n.r][n.c] && !options.some((o) => o.r === n.r && o.c === n.c)) options.push(n);
+      }
+    }
+    if (options.length === 0) return undefined;
+    const at = options[Math.floor(this.rng() * options.length)];
+    this.board[at.r][at.c] = TANG;
+    return at;
   }
 
   private sortOf(p: Cell): 'rocket' | 'area' | 'all' | null {
@@ -262,7 +345,7 @@ export class Match3 {
   finale(): Step[] {
     if (this.status() !== 'won' || this.leftAtWin >= 0) return [];
     this.leftAtWin = this.movesLeft;
-    const spots = this.allCells().filter(({ r, c }) => !this.ice[r][c] && !this.fires({ r, c }));
+    const spots = this.allCells().filter(({ r, c }) => !this.ice[r][c] && isTile(this.board[r][c]) && !this.fires({ r, c }));
     const picked: Cell[] = [];
     for (let i = 0; i < Math.min(this.movesLeft, 12, spots.length); i++) {
       const j = Math.floor(this.rng() * spots.length);
@@ -279,13 +362,21 @@ export class Match3 {
     if (this.status() !== 'playing' || !this.inside(cell) || this.ice[cell.r][cell.c] || !this.fires(cell)) return { valid: false, steps: [], shuffled: false };
     this.movesLeft--;
     this.movesUsed++;
-    return this.settle([cell]);
+    this.tangThisMove = 0;
+    const result = this.settle([cell]);
+    return { ...result, ...this.afterMove() };
   }
 
   /** The hammer: removes one tile without using a move, then lets the board settle. */
   smash(cell: Cell): SwapResult {
     if (this.status() !== 'playing' || !this.inside(cell)) return { valid: false, steps: [], shuffled: false };
-    return this.settle([cell]);
+    const result = this.settle([cell]);
+    let shuffled = false;
+    if (this.status() === 'playing' && !this.hasMove()) {
+      this.shuffle();
+      shuffled = true;
+    }
+    return { ...result, shuffled };
   }
 
   private allCells(): Cell[] {
@@ -302,7 +393,7 @@ export class Match3 {
   /** The kind with the most tiles on the board. */
   private commonKind(): number {
     const counts = new Map<number, number>();
-    for (const x of this.allCells()) { const k = this.board[x.r][x.c]; if (k >= 0 && !isFree(k)) counts.set(k, (counts.get(k) ?? 0) + 1); }
+    for (const x of this.allCells()) { const k = this.board[x.r][x.c]; if (isTile(k)) counts.set(k, (counts.get(k) ?? 0) + 1); }
     return [...counts.entries()].sort((p, q) => q[1] - p[1])[0]?.[0] ?? -2;
   }
 
@@ -315,20 +406,21 @@ export class Match3 {
     if (this.status() === 'playing') this.shuffle();
   }
 
+  /** Resolves the first cells and the cascades after them (the caller shuffles if needed). */
   private settle(first: Cell[]): SwapResult {
     const steps: Step[] = [this.resolve(first, 1)];
     let chain = 2;
     while (this.status() !== 'won') {
       const groups = this.findGroups();
-      if (groups.length === 0) break;
+      if (groups.length === 0) {
+        const logs = this.logsAtBottom();
+        if (logs.length === 0) break;
+        steps.push(this.resolve(logs, chain++, [], [], true));
+        continue;
+      }
       steps.push(this.resolveGroups(groups, chain++, []));
     }
-    let shuffled = false;
-    if (this.status() === 'playing' && !this.hasMove()) {
-      this.shuffle();
-      shuffled = true;
-    }
-    return { valid: true, steps, shuffled };
+    return { valid: true, steps, shuffled: false };
   }
 
   /** A legal move, if any (used for hints and the no-moves shuffle). */
@@ -338,7 +430,7 @@ export class Match3 {
         for (const [dr, dc] of [[0, 1], [1, 0]]) {
           const a = { r, c };
           const b = { r: r + dr, c: c + dc };
-          if (!this.inside(b) || this.ice[a.r][a.c] || this.ice[b.r][b.c]) continue;
+          if (!this.inside(b) || this.locked(a) || this.locked(b)) continue;
           if (this.fires(a) || this.fires(b)) return [a, b];
           this.swapCells(a, b);
           const ok = this.findMatches().length > 0;
@@ -373,7 +465,7 @@ export class Match3 {
    */
   findGroups(): { cells: Cell[]; longest: number; across: boolean; down: boolean }[] {
     const runs: { cells: Cell[]; dir: 'h' | 'v' }[] = [];
-    const real = (k: number) => k !== EMPTY && !isFree(k);
+    const real = isTile;
     for (let r = 0; r < this.rows; r++) {
       let start = 0;
       for (let c = 1; c <= this.cols; c++) {
@@ -451,7 +543,7 @@ export class Match3 {
       for (let j = 0; j < other; j++) {
         let run = 1;
         for (let i = 1; i <= len; i++) {
-          const same = i < len && get(i, j) !== EMPTY && !isFree(get(i, j)) && get(i, j) === get(i - 1, j);
+          const same = i < len && isTile(get(i, j)) && get(i, j) === get(i - 1, j);
           if (same) { run++; continue; }
           if (run >= 3) for (let k = i - run; k < i; k++) mark(k, j);
           run = 1;
@@ -465,19 +557,35 @@ export class Match3 {
     return out;
   }
 
-  private resolve(first: Cell[], chain: number, made: Made[] = [], blasts: Step['blasts'] = []): Step {
+  private resolve(first: Cell[], chain: number, made: Made[] = [], blasts: Step['blasts'] = [], collectLogs = false): Step {
     const goal = this.level.goal;
-    const iceBroken: Cell[] = [];
+    const iceBroken: Step['iceBroken'] = [];
+    const mossGone: Cell[] = [];
     // Cleared specials set off their effect, which can set off others.
     const seen = new Set<number>();
     const keep = new Set(made.filter((m) => !first.some((f) => f.r === m.cell.r && f.c === m.cell.c)).map((m) => m.cell.r * this.cols + m.cell.c));
     const matched: Cell[] = [];
+    /** Cells whose ice already lost a layer in this step (one layer per step). */
+    const hitIce = new Set<number>();
+    const chip = (p: Cell): number => {
+      const key = p.r * this.cols + p.c;
+      if (hitIce.has(key) || !this.ice[p.r][p.c]) return this.ice[p.r][p.c];
+      hitIce.add(key);
+      this.ice[p.r][p.c]--;
+      iceBroken.push({ ...p, left: this.ice[p.r][p.c] });
+      return this.ice[p.r][p.c];
+    };
     const queue = [...first];
     while (queue.length) {
       const { r, c } = queue.shift()!;
       const key = r * this.cols + c;
       if (seen.has(key) || keep.has(key) || !this.inside({ r, c })) continue;
       seen.add(key);
+      const k = this.board[r][c];
+      // a log is never broken, only collected at the bottom
+      if (k === STOCK && !(collectLogs && r === this.rows - 1)) continue;
+      // a tile under two layers stays; the hit only takes a layer
+      if (this.ice[r][c] > 1) { chip({ r, c }); continue; }
       matched.push({ r, c });
       const sp = this.special[r][c];
       if (sp === 'right') for (let cc = c + 1; cc < this.cols; cc++) queue.push({ r, c: cc });
@@ -502,23 +610,37 @@ export class Match3 {
         blasts.push({ cell: { r, c }, special: 'bomb' });
       }
     }
-    // Something cleared beside a frozen tile thaws it; the tile stays (Jonas, 2026-11-17).
+    // A tile cleared beside ice, snow or seaweed takes a layer of it; the
+    // frozen tile itself stays (Jonas, 2026-11-17).
     const gone = new Set(matched.map(({ r, c }) => r * this.cols + c));
+    const tang: Cell[] = [];
     for (const { r, c } of matched) {
+      if (!isTile(this.board[r][c]) && !isFree(this.board[r][c])) continue;
       for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const n = { r: r + dr, c: c + dc };
-        if (this.inside(n) && this.ice[n.r][n.c] && !gone.has(n.r * this.cols + n.c)) { this.ice[n.r][n.c] = false; iceBroken.push(n); }
+        if (!this.inside(n) || gone.has(n.r * this.cols + n.c)) continue;
+        if (this.ice[n.r][n.c]) chip(n);
+        else if (this.board[n.r][n.c] === TANG) { gone.add(n.r * this.cols + n.c); tang.push(n); }
       }
     }
+    matched.push(...tang);
     for (const { r, c } of matched) {
-      if (goal.type === 'collect' && this.board[r][c] === goal.kind) this.collected++;
-      if (this.ice[r][c]) { this.ice[r][c] = false; iceBroken.push({ r, c }); }
+      const k = this.board[r][c];
+      if (goal.type === 'collect' && k === goal.kind) this.collected++;
+      if (k === TANG || k === STEN) {
+        if (goal.type === 'block' && k === (goal.block === 'tang' ? TANG : STEN)) this.blocksCleared++;
+        if (k === TANG) this.tangThisMove++;
+      }
+      if (k === STOCK) this.stocksOut++;
+      if (this.ice[r][c]) chip({ r, c });
+      if (this.moss[r][c]) { this.moss[r][c] = false; mossGone.push({ r, c }); }
       this.board[r][c] = EMPTY;
       this.special[r][c] = null;
     }
     for (const m of made) {
       const { r, c } = m.cell;
-      if (this.ice[r][c]) { this.ice[r][c] = false; iceBroken.push({ r, c }); }
+      if (this.ice[r][c]) chip({ r, c });
+      if (this.moss[r][c]) { this.moss[r][c] = false; mossGone.push({ r, c }); }
       this.board[m.cell.r][m.cell.c] = m.kind;
       this.special[m.cell.r][m.cell.c] = m.special;
     }
@@ -528,7 +650,7 @@ export class Match3 {
     // gravity: a frozen tile stays put, so each column falls in stretches
     // between frozen tiles
     const falls: Fall[] = [];
-    const frozen = (r: number, c: number) => this.ice[r][c] && this.board[r][c] !== EMPTY;
+    const frozen = (r: number, c: number) => (this.ice[r][c] > 0 && this.board[r][c] !== EMPTY) || this.board[r][c] === TANG || this.board[r][c] === STEN;
     for (let c = 0; c < this.cols; c++) {
       let write = this.rows - 1;
       for (let r = this.rows - 1; r >= 0; r--) {
@@ -563,7 +685,7 @@ export class Match3 {
         bottom = top - 2; // skip the frozen tile above this stretch
       }
     }
-    return { cleared: matched, iceBroken, falls, spawns, score, made, blasts };
+    return { cleared: matched, iceBroken, mossGone, falls, spawns, score, made, blasts };
   }
 
   /** Would `kind` at (r, c) complete a line of three with tiles already placed? */
@@ -587,12 +709,21 @@ export class Match3 {
     return pick(this.rng, weights);
   }
 
-  private freshBoard(): number[][] {
+  /** New random tiles everywhere except on blocks (the level's, or the ones on the board now). */
+  private freshBoard(blocks?: number[][]): number[][] {
     for (let attempt = 0; attempt < 100; attempt++) {
       const b: number[][] = Array.from({ length: this.rows }, () => Array(this.cols).fill(EMPTY));
+      if (blocks) {
+        for (const p of this.allCells()) if (isBlock(blocks[p.r][p.c])) b[p.r][p.c] = blocks[p.r][p.c];
+      } else {
+        for (const [r, c] of this.level.tang ?? []) b[r][c] = TANG;
+        for (const [r, c] of this.level.sten ?? []) b[r][c] = STEN;
+        for (const [r, c] of this.level.stock ?? []) b[r][c] = STOCK;
+      }
       this.board = b;
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
+          if (b[r][c] !== EMPTY) continue;
           const options = Array.from({ length: this.level.kinds }, (_, k) => k).filter((k) => !this.makesLine(r, c, k));
           b[r][c] = options[Math.floor(this.rng() * options.length)];
         }
@@ -603,8 +734,8 @@ export class Match3 {
   }
 
   private shuffle(): void {
-    // frozen tiles stay where they are
-    const spots = this.allCells().filter(({ r, c }) => !this.ice[r][c]);
+    // frozen tiles and blocks stay where they are
+    const spots = this.allCells().filter(({ r, c }) => !this.ice[r][c] && !isBlock(this.board[r][c]));
     const tiles = spots.map(({ r, c }) => ({ k: this.board[r][c], s: this.special[r][c] }));
     for (let attempt = 0; attempt < 100; attempt++) {
       for (let i = tiles.length - 1; i > 0; i--) {
@@ -617,7 +748,7 @@ export class Match3 {
       });
       if (this.findMatches().length === 0 && this.hasMove()) return;
     }
-    this.board = this.freshBoard();
+    this.board = this.freshBoard(this.board.map((row) => [...row]));
     this.special = Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
   }
 }

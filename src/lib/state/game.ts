@@ -100,6 +100,15 @@ export function toast(text: string, ms = 3500): void {
 }
 
 /** A tip shown once per player, the first time something matters (instead of a long introduction). */
+/** True the first time it is asked for this id, then never again (shares the tips list). */
+export function firstTime(id: string): boolean {
+  const seen = load<string[]>('tips', []);
+  if (seen.includes(id)) return false;
+  save('tips', [...seen, id]);
+  log('tip', { tip: id });
+  return true;
+}
+
 export function tipOnce(id: string, text: string): void {
   const seen = load<string[]>('tips', []);
   if (seen.includes(id)) return;
