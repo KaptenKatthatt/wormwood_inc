@@ -3,12 +3,22 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
 
+/**
+ * Two apps side by side on Jonas's phone (2026-11-18): the dev build is
+ * "Skärgårdsbyn dev", the tester build plain "Skärgårdsbyn" (Jonas chose
+ * that, since the testers install it too). The addresses differ, so the
+ * phone keeps them apart.
+ */
+const DEV = process.env.VITE_DEV_MENU !== 'false';
+const APP_NAME = DEV ? 'Skärgårdsbyn dev' : 'Skärgårdsbyn';
+
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     svelte(),
+    { name: 'app-name', transformIndexHtml: (html: string) => html.replace('content="Skärgårdsbyn"', `content="${APP_NAME}"`).replace('<title>Skärgårdsbyn</title>', `<title>${APP_NAME}</title>`) },
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
@@ -26,8 +36,8 @@ export default defineConfig({
       },
       manifest: {
         id: '/',
-        name: 'Skärgårdsbyn',
-        short_name: 'Skärgårdsbyn',
+        name: APP_NAME,
+        short_name: APP_NAME,
         description: 'Lös pussel och bygg en by vid havet.',
         lang: 'sv',
         start_url: '/',
