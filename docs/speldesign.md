@@ -123,6 +123,14 @@ Nya hinders grafik visas för Jonas och godkänns innan den läggs ut.
 
 Varje byggnad får tre utseenden: ett för nivå 1–3, ett för 4–7 och ett för 8–10. Medan den byggs står en byggställning. Låsta tomter täcks av snår eller skog tills de låses upp. Layouten finns i /mnt/project-files/byns-utseende/3d/village3.json.
 
+**Introskärmen (Jonas godkände 2026-11-18 kl. 13.59):** introskärmen visar Sjöboden i stilen rödfärg och skärgård, med pynt B:
+
+- Under fönstren sitter två blomlådor med pelargoner, men det finns ingen låda på gaveln.
+- Det finns en bänk och en kruka med blå blommor.
+- En grön roddbåt ligger i vattnet med två åror på längden. Den är förtöjd med en tunn lina i en smal stolpe vid bryggans hörn.
+
+Skylten "Skärgårdsbyn" och Spela-knappen är ritade i kod, och skärmen visar inget versionsnummer. Filerna ligger i /mnt/project-files/pussel-stil/intro/slutlig/.
+
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
 Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efter testet, så att köpen kostar något. Om plånboken betalas ut på riktigt stängs steg 7 i veckotrappan (kistor, lyckohjul, mästardragningar) av för den testpersonen, så att det inte blir spel om pengar (Jonas 2026-11-18).
