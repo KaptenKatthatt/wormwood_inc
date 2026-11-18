@@ -63,7 +63,7 @@ describe('the obstacles of worlds 2 to 5', () => {
   it('every world has its own tiles, cover and block, brought in with a tip', () => {
     expect([41, 81, 121, 161].map((n) => regionOf(n).id)).toEqual(['slatten', 'bergslagen', 'hogakusten', 'vinter']);
     expect(regionOf(200).id).toBe('vinter');
-    for (const [first, cover, block] of [[41, 'lera', 'hobal'], [81, 'kol', 'malm'], [121, 'nat', 'klapper'], [161, 'frost', 'snogubbe']] as const) {
+    for (const [first, cover, block] of [[41, 'lera', 'hobal'], [81, 'kol', 'malm'], [121, 'sand', 'klapper'], [161, 'frost', 'snogubbe']] as const) {
       const world = ALL_LEVELS.slice(first - 1, first + 39);
       expect(world.some((l) => l.intro === cover)).toBe(true);
       expect(ALL_LEVELS[first + 8].intro).toBe(block);
