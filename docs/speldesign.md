@@ -69,7 +69,7 @@ Stil: en gammal svensk by på fastlandet, med åkrar och skog runt om (inte en �
 Alla 8 byggnader har 10 nivåer (spelet 0.8.0).
 
 ### Anfallet (steg 5)
-- En påhittad grannby anfaller runt minut 12. Varning med nedräkning på 60 sekunder.
+- En påhittad grannby anfaller runt minut 23. Varning med nedräkning på 60 sekunder.
 - Under nedräkningen kan spelaren köpa sköld (100 ädelstenar) eller träna soldater i kasernen.
 - Varningen säger från vilken sida anfallet kommer. Armén plus tornet på den sidan (fullt) och de andra tornen (till hälften) mot anfallets styrka avgör utgången. En osäkrad sida lockar till att bygga alla fyra.
 - Utan tillräckligt försvar förlorar byn 30 % av guldet, och en byggnad skadas och måste repareras (tar byggtid, kan köpas bort).
@@ -78,19 +78,18 @@ Alla 8 byggnader har 10 nivåer (spelet 0.8.0).
 **Försvaret (spelet 0.13.0):** soldater × (10 + 5 × Smedjans nivå) + 30 per nivå på tornet på anfallssidan + 15 per nivå på de andra tornen. Sidan slumpas, även för anfall när spelaren är borta. Testversionen: https://spela.84.247.143.6.sslip.io/.
 
 ### Kostnadskurvan
-Kostnaden växer ungefär i kvadrat med antalet byggen. En vunnen bana ger cirka 100 guld.
+Kostnaden växer långsamt i början och sedan ungefär i kvadrat med antalet byggen.
 
 | Bygge nr | Guld | Byggtid |
 |---|---|---|
-| 1 | 0 (gratis) | 5 s |
-| 2 | 0 (gratis) | 5 s |
-| 3 | 150 | 1 min |
-| 4 | 400 | 5 min |
-| 5 | 900 | 30 min |
-| 6 | 1 600 | 2 h |
-| 7 och framåt | 1 600 + 300 per bygge efter det sjätte | 2 h |
+| 1–2 | 0 (gratis) | 5 s |
+| 3–8 | stiger långsamt | under 1 min |
+| 9–10 | stiger | 5 min |
+| 11 | | 15 min |
+| 12 | | 30 min |
+| 13 och framåt | växer ungefär i kvadrat | 1–2 h |
 
-Runt minut 6 behövs fyra banor per bygge, och där börjar grindingen.
+**Beslut 2026-11-18 (generösare början):** belöningen per utmaning är 150–250 guld. De första 8 byggena tar under en minut. Den första riktiga väggen (bygge på 15–30 min, liven slut) kommer runt minut 20 i stället för minut 6–9. Stöd: Ascarza m.fl. 2025 (B1), där lättare banor gav mer spelande och mer intäkt totalt. Exakta guldpriser sätts i bygget så att väggen hamnar runt minut 20.
 
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
@@ -126,7 +125,7 @@ Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efte
 Priser i ädelstenar visas utan kronor bredvid, eftersom det otydliga priset är en del av kroken *Flera valutalager*.
 
 ### Tid
-- **Verklig tid** är standard i testerna. Tiderna väljs så att väggarna kommer inom 10–15 minuter.
+- **Verklig tid** är standard i testerna. Tiderna väljs så att väggarna kommer runt minut 20.
 - **Snabbad klocka** (till exempel 60 gånger) kan väljas i dev-menyn.
 - Byggtider, startvärden: första bygget 5 s, sedan 1 min, 5 min, 30 min, 2 h.
 - Banorna 3–4 blir märkbart svårare, så att livet tar slut för de flesta inom ett pass.
@@ -144,15 +143,15 @@ Spelet ska räcka i några timmar, så att testare kan spela på egen hand läng
 
 ## 4. Kroktrappan
 
-Fem steg med ökande press. Varje steg startas av en händelse i spelet, och klockan är reserv om händelsen dröjer.
+Fem steg med ökande press under ett första pass på 20–25 minuter (utsträckt 2026-11-18 så att väggen inte kommer för tidigt). Varje steg startas av en händelse i spelet, och klockan är reserv om händelsen dröjer.
 
 | Steg | Ungefär | Krokar | Startas av |
 |---|---|---|---|
-| 1. Mild | min 0–3 | Starthjälp: startbidrag i guld och ädelstenar, de första byggena gratis och klara på sekunder | Spelstart |
-| 2. Lockande | min 3–6 | Nära vinst ("bara 2 drag kvar!"), betala för 5 extra drag | Första förlusten eller nära förlusten |
-| 3. Begränsande | min 6–9 | Väntetid som går att köpa bort (byggen 5–30 min), liv tar slut, fyll på guld med ädelstenar | Första långa bygget, första gången liven är slut |
-| 4. Stressande | min 9–12 | Tidsbegränsat erbjudande med nedräkning, impulsköp mellan banorna | Första förlusten efter minut 9 |
-| 5. Skuldbeläggande | min 12–15 | Byn anfalls och skölden kostar ädelstenar (ägande), byborna blir ledsna och tjatar när spelaren vill sluta (skuld) | Minut 12, eller när spelaren försöker sluta |
+| 1. Mild | min 0–8 | Starthjälp: startbidrag, generösa belöningar, de första 8 byggena klara på under en minut | Spelstart |
+| 2. Lockande | min 8–14 | Nära vinst ("bara 2 drag kvar!"), betala för 5 extra drag | Första förlusten eller nära förlusten |
+| 3. Begränsande | min 14–20 | Väntetid som går att köpa bort (byggen 15–30 min), liv tar slut, fyll på guld med ädelstenar | Första långa bygget, första gången liven är slut |
+| 4. Stressande | min 20–23 | Tidsbegränsat erbjudande med nedräkning, impulsköp mellan banorna | Första förlusten efter minut 20 |
+| 5. Skuldbeläggande | min 23–25 | Byn anfalls och skölden kostar ädelstenar (ägande), byborna blir ledsna och tjatar när spelaren vill sluta (skuld) | Minut 23, eller när spelaren försöker sluta |
 
 **Fyll på guld (steg 3):** när guldet inte räcker till ett bygge visas "Fyll på X guld för Y ädelstenar" (10 guld per ädelsten, avrundat uppåt), och bygget startar direkt. Egen brytare i dev-menyn. Loggas som krokögonblick (visad, ja, räcker inte).
 
@@ -160,7 +159,7 @@ Hela tiden: butiken finns tillgänglig. Från steg 2: nästa bana startar av sig
 
 ### Testupplägg: första pass plus en fri vecka
 
-Varje testperson spelar först ett pass på cirka 15 minuter med trappan, och behåller sedan spelet en vecka hemma. Under veckan slås krokarna som verkar över dagar på. Jonas intervjuar efter veckan.
+Varje testperson spelar först ett pass på cirka 20–25 minuter med trappan, och behåller sedan spelet en vecka hemma. Under veckan slås krokarna som verkar över dagar på. Jonas intervjuar efter veckan.
 
 | Dagskrok | Så blir det |
 |---|---|
