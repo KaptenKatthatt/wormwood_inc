@@ -1,4 +1,4 @@
-# My Dear Wormwood
+# Skärgårdsbyn
 
 Ett match-3-spel med en by, byggt som PWA för ett examensarbete om
 engagemangsdriven design ("Kära spelare – En studie i manipulation och

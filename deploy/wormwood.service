@@ -1,5 +1,5 @@
 [Unit]
-Description=My Dear Wormwood (game server: static files, playtest log, Web Push)
+Description=Skärgårdsbyn (game server: static files, playtest log, Web Push)
 After=network-online.target
 
 [Service]

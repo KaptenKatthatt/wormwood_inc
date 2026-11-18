@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Small backend for My Dear Wormwood, no framework:
+ * Small backend for Skärgårdsbyn, no framework:
  *  - serves the built game from dist/ (SPA fallback, sw.js never cached)
  *  - POST /api/log            playtest events, appended as NDJSON per day
  *  - GET  /api/push/key       the VAPID public key
@@ -267,7 +267,7 @@ export async function createApp(opts) {
 
     if (path === '/api/push/test') {
       if (!validId(body.playerId)) return json(res, 400, { error: 'fel format' });
-      const ok = await sendPush(body.playerId, { title: 'My Dear Wormwood', body: 'Notiserna fungerar.', tag: 'test' });
+      const ok = await sendPush(body.playerId, { title: 'Skärgårdsbyn', body: 'Notiserna fungerar.', tag: 'test' });
       return json(res, ok ? 200 : 404, { ok });
     }
 

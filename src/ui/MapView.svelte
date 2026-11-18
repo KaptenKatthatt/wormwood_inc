@@ -10,7 +10,7 @@
   import { ALL_LEVELS, LEVELS, WORLDS, goalText, levelAt, worldOf } from '../lib/match3/levels';
   import NODES from '../lib/match3/mapNodes.json';
   import WORLD_NODES from '../lib/match3/worldNodes.json';
-  import { EXPANSION } from '../lib/config/flags';
+  import { DEV_MENU, EXPANSION } from '../lib/config/flags';
   import { exp } from '../lib/state/expansion';
   import { bestStars } from '../lib/state/game';
   import WeekStrip from './WeekStrip.svelte';
@@ -30,7 +30,8 @@
   const world = $derived(WORLDS[viewWorld - 1]);
   const pts = $derived(roadFor(viewWorld));
   const worldLevels = $derived(EXPANSION ? ALL_LEVELS.slice(world.from - 1, world.to) : LEVELS);
-  const maxWorld = $derived(EXPANSION ? Math.min(WORLDS.length, Math.max($exp.maxWorld, worldOf(current).id) + 1) : 1);
+  // the dev build can browse all five worlds (Jonas, 2026-11-18)
+  const maxWorld = $derived(!EXPANSION ? 1 : DEV_MENU ? WORLDS.length : Math.min(WORLDS.length, Math.max($exp.maxWorld, worldOf(current).id) + 1));
   const BOAT_TO = 11;
 
   /** A smooth Catmull-Rom curve through the points. */

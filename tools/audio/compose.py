@@ -2,7 +2,7 @@
 
     python3 tools/audio/compose.py OUT_DIR [name ...]
 
-Every melody here is original (written for My Dear Wormwood, 2026). The
+Every melody here is original (written for Skärgårdsbyn, 2026). The
 instruments come from the FluidR3_GM sound font (MIT). Style: "Rödfärg och
 skärgård" (red cottages by the sea), Swedish folk colour, warm and safe,
 no dark undertone (design decision 2026-11-17).

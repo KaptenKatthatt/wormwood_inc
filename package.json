@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.22.1",
   "type": "module",
-  "description": "My Dear Wormwood: ett match-3-spel med by, byggt som PWA (exjobb 2026).",
+  "description": "Skärgårdsbyn: ett match-3-spel med by, byggt som PWA (exjobb 2026).",
   "scripts": {
     "dev": "vite",
     "dev:server": "node server/index.mjs",

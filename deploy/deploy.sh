@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds and (re)starts My Dear Wormwood on the devserver from origin/main
+# Builds and (re)starts Skärgårdsbyn on the devserver from origin/main
 # (or the ref given as $1). Run as root. First-time setup: see deploy/DEPLOY.md.
 set -euo pipefail
 REF="${1:-origin/main}"

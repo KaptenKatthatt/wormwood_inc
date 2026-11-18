@@ -6,17 +6,18 @@
   import { formatKr } from '../lib/economy/wallet';
   import { EXPANSION } from '../lib/config/flags';
   import { challengeNo } from '../lib/state/game';
-  import { WORLDS } from '../lib/match3/levels';
+  import { TOTAL_CHALLENGES, WORLDS, worldOf } from '../lib/match3/levels';
   import { WEEK_STEPS, type WeekStep } from '../lib/expansion/week';
-  import { devWeekStep, exp, recordWorld, testDay } from '../lib/state/expansion';
+  import { devWeekStep, exp, testDay } from '../lib/state/expansion';
   import { EXPANSION_HOOKS } from '../lib/hooks';
   const tday = $derived.by(() => { void $now; void $daily; return testDay(); });
-  function jumpWorld(w: number) {
-    const n = WORLDS[w - 1].from;
+  /** Dev only (Jonas, 2026-11-18): switch freely between the worlds without moving the week staircase. */
+  function jumpTo(n: number) {
+    if (!Number.isInteger(n) || n < 1 || n > TOTAL_CHALLENGES) { toast(`Välj en utmaning mellan 1 och ${TOTAL_CHALLENGES}`); return; }
     challengeNo.set(n);
-    recordWorld(n);
-    toast(`Hoppade till utmaning ${n}`);
+    toast(`Hoppade till utmaning ${n} (${worldOf(n).name})`);
   }
+  let pick = $state(1);
 
   const mins = $derived.by(() => { void $now; return minutesIn(); });
   const dayOn = $derived.by(() => { void $now; void $daily; void $settings; return dayHooksOn(); });
@@ -27,6 +28,22 @@
 <section class="dev" aria-labelledby="dev-title">
   <h2 id="dev-title">Utvecklarmeny</h2>
   <p class="fine">Syns inte i versionen som testpersonerna får.</p>
+
+  {#if EXPANSION}
+    <fieldset>
+      <legend>Världar</legend>
+      <p>Nu: utmaning {$challengeNo} i {worldOf($challengeNo).name}. Kartans pilar går till alla fem världarna i den här versionen.</p>
+      <div class="buttons">
+        {#each WORLDS as w}
+          <button class="ghost" aria-pressed={worldOf($challengeNo).id === w.id} onclick={() => jumpTo(w.from)}>{w.id}. {w.name}</button>
+        {/each}
+      </div>
+      <form class="buttons" onsubmit={(e) => { e.preventDefault(); jumpTo(pick); }}>
+        <label class="jump">Utmaning <input type="number" min="1" max={TOTAL_CHALLENGES} bind:value={pick} /></label>
+        <button class="ghost" type="submit">Hoppa dit</button>
+      </form>
+    </fieldset>
+  {/if}
 
   <fieldset>
     <legend>Tid</legend>
@@ -76,11 +93,6 @@
           <button class="ghost" disabled={$exp.step >= d.step} onclick={() => devWeekStep(d.step as WeekStep)}>Till steg {d.step}</button>
         {/each}
       </div>
-      <div class="buttons">
-        {#each WORLDS as w}
-          <button class="ghost" onclick={() => jumpWorld(w.id)}>Värld {w.id}</button>
-        {/each}
-      </div>
     </fieldset>
   {/if}
 
@@ -125,6 +137,9 @@
   .row { display: flex; gap: 10px; align-items: flex-start; min-height: 44px; }
   .row input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--falu); flex: none; }
   .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .jump { display: flex; align-items: center; gap: 8px; }
+  .jump input { width: 5.5em; min-height: 44px; font: inherit; padding: 0 8px; }
+  button[aria-pressed='true'] { outline: 3px solid var(--falu); }
   dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: .9rem; }
   dt { color: var(--muted); }
   dd { margin: 0; overflow-wrap: anywhere; }
