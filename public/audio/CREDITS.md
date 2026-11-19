@@ -6,7 +6,8 @@ Alla ljud valdes av Jonas Olson på lyssningssidan 2026-11-17. Varje fil i
 ## Egna (komponerade för spelet)
 
 Melodier, arrangemang och ljudeffekter skrivna i kod av Claude (Anthropic) för
-det här exjobbet, 2026. Noterna finns i `tools/audio/compose.py` och `tools/audio/title_tunes.py` och renderas
+det här exjobbet, 2026. Noterna finns i `tools/audio/compose.py`, `tools/audio/title_tunes.py` och
+`tools/audio/world_tunes.py` och renderas
 med FluidSynth och ljudbanken **FluidR3_GM** (Frank Wen, MIT-licens,
 https://github.com/FluidSynth/fluidsynth/wiki/SoundFont). Effekterna "mynt" är
 syntetiserade direkt i `compose.py`.
@@ -16,6 +17,10 @@ syntetiserade direkt i `compose.py`.
 | `music/title-solsken` | musik på titelskärmen (sjöboden) | "Solsken", glad låt i A-dur, blockflöjt och dragspel (vald 2026-11-18, `tools/audio/title_tunes.py`) |
 | `music/village-udden` | musik i byn och på kartan | "Udden", polskaliknande vals i D-dur, dragspel och klarinett |
 | `music/puzzle-brickor` | musik på udda banor | "Brickor", schottiskänsla i G-dur, marimba och blockflöjt |
+| `music/world-2` | musik i värld 2, Slätten | "Rapsfält", D-dur, visselflöjt och dragspel med träklapper (vald 2026-11-19, `tools/audio/world_tunes.py`) |
+| `music/world-3` | musik i värld 3, Bergslagen | "Hammarsmeden", vers i e-moll och refräng i G-dur, klarinett och dragspel med städslag |
+| `music/world-4` | musik i värld 4, Höga kusten | "Fiskeläget", jigg i G-dur, dragspel och visselflöjt |
+| `music/world-5` | musik i värld 5, Vintermarknaden | "Julmarknad", C-dur, speldosa och blockflöjt med bjällror |
 | `sfx/match-0` … `match-7` | matchning och kombo | marimba, ett tonsteg högre för varje kedja |
 | `sfx/swap` | byta brickor | mjukt marimbaljud |
 | `sfx/invalid` | drag utan rad | tock-tock i trä |

@@ -37,7 +37,7 @@ const MUSIC_FILES: Record<string, string> = {
  * a world that is not listed yet keeps the two tunes of the first world. Add
  * the world's number here when its tune is in place.
  */
-export const WORLD_TUNES: readonly number[] = [];
+export const WORLD_TUNES: readonly number[] = [2, 3, 4, 5];
 for (const w of WORLD_TUNES) MUSIC_FILES[`world-${w}`] = `world-${w}`;
 /** Cascade steps: match-0 .. match-7 rise through a pentatonic scale. */
 const MATCH_STEPS = 8;
