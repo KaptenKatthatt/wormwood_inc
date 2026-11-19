@@ -55,7 +55,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-log('open', { standalone: isStandalone(), version: __APP_VERSION__, code: testCode(playerId) });
+log('open', { standalone: isStandalone(), host: location.host, version: __APP_VERSION__, code: testCode(playerId) });
 
 // Looks for a new build and takes it in by itself (src/lib/pwa/update.ts).
 keepUpdated();
