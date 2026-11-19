@@ -2,7 +2,8 @@
   import GameCanvas from '../game/GameCanvas.svelte';
   import { VillageScene, type PlotView } from '../game/VillageScene';
   import { bubble, hookOn, now, pressQuit, purse, skipBuild, skipRepair, stairs, startBuild, timers, topUpAndBuild, topUpOffered, village } from '../lib/state/game';
-  import { tutEvent } from '../lib/tutorial';
+  import { tutEvent, tutorialActive } from '../lib/tutorial';
+  import { firstLetter } from '../lib/state/game';
   import { CHRISTMAS } from '../lib/config/flags';
   import { daily, settings } from '../lib/state/game';
   import { countdownShown, forcedLook, villageLook, xmas, xmasDate, xmasDay, xmasOpen } from '../lib/state/christmas';
@@ -45,7 +46,7 @@
   const starsFit = $derived(plots.every((p) => p.locked || p.level === 0 || (p.level >= 4 && p.level <= 7)));
   const layers = $derived(CHRISTMAS ? decorLayers($xmas, look, starsFit) : []);
 
-  onMount(() => tutEvent('inVillage'));
+  onMount(() => { tutEvent('inVillage'); if (!tutorialActive()) firstLetter(); });
   $effect(() => { if (constr) tutEvent('built'); });
   const damaged = $derived($stairs.damaged);
   const repairTimer = $derived(damaged ? $timers.find((t) => t.id === damaged.timerId) : undefined);

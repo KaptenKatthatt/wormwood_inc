@@ -8,7 +8,7 @@ import { writable, get } from 'svelte/store';
 import { load, save } from './state/storage';
 import { log } from './log/logger';
 
-export type TutEvent = 'levelStarted' | 'moved' | 'levelEnded' | 'inVillage' | 'built';
+export type TutEvent = 'levelStarted' | 'moved' | 'levelEnded' | 'inVillage' | 'built' | 'buildDone' | 'onMap';
 
 export interface TutStep {
   id: string;
@@ -43,6 +43,9 @@ export const TUT_STEPS: TutStep[] = [
   { id: 'play', tab: 'pussel', silent: true, title: 'Spela', text: '', waitFor: 'levelEnded' },
   { id: 'village', tab: 'byn', target: 'to-village|tab-byn', selfNav: true, title: 'Till byn', text: 'Använd guldet i byn.', waitFor: 'inVillage' },
   { id: 'build', tab: 'byn', target: 'build-stugan|build-open', title: 'Bygg ditt första hus', text: 'Tryck på Bygg och välj Stugan.', waitFor: 'built' },
+  // Jonas, 2026-11-19: the house is built with nothing in the way, and a last sign sends the player to the map.
+  { id: 'building', tab: 'byn', selfNav: true, silent: true, title: 'Stugan byggs', text: '', waitFor: 'buildDone' },
+  { id: 'done', tab: 'byn', selfNav: true, target: 'tab-pussel', title: 'Så, nu kan du det viktigaste!', text: 'Tryck på Kartan och kör igång.', waitFor: 'onMap' },
 ];
 
 interface TutState { index: number | null; startedAt: number; /** Times left of a repeated step. */ left?: number }
@@ -82,6 +85,8 @@ export function tutEvent(ev: TutEvent): void {
   if (!step) return;
   // The challenge can end before the practice moves are done: then the practice and the free play are both over.
   if (step.id === 'practice' && ev === 'levelEnded') { nextTutStep(); nextTutStep(); return; }
+  // The last sign also goes away if the player is already on the map and just starts a challenge.
+  if (step.id === 'done' && ev === 'levelStarted') { nextTutStep(); return; }
   if (step.waitFor !== ev) return;
   if (step.repeat) {
     const t = get(tutorial);

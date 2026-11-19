@@ -14,7 +14,7 @@
   import Calendar from './ui/Calendar.svelte';
   import AwayReport from './ui/AwayReport.svelte';
   import { log } from './lib/log/logger';
-  import { TUT_STEPS, tutorial } from './lib/tutorial';
+  import { TUT_STEPS, tutEvent, tutorial } from './lib/tutorial';
   import { EXPANSION } from './lib/config/flags';
   import { adOpen, adReward, exp, friendNote, hubOpen, offerShown } from './lib/state/expansion';
   import RewardBurst from './ui/RewardBurst.svelte';
@@ -31,7 +31,7 @@
   import { CHRISTMAS } from './lib/config/flags';
   import Questionnaire from './ui/Questionnaire.svelte';
   import { offerQuestionnaire, qOpen } from './lib/state/questionnaire';
-  import { letter } from './lib/state/game';
+  import { letter, village } from './lib/state/game';
   // The start screen shows each time the app opens (Jonas, 2026-11-18).
   let intro = $state(true);
 
@@ -75,8 +75,14 @@
     if (wantAsk && quiet) { wantAsk = false; offerQuestionnaire(); }
   });
 
+  // The introduction's last sign waits for the first house to stand ready.
+  $effect(() => {
+    if (tutStep?.id === 'building' && !$village.construction) tutEvent('buildDone');
+  });
+
   function go(t: Tab) {
     tab = t;
+    if (t === 'pussel') tutEvent('onMap');
     history.replaceState(null, '', `#${t}`);
     log('view', { tab: t });
   }

@@ -32,7 +32,7 @@ export interface Settings {
   logging: boolean | null;
   notifications: boolean;
   hooks: Record<HookId, boolean>;
-  /** The uncle's letters. Paused by default in dev builds while Jonas tests (2026-11-17). */
+  /** The letters. Paused by default in dev builds while Jonas tests (2026-11-17). */
   letters: boolean;
   /** Day hooks: from the second day ('auto'), always or never. */
   dayMode: DayMode;
@@ -857,7 +857,7 @@ export function submitSurvey(answers: SurveyAnswer[]): void {
   quitFlow.set('thanks');
 }
 
-/** The advisor's welcome, once per player. */
+/** The welcome letter, once per player: the first time they open the village on their own after the introduction. */
 export function firstLetter(): void {
   if (load('welcomed', false)) return;
   save('welcomed', true);

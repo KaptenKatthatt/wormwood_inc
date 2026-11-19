@@ -3,7 +3,7 @@ import { keepUpdated } from './lib/pwa/update';
 import App from './App.svelte';
 import { testCode } from './lib/testCode';
 import './app.css';
-import { cancelAwayPushes, clock, daily, firstLetter, markSeen, minutesIn, offerCalendar, playerId, restartHookClock, scheduleAwayPushes, settings, tick, welcomeBack } from './lib/state/game';
+import { cancelAwayPushes, clock, daily, markSeen, minutesIn, offerCalendar, playerId, restartHookClock, scheduleAwayPushes, settings, tick, welcomeBack } from './lib/state/game';
 import { dayKey, daysBetween } from './lib/daily';
 
 import { onTutorialFinish, startTutorial, tutorialDone } from './lib/tutorial';
@@ -28,10 +28,11 @@ welcomeBack();
 tick();
 setInterval(tick, 1000);
 // The hook staircase starts counting when the introduction is over.
-onTutorialFinish(() => { restartHookClock(); firstLetter(); offerCalendar(); });
+// The welcome letter waits until the player opens the village on their own (Jonas, 2026-11-19; VillageView).
+onTutorialFinish(() => { restartHookClock(); offerCalendar(); });
 if (get(settings).logging !== null) {
   if (!tutorialDone()) startTutorial();
-  else { firstLetter(); offerCalendar(); }
+  else offerCalendar();
 }
 /** Which day of the test this is: 1 on the first day the game was opened. */
 const dayIndex = () => daysBetween(get(daily).firstDay, dayKey(clock.now())) + 1;
