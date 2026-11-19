@@ -284,12 +284,32 @@ export class Match3Scene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Tells the page where on the screen the two hinted tiles are, so the introduction can dim
+   * everything but them (Jonas, 2026-11-19). Sent as a window event: the scene knows no stores.
+   */
+  private tellHintSpot(move: Cell[] | null): void {
+    let detail: { left: number; top: number; width: number; height: number } | null = null;
+    if (move) {
+      const c = this.game.canvas.getBoundingClientRect();
+      const s = c.width / this.scale.gameSize.width;
+      const ps = move.map((cell) => this.pos(cell));
+      const half = this.cell / 2;
+      const x0 = Math.min(...ps.map((p) => p.x)) - half, x1 = Math.max(...ps.map((p) => p.x)) + half;
+      const y0 = Math.min(...ps.map((p) => p.y)) - half, y1 = Math.max(...ps.map((p) => p.y)) + half;
+      detail = { left: c.left + x0 * s, top: c.top + y0 * s, width: (x1 - x0) * s, height: (y1 - y0) * s };
+    }
+    window.dispatchEvent(new CustomEvent('tut-hint', { detail }));
+  }
+
   private drawHint(): void {
     for (const h of this.hintTweens) h.destroy();
     this.hintTweens = [];
+    this.tellHintSpot(null);
     if (!this.registry.get('hint') || !this.engine || this.busy) return;
     const move = this.engine.findMove();
     if (!move) return;
+    this.tellHintSpot(move);
     for (const cell of move) {
       const p = this.pos(cell);
       const box = this.add.rectangle(p.x, p.y, this.cell - 2 * this.k, this.cell - 2 * this.k).setStrokeStyle(4 * this.k, this.frame, 1).setDepth(3);

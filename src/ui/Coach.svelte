@@ -11,6 +11,8 @@
   let rect = $state<DOMRect | null>(null);
   /** The dialog the target sits in, if any (the button "Till byn" in "Utmaningen klarad!"). */
   let host = $state<DOMRect | null>(null);
+  /** Where the two hinted tiles are on the screen (sent by the board), for the first step. */
+  let spot = $state<{ left: number; top: number; width: number; height: number } | null>(null);
   let nextBtn = $state<HTMLButtonElement>();
   let frame = 0;
 
@@ -32,6 +34,25 @@
     if (!step) return;
     frame = requestAnimationFrame(track);
     return () => cancelAnimationFrame(frame);
+  });
+
+  $effect(() => {
+    if (!step?.hint) { spot = null; return; }
+    const on = (e: Event) => { spot = (e as CustomEvent).detail ?? null; };
+    window.addEventListener('tut-hint', on);
+    return () => window.removeEventListener('tut-hint', on);
+  });
+  const lit = $derived(step?.hint && spot ? spot : null);
+  // The first sign sits in the middle of the screen with everything but the two tiles dimmed
+  // (Jonas, 2026-11-19); it moves just above or below the tiles if it would cover them.
+  const BUBBLE_H = 150;
+  const midStyle = $derived.by(() => {
+    if (!lit) return '';
+    const h = window.innerHeight;
+    const top = h / 2 - BUBBLE_H / 2;
+    const covers = lit.top - 16 < top + BUBBLE_H && lit.top + lit.height + 16 > top;
+    if (!covers) return `top: ${top}px;`;
+    return lit.top - 16 - BUBBLE_H > 70 ? `bottom: ${h - lit.top + 16}px;` : `top: ${lit.top + lit.height + 16}px;`;
   });
 
   // Bring the target into view when a step starts (Avsluta sits far down in the village).
@@ -70,10 +91,12 @@
 </script>
 
 {#if step && !step.silent}
-  {#if rect}
+  {#if lit}
+    <div class="ring dim" style:top={`${lit.top - 4}px`} style:left={`${lit.left - 4}px`} style:width={`${lit.width + 8}px`} style:height={`${lit.height + 8}px`} aria-hidden="true"></div>
+  {:else if rect}
     <div class="ring" class:big class:lit={host !== null} style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
   {/if}
-  <div class="bubble" class:below class:floating={big} style={big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
+  <div class="bubble" class:below class:floating={big && !lit} style={lit ? midStyle : big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
     <h2 id="coach-title">{step.title}</h2>
     <p id="coach-text" aria-live="polite">{step.text}</p>
     <div class="row">
@@ -89,6 +112,7 @@
   .ring { position: fixed; z-index: 15; border: 4px solid var(--gold); border-radius: 12px; pointer-events: none;
     box-shadow: 0 0 0 9999px rgb(0 0 0 / .35); animation: pulse 1.4s ease-in-out infinite; }
   .ring.big, .ring.lit { box-shadow: none; }
+  .ring.dim { box-shadow: 0 0 0 9999px rgb(0 0 0 / .55); }
   @keyframes pulse { 50% { border-color: #fff6ee; } }
   .bubble { position: fixed; left: 12px; right: 12px; z-index: 16; margin: 0 auto; max-width: 440px; background: #fffaf0; color: #1f1a17;
     border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 24px rgb(0 0 0 / .35); display: grid; gap: 6px; }
