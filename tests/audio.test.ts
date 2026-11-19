@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { puzzleMusicFor } from '../src/lib/audio/sound';
+import { puzzleMusicFor, WORLD_EXTRA, WORLD_TUNES } from '../src/lib/audio/sound';
 
 const AUDIO = new URL('../public/audio/', import.meta.url);
 const SRC = readFileSync(new URL('../src/lib/audio/sound.ts', import.meta.url), 'utf8');
@@ -20,6 +20,25 @@ describe('sound', () => {
     expect(puzzleMusicFor(40, [2, 3])).toBe('puzzle-gem-waltz');
     // past the road it starts over in the first world
     expect(puzzleMusicFor(201, [2, 3])).toBe('puzzle-brickor');
+  });
+
+  it('a world with several tunes takes them in turn, starting with its own', () => {
+    const extra = { 5: ['a', 'b'] };
+    expect(puzzleMusicFor(161, [5], extra)).toBe('world-5');
+    expect(puzzleMusicFor(162, [5], extra)).toBe('world-5-a');
+    expect(puzzleMusicFor(163, [5], extra)).toBe('world-5-b');
+    expect(puzzleMusicFor(164, [5], extra)).toBe('world-5');
+    expect(puzzleMusicFor(200, [5], extra)).toBe('world-5'); // challenge 40 of the world
+    expect(puzzleMusicFor(41, [2, 5], extra)).toBe('world-2');
+  });
+
+  it('every world tune exists in both formats', () => {
+    const files = [
+      ...WORLD_TUNES.map((w) => `world-${w}`),
+      ...Object.entries(WORLD_EXTRA).flatMap(([w, names]) => names.map((name) => `world-${w}-${name}`)),
+    ];
+    expect(files.length).toBe(9);
+    for (const f of files) for (const ext of ['ogg', 'mp3']) expect(existsSync(new URL(`music/${f}.${ext}`, AUDIO)), `${f}.${ext}`).toBe(true);
   });
 
   it('every file the game asks for exists in both formats', () => {
