@@ -87,9 +87,11 @@
           {@const done = l.id < current}
           {@const now = l.id === current}
           {@const r = now ? 58 : 42}
+          <!-- The pulsing circle starts its challenge, like the button Spela (Jonas, 2026-11-19); the others only in the dev build. -->
+          {@const tap = now ? onPlay : onPick ? () => onPick(l.id) : undefined}
           <!-- svelte-ignore a11y_no_noninteractive_tabindex (role is button whenever tabindex is set) -->
-          <g transform={`translate(${p[0]} ${p[1]})`} class:pick={!!onPick} role={onPick ? 'button' : undefined} tabindex={onPick ? 0 : undefined} aria-label={onPick ? `Spela utmaning ${l.id}` : undefined}
-            onclick={onPick ? () => onPick(l.id) : undefined} onkeydown={onPick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(l.id); } } : undefined}>
+          <g transform={`translate(${p[0]} ${p[1]})`} class:pick={!!tap} role={tap ? 'button' : undefined} tabindex={tap ? 0 : undefined} aria-label={tap ? `Spela utmaning ${l.id}` : undefined}
+            onclick={tap} onkeydown={tap ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } } : undefined}>
             <ellipse cy={r * 0.42} rx={r} ry={r * 0.55} fill="#00000033" />
             <g class:now>
               <circle {r} fill={done ? '#e0b04a' : now ? '#b8382a' : '#f4ead8'} stroke={now ? '#fff' : '#7a2418'} stroke-width={now ? 10 : 6.5} />
