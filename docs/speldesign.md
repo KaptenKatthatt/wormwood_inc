@@ -147,13 +147,14 @@ Skylten "Skärgårdsbyn" och Spela-knappen är ritade i kod, och skärmen visar 
 |---|---|
 | Ljusslingor på muren | 40 |
 | Julkärvar vid portarna | 80 |
+| Adventsstjärnor i fönstren | 100 |
 | Marschaller längs vägarna | 150 |
 | Halmbock på torget | 250 |
 | Julgran på torget | 400 |
 
-Pyntlistan är inte godkänd av Jonas: marschaller och halmbock ersatte adventsstjärnor i fönstren och snö på taken när grafiken målades, och Jonas har inte sagt ja till bytet (2026-11-19). 
+Pyntlistan har sex pynt (Jonas 2026-11-19): adventsstjärnorna är med, marschaller och halmbock är kvar, och snön är gratis eftersom den följer med vinterbyn. Granen och bocken har snö på sig i vinterbyn. Adventsstjärnorna ritas på fönstrens platser, som skiljer sig mellan utseenden och nivåer, och får inte sticka upp över takkanten.
 
-Allt pynt kostar 920 pepparkakor. Jonas bad 2026-11-19 om snällare pepparkakor, och siffrorna ovan är de snällare (förut 20 per lucka, 5 plus 1 per stjärna, 5 ädelstenar för en missad lucka och 10 pepparkakor per ädelsten). En testare som spelar en vecka får nu ungefär 210 från luckorna och 500–600 från utmaningarna, alltså det mesta av pyntet på en vecka och allt på två, utan att köpa. Uppskattningen bygger på ungefär 40 vunna utmaningar i veckan.
+Allt pynt kostar 1 020 pepparkakor. Jonas bad 2026-11-19 om snällare pepparkakor, och siffrorna ovan är de snällare (förut 20 per lucka, 5 plus 1 per stjärna, 5 ädelstenar för en missad lucka och 10 pepparkakor per ädelsten). En testare som spelar en vecka får nu ungefär 210 från luckorna och 500–600 från utmaningarna, alltså det mesta av pyntet på en vecka och allt på två, utan att köpa. Uppskattningen bygger på ungefär 40 vunna utmaningar i veckan.
 
 **Nedräkningen.** En skylt visar "Julmarknaden stänger om X dagar". Efter den 24 december går pyntet inte att köpa. Det som är köpt står kvar.
 
