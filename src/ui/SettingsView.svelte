@@ -8,10 +8,12 @@
   import { log } from '../lib/log/logger';
   import { flush } from '../lib/log/logger';
   import InstallGuide from './InstallGuide.svelte';
+  import Credits from './Credits.svelte';
   import { audioSettings } from '../lib/audio/sound';
   import { doneTesting, openQuestionnaire, qState } from '../lib/state/questionnaire';
 
   let pushStatus = $state('');
+  let credits = $state(false);
 
   async function turnOnPush() {
     pushStatus = 'Frågar …';
@@ -51,7 +53,6 @@
     <input type="checkbox" checked={$audioSettings.sfx} onchange={(e) => audioSettings.update((a) => ({ ...a, sfx: e.currentTarget.checked }))} />
     <span><strong>Ljudeffekter</strong></span>
   </label>
-  <p class="credits">Musiken "Udden" och "Brickor" och de flesta ljuden är gjorda för spelet. "Gem Waltz" av Haley Halcyon, CC BY 4.0. Övriga ljud från Kenney, bart, rubberduck, RandomMind, jasinski och Rango Mango (CC0), via OpenGameArt.</p>
 
   <h2>Hjälp</h2>
   <button class="ghost" onclick={() => startTutorial(true)}>Visa introduktionen igen</button>
@@ -89,8 +90,10 @@
   {/if}
 
   {#if DEV_MENU}<DevMenu />{/if}
+  <button class="ghost" onclick={() => (credits = true)}>Medverkande</button>
   <p class="version">Version {__APP_VERSION__}</p>
 </section>
+{#if credits}<Credits onClose={() => (credits = false)} />{/if}
 
 <style>
   .settings { background: var(--panel); color: var(--ink); padding: 8px 16px 24px; overflow-y: auto; height: 100%; display: flex; flex-direction: column; gap: 10px; }
@@ -100,7 +103,6 @@
   .row { display: flex; gap: 10px; align-items: flex-start; min-height: 48px; }
   .row input { width: 24px; height: 24px; margin-top: 2px; accent-color: var(--falu); flex: none; }
   .status { color: var(--muted); }
-  .credits { font-size: .85rem; color: var(--muted); }
   .version { margin: 16px 0 0; font-size: .85rem; opacity: .7; text-align: center; }
   .code { font-family: ui-monospace, monospace; font-size: 1.1rem; letter-spacing: .08em; }
 </style>

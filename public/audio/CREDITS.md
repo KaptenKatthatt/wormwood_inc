@@ -83,7 +83,7 @@ kontrollerades på OpenGameArt 2026-11-19. `music/ambience-sea`
 "Gem Waltz" by Haley Halcyon, licensed under CC BY 4.0
 (https://creativecommons.org/licenses/by/4.0/), from OpenGameArt. Converted
 to Ogg Vorbis and MP3; not otherwise changed. Samma text visas i spelet under
-Inställningar.
+Inställningar, Medverkande.
 
 Licenserna kontrollerades på respektive OpenGameArt-sida 2026-11-17.
 
