@@ -9,7 +9,7 @@ import { dayKey } from '../daily';
 import { EXPANSION } from '../config/flags';
 import { flush, log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
-import { PART1, afterPart1, endPushDelay, forLog, part2, pushDelay, shouldAsk, startQ, testDayOf, type Answer, type QState, type Reached } from '../questionnaire';
+import { MAX_ASKS, PART1, afterPart1, endPushDelay, forLog, part2, pushDelay, shouldAsk, startQ, testDayOf, type Answer, type QState, type Reached } from '../questionnaire';
 import { exp } from './expansion';
 import { clock, daily, playerId, resetListeners, settings, stairs } from './game';
 import { load, save } from './storage';
@@ -45,11 +45,13 @@ export function offerQuestionnaire(): void {
   log('questionnaire_asked', { testDay: day, ask: s.asks + 1, stage: s.stage });
 }
 
-export function answerAsk(now: boolean): void {
-  log('questionnaire_ask_answer', { now });
-  if (now) resume();
-  qOpen.set(now ? 'form' : null);
-  if (now) log('questionnaire_open', { from: 'ask', stage: get(qState).stage, testDay: testDay() });
+/** The answer to the game's own question: now, later, or never (the game then stops asking; the form stays under Settings). */
+export function answerAsk(answer: 'now' | 'later' | 'never'): void {
+  log('questionnaire_ask_answer', { answer });
+  if (answer === 'never') qState.update((s) => ({ ...s, asks: MAX_ASKS }));
+  if (answer === 'now') resume();
+  qOpen.set(answer === 'now' ? 'form' : null);
+  if (answer === 'now') log('questionnaire_open', { from: 'ask', stage: get(qState).stage, testDay: testDay() });
 }
 
 /** The button under Settings. */

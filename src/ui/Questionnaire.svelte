@@ -77,11 +77,12 @@
     {:else}
       <p>Testet är snart slut. Jag har en sak att berätta och några sista frågor. Det tar några minuter.</p>
     {/if}
-    <p class="fine">Frågorna finns också under Inställningar.</p>
+    <p class="fine">Du kan spela vidare så länge du vill, vad du än svarar. Frågorna finns också under Inställningar.</p>
     <div class="buttons">
-      <button class="primary" onclick={() => answerAsk(true)}>Svara nu</button>
-      <button class="ghost" onclick={() => answerAsk(false)}>Senare</button>
+      <button class="primary" onclick={() => answerAsk('now')}>Svara nu</button>
+      <button class="ghost" onclick={() => answerAsk('later')}>Senare</button>
     </div>
+    <button class="link" onclick={() => answerAsk('never')}>Nej tack, fråga inte igen</button>
   </Modal>
 {:else if $qOpen === 'form'}
   <div class="form" role="dialog" aria-modal="true" aria-labelledby="q-title" bind:this={top}>
