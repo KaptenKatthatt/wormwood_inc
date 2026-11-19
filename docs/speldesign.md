@@ -157,6 +157,22 @@ Allt pynt kostar 920 pepparkakor. En testare som spelar en vecka får ungefär 1
 
 **Krokar och loggning.** Händelsen är en egen krok med fyra delar: daglig vana (luckan), rädsla att missa (nedräkningen och missade luckor), tidsbegränsad valuta och betala för att ta igen. Spelet loggar varje öppnad lucka, varje lucka som köpts i efterhand, varje pyntköp, varje påfyllning av pepparkakor och när spelaren såg nedräkningen. Dev-menyn får en brytare för händelsen och ett sätt att ställa datumet. Ny grafik (kalendern, pepparkakan, pyntet) visas för Jonas och godkänns innan den läggs ut.
 
+**Byn i vinterskrud (Jonas 2026-11-19).** Byn byter utseende i december. Sommarbyn visas till och med 30 november. Utseende A, lätt snö, visas 1–7 december. Utseende B, djup vinter, visas från 8 december. Utseende C, blå timmen, visas i stället för A och B när det är mörkt ute i Skåne, det vill säga när solen är nere i Eslöv (i december ungefär 15.35–08.30). Julpyntet ligger som lager ovanpå i alla utseenden. Dev-menyn får ett val som tvingar fram ett utseende. Alla byggnader finns målade i tre nivåer för varje utseende i `/mnt/project-files/jul/vinter/`. Granskningssida: https://claude.ai/artifact/5sQfYtKK6FypE6FBuXBrP3. Den färdiga grafiken väntar på Jonas ja. Byte av utseende för övriga årstider ligger i backloggen.
+
+**Ingången.** Julskylten längst ner i byn öppnar kalendern och julmarknaden. Skylten visas från spelarens andra dag.
+
+### Rättningar efter Jonas testrunda (2026-11-19)
+
+Från tråden "Rätta felen från Jonas testrunda", efter Jonas lista:
+
+- **Pris per byggnad.** Byggnumrets kostnad (kurvan är oförändrad) gånger byggnadens faktor, avrundat till 10. Marknadens rabatt gäller som förut. De två första byggena är gratis, och byggtiden följer byggnumret. Föreslagna faktorer, som Jonas inte har godkänt än: Stugan 1,5; Marknaden 1,4; Kvarnen 1,3; Hamnen 1,3; Sjöboden 1,2; Gästgiveriet 1,2; Smedjan 1,1; Skolan 1,1; Kasernen 1,0; Ladan 0,9; vakttornen 0,8; Kapellet 0,7.
+- **Byn.** Byn tar hela skärmen. En flytande knapp "Bygg" öppnar bygglistan som ett ark nerifrån, med priset på varje knapp.
+- **Inne i en utmaning.** Flikmenyn syns inte. En menyknapp uppe till vänster öppnar "Paus" med musik och ljud av och på, Fortsätt spela och Lämna utmaningen. Att lämna kostar ett liv om minst ett drag är gjort, annars inget.
+- **Hinder utan siffror.** Malm och klappersten visar inga siffror utan spricker mer för varje träff.
+- **Reklamfilmer.** Fyra egna påhittade filmer (Bärplock, Brygghuset Nordanvind, Mäklarhuset Vassen, Fiskelyckan), 10 sekunder med tre scener och en stapel som går från vänster till höger kant. Efter filmen visas en belöningsanimation där guldet räknas upp till det dubbla. Varje visning loggas med filmens id.
+- **Ladans text.** "Förråden i byar du tagit över rymmer en timmes guld till för varje nivå". Mekaniken är oförändrad.
+- **Musik per värld.** Värld 2–5 får egna låtar. Värld 1 behåller sina två.
+
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
 Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efter testet, så att köpen kostar något. Om plånboken betalas ut på riktigt stängs steg 7 i veckotrappan (kistor, lyckohjul, mästardragningar) av för den testpersonen, så att det inte blir spel om pengar (Jonas 2026-11-18).
@@ -299,3 +315,4 @@ Per bana loggas: tid på banan, antal drag (även extra drag), vinst eller förl
 - Testplånbok som betalas ut på riktigt efter testet (Jonas funderar). Om den betalas ut stängs steg 7 i veckotrappan (kistor, lyckohjul, mästardragningar) av för den testpersonen, så att det inte blir spel om pengar (Jonas 2026-11-18).
 - Spelaren anfaller och tar över andra byar.
 - Säsonger och en samling att fylla.
+- Säsongsutseende på byn för vår, höst och övrig vinter (Jonas 2026-11-19: efter exjobbsperioden). Under exjobbet görs bara vinterskruden i december.
