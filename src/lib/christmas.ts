@@ -5,18 +5,19 @@
  * for won challenges, decorations for the village bought with gingerbread, and
  * a countdown to the market closing. Pure logic; state/christmas.ts applies it.
  *
- * The numbers are the design thread's proposal and not yet confirmed by Jonas.
+ * The numbers are the design thread's, made kinder after Jonas asked for that
+ * (2026-11-19); he has not confirmed the exact figures.
  */
 
 export const LAST_DOOR = 24;
 /** Gingerbread in every door. */
-export const DOOR_COOKIES = 20;
+export const DOOR_COOKIES = 30;
 /** Gems to open a door whose day has passed. */
-export const LATE_DOOR_GEMS = 5;
-export const WIN_COOKIES = 5;
-export const STAR_COOKIES = 1;
+export const LATE_DOOR_GEMS = 3;
+export const WIN_COOKIES = 10;
+export const STAR_COOKIES = 2;
 /** Gingerbread per gem when topping up. */
-export const COOKIES_PER_GEM = 10;
+export const COOKIES_PER_GEM = 15;
 
 /**
  * Torches and the straw goat replaced the first proposal's window stars and

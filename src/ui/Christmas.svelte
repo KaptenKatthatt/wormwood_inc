@@ -6,7 +6,7 @@
   import Modal from './Modal.svelte';
   import { now, purse, settings, daily } from '../lib/state/game';
   import { buyXmasDecor, countdownShown, openXmasDoor, refillFor, xmas, xmasDate, xmasDay, xmasOpen } from '../lib/state/christmas';
-  import { DECOR, DOOR_COOKIES, LAST_DOOR, LATE_DOOR_GEMS, countdownText, decorBlock, doorGiftText, doorStatus, refill } from '../lib/christmas';
+  import { DECOR, DOOR_COOKIES, STAR_COOKIES, WIN_COOKIES, LAST_DOOR, LATE_DOOR_GEMS, countdownText, decorBlock, doorGiftText, doorStatus, refill } from '../lib/christmas';
   import { onMount } from 'svelte';
 
   const today = $derived.by(() => { void $now; void $settings; void $daily; void $xmasDate; return xmasDay(); });
@@ -70,7 +70,7 @@
       </li>
     {/each}
   </ul>
-  <p class="fine">Vunna utmaningar ger 5 pepparkakor och 1 till per stjärna.</p>
+  <p class="fine">Vunna utmaningar ger {WIN_COOKIES} pepparkakor och {STAR_COOKIES} till per stjärna.</p>
   <div class="buttons"><button class="ghost" onclick={() => xmasOpen.set(false)}>Stäng</button></div>
 </Modal>
 

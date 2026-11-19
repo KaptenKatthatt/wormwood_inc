@@ -42,11 +42,11 @@ describe('Christmas in Skargardsbyn', () => {
     expect(doorPrice(startXmas(2026), 3, 0)).toBeNull();
   });
 
-  it('pays gingerbread for wins and prices the top-up at 10 per gem', () => {
-    expect(cookiesForWin(1)).toBe(6);
-    expect(cookiesForWin(3)).toBe(8);
-    expect(refill(1)).toEqual({ gems: 1, cookies: 10 });
-    expect(refill(25)).toEqual({ gems: 3, cookies: 30 });
+  it('pays gingerbread for wins and prices the top-up at 15 per gem', () => {
+    expect(cookiesForWin(1)).toBe(12);
+    expect(cookiesForWin(3)).toBe(16);
+    expect(refill(1)).toEqual({ gems: 1, cookies: 15 });
+    expect(refill(25)).toEqual({ gems: 2, cookies: 30 });
   });
 
   it('sells decorations for gingerbread until the market closes, and keeps them', () => {
