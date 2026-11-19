@@ -72,7 +72,8 @@ Alla 8 byggnader har 10 nivåer (spelet 0.8.0).
 - En påhittad grannby anfaller runt minut 23. Varning med nedräkning på 60 sekunder.
 - Under nedräkningen kan spelaren köpa sköld (100 ädelstenar) eller träna soldater i kasernen.
 - Varningen säger från vilken sida anfallet kommer. Armén plus tornet på den sidan (fullt) och de andra tornen (till hälften) mot anfallets styrka avgör utgången. En osäkrad sida lockar till att bygga alla fyra.
-- Utan tillräckligt försvar förlorar byn 30 % av guldet, och en byggnad skadas och måste repareras (tar byggtid, kan köpas bort).
+- Utan tillräckligt försvar förlorar byn 30 % av guldet, och ett till tre hus skadas.
+- **Skadade hus (Jonas 2026-11-19, alternativ B "Kännbar").** Ett skadat hus ger halv bonus och kan inte uppgraderas förrän det är lagat. Spelaren startar lagningen själv. Den kostar guld, 20 % av husets senaste uppgradering, och tid, 25 % av husets senaste byggtid men minst 2 minuter. Tiden kan köpas bort med ädelstenar som vid byggen. Antalet skadade hus följer av hur mycket försvaret saknade: 1 om försvaret var minst 75 % av anfallets styrka, 2 om det var minst 50 %, annars 3. Tornet på anfallssidan skadas först, sedan husen närmast den sidan, och Stugan sist. Trivseln sjunker 5 per skadat hus tills det är lagat. Jonas har valt principen. Siffrorna är förslag från tråden "Ta fram skadade byggnader efter anfall". Regeln ersätter den tidigare, där ett hus räknades som nivå 0 i 5 minuter och lagades gratis. Varje hus får en skadad bild per utseendenivå.
 - Anfallet är inställt på att vara lite för starkt för det spelaren hunnit bygga, så att skölden lockar.
 
 **Försvaret (spelet 0.13.0):** soldater × (10 + 5 × Smedjans nivå) + 30 per nivå på tornet på anfallssidan + 15 per nivå på de andra tornen. Sidan slumpas, även för anfall när spelaren är borta. Testversionen: https://skargardsbyn.84.247.143.6.sslip.io/ (dev med dev-meny: https://dev.skargardsbyn.84.247.143.6.sslip.io/).
@@ -324,5 +325,6 @@ Per bana loggas: tid på banan, antal drag (även extra drag), vinst eller förl
 ## 6. Backlogg och senare
 - Testplånbok som betalas ut på riktigt efter testet (Jonas funderar). Om den betalas ut stängs steg 7 i veckotrappan (kistor, lyckohjul, mästardragningar) av för den testpersonen, så att det inte blir spel om pengar (Jonas 2026-11-18).
 - Spelaren anfaller och tar över andra byar.
+- Hård variant av skadade hus: ett hus som stått olagat i 24 timmar tappar en nivå (alternativ C, bortvalt 2026-11-19).
 - Säsonger och en samling att fylla.
 - Säsongsutseende på byn för vår, höst och övrig vinter (Jonas 2026-11-19: efter exjobbsperioden). Under exjobbet görs bara vinterskruden i december.
