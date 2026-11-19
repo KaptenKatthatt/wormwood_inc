@@ -107,6 +107,8 @@ export interface VillageState {
   construction: Construction | null;
   /** The highest world reached (clears the expansion's plots). */
   world?: number;
+  /** What each building's last upgrade cost in gold and time (sets the price of a repair). */
+  last?: Partial<Record<BuildingId, { gold: number; ms: number }>>;
 }
 
 export const START_VILLAGE: VillageState = {

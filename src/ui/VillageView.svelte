@@ -1,7 +1,7 @@
 <script lang="ts">
   import GameCanvas from '../game/GameCanvas.svelte';
   import { VillageScene, type PlotView } from '../game/VillageScene';
-  import { bubble, hookOn, now, pressQuit, purse, skipBuild, skipRepair, stairs, startBuild, timers, topUpAndBuild, topUpOffered, village } from '../lib/state/game';
+  import { bubble, hookOn, now, pressQuit, purse, repairPrice, skipBuild, skipRepair, stairs, startBuild, startRepair, timers, topUpAndBuild, topUpOffered, village } from '../lib/state/game';
   import { tutEvent, tutorialActive } from '../lib/tutorial';
   import { firstLetter } from '../lib/state/game';
   import { CHRISTMAS } from '../lib/config/flags';
@@ -34,6 +34,7 @@
     BUILDINGS.map((b) => ({
       id: b.id, name: b.short ?? b.name, level: $village.levels[b.id], locked: !cleared($village, b.id),
       building: constr?.id === b.id, progress: constr?.id === b.id && timer ? progress(timer, $now) : 0,
+      damaged: $stairs.damaged.some((d) => d.id === b.id),
     })),
   );
 
@@ -48,9 +49,11 @@
 
   onMount(() => { tutEvent('inVillage'); if (!tutorialActive()) firstLetter(); });
   $effect(() => { if (constr) tutEvent('built'); });
-  const damaged = $derived($stairs.damaged);
-  const repairTimer = $derived(damaged ? $timers.find((t) => t.id === damaged.timerId) : undefined);
-  const repairLeft = $derived(repairTimer ? remaining(repairTimer, $now) : 0);
+  // Buildings damaged by a lost attack: half bonus and no upgrade until the player has them repaired.
+  const damaged = $derived($stairs.damaged.map((d) => {
+    const t = d.timerId ? $timers.find((x) => x.id === d.timerId) : undefined;
+    return { id: d.id, name: BUILDINGS.find((b) => b.id === d.id)?.name ?? d.id, repairing: !!t, left: t ? remaining(t, $now) : 0, price: repairPrice(d.id) };
+  }));
   const figures = $derived(hookOn('figures'));
   const face = $derived(['😢', '🙁', '😐', '🙂', '😊'][Math.min(4, Math.floor($stairs.mood / 20))]);
 
@@ -79,12 +82,17 @@
           {#if hookOn('skipWait')}<button class="primary" onclick={skipBuild}>Klart nu för 💎 {skipGems(left)}</button>{/if}
         </div>
       {/if}
-      {#if damaged && repairTimer && repairLeft > 0}
+      {#each damaged as d (d.id)}
         <div class="building damaged">
-          <span><strong>{BUILDINGS.find((b) => b.id === damaged.id)?.name}</strong> skadades i anfallet och lagas: {formatDuration(repairLeft)} kvar</span>
-          {#if hookOn('skipWait')}<button class="primary" onclick={skipRepair}>Laga nu för 💎 {skipGems(repairLeft)}</button>{/if}
+          {#if d.repairing}
+            <span><strong>{d.name}</strong> lagas: {formatDuration(d.left)} kvar</span>
+            {#if hookOn('skipWait') && d.left > 0}<button class="primary" onclick={() => skipRepair(d.id)}>Klart nu för 💎 {skipGems(d.left)}</button>{/if}
+          {:else}
+            <span><strong>{d.name}</strong> skadades i anfallet och ger halv bonus tills den är lagad.</span>
+            <button class="primary" disabled={$purse.gold < d.price.gold} onclick={() => startRepair(d.id)}>Laga för 🪙 {d.price.gold} ({formatDuration(d.price.ms)})</button>
+          {/if}
         </div>
-      {/if}
+      {/each}
       <div class="fabs">
         <button class="quit" data-tut="quit" onclick={pressQuit}>Avsluta</button>
         {#if !sheet}
@@ -109,6 +117,7 @@
       </div>
       <ul>
         {#each BUILDINGS as b (b.id)}
+          {@const broken = $stairs.damaged.some((d) => d.id === b.id)}
           {@const block = buildBlock($village, b.id, $purse.gold)}
           {@const price = priceOf(b.id)}
           {#if block === 'locked'}
@@ -125,7 +134,10 @@
               <strong>{b.name}</strong> <span class="lvl">{$village.levels[b.id] === 0 ? 'ej byggd' : `nivå ${$village.levels[b.id]} av ${MAX_LEVEL}`}</span>
               <span class="fine">{b.effect}</span>
             </div>
-            {#if block === 'gold' && hookOn('topUpGold')}
+            {#if broken}
+              <button class="ghost" disabled aria-describedby={`why-${b.id}`}>Bygg ut</button>
+              <span class="why" id={`why-${b.id}`}>Skadad: laga den först</span>
+            {:else if block === 'gold' && hookOn('topUpGold')}
               {@const missing = price - $purse.gold}
               {topUpOffered(b.id, missing)}
               <button data-tut={`build-${b.id}`} class="primary topup" onclick={() => build(b.id, true)}>
