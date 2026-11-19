@@ -176,7 +176,9 @@ Från tråden "Rätta felen från Jonas testrunda", efter Jonas lista:
 - **Liv.** Liv visas som fem hjärtikoner, röda eller tomma, utan siffra och utan ordet "fullt".
 - **Menyknappen** inne i en utmaning ligger i topplisten.
 - **Skrikig reklam.** Jonas vill att reklamen skär sig med spelet och är lite irriterande, som riktig reklam. Utöver de fyra lugna filmerna finns fyra skrikiga påhittade: Guldregn (nätcasino), Fullträff (betting), Fyndo (shoppingapp) och Kungars Krig (krigsspel). Existerande reklamfilmer används inte, eftersom det kräver tillstånd. De fyra nya filmerna väntar på Jonas ja.
-- **Väntar på Jonas:** var guld och ädelstenar ska ligga inne i en utmaning, och en tydligare sprucken malm.
+- **Topplisten inne i en utmaning (Jonas 2026-11-19, förslag A):** menyknapp, hjärtan, guld och ädelstenar ligger i topplisten.
+- **Reklamen som A/B-test (Jonas 2026-11-19).** Alla åtta filmerna byggs. Vissa spelare får bara de fyra lugna filmerna och andra bara de fyra skrikiga, för att mäta hur det påverkar. Gruppen följer av spelar-id, ungefär hälften var, och är densamma hela tiden. Den loggas som adGroup (calm eller loud) tillsammans med filmens id när filmen visas, ses klart eller stängs i förtid (med antal sedda sekunder). Testbygget kan inte byta grupp, det kan bara dev-menyn. Med få testare blir grupperna små och inte säkert jämna. Om Jonas vill styra vem som hamnar var behövs en tilldelning per testkod.
+- **Väntar på Jonas:** en tydligare sprucken malm.
 
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
