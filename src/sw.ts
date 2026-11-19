@@ -36,7 +36,7 @@ registerRoute(
 );
 // The art of worlds 2-5: shown from the cache at once and refreshed behind it.
 registerRoute(
-  ({ url }) => url.origin === self.location.origin && (url.pathname.startsWith('/art/worlds/') || url.pathname.startsWith('/art/village/winter/') || url.pathname.startsWith('/art/village/xmas/')),
+  ({ url }) => url.origin === self.location.origin && (url.pathname.startsWith('/art/worlds/') || url.pathname.startsWith('/art/village/winter/') || url.pathname.startsWith('/art/village/damaged/') || url.pathname.startsWith('/art/village/xmas/')),
   async ({ request }) => {
     const cache = await caches.open('worlds-art-v1');
     const hit = await cache.match(request);

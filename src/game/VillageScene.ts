@@ -10,6 +10,8 @@ const BG = ART.background;
 const DIR = '/art/village/';
 /** The winter pictures have this margin around them: drawn at x-PAD, y-PAD. */
 const WINTER_PAD = 10;
+/** The damaged pictures (in damaged/, same file names) have this margin for the rubble at the foot. */
+const DAMAGED_PAD = 8;
 type Look = 'summer' | 'a' | 'b' | 'c';
 
 /** Which picture a building level uses (Jonas, 2026-11-18): 1-3, 4-7 and 8-10. */
@@ -27,6 +29,10 @@ export function stageOf(level: number): '1' | '2' | '3' {
  * or c; the same file names under winter/<look>/) and the Christmas decorations
  * are whole-village layers drawn over the buildings ('layers': file names in xmas/).
  * Those pictures are loaded the first time they are needed.
+ *
+ * A building damaged by a lost attack shows its damaged picture (Jonas approved
+ * all 33 on 2026-11-19). They are painted for the summer village only: in a
+ * winter look the building is darkened instead. Either way a red sign marks it.
  */
 export class VillageScene extends Phaser.Scene {
   constructor() {
@@ -60,8 +66,9 @@ export class VillageScene extends Phaser.Scene {
   }
 
   /** Loads what the look and the layers need and is not loaded yet; true when something is on its way. */
-  private loadMissing(look: Look, layers: string[]): boolean {
+  private loadMissing(look: Look, layers: string[], damaged: string[]): boolean {
     const want: [string, string][] = layers.map((f) => [`v-xmas-${f}`, `${DIR}xmas/${f}`]);
+    if (look === 'summer') for (const f of damaged) want.push([`v-damaged-${f}`, `${DIR}damaged/${f}`]);
     if (look !== 'summer') {
       want.push([`v-${look}-${BG.file}`, `${DIR}winter/${look}/${BG.file}`]);
       for (const b of Object.values(BUILDINGS)) for (const st of Object.values(b.stages)) want.push([`v-${look}-${st.file}`, `${DIR}winter/${look}/${st.file}`]);
@@ -86,12 +93,13 @@ export class VillageScene extends Phaser.Scene {
     const oy = Math.min(0, Math.max(height - BG.h * s, height / 2 - centre * s));
     const look: Look = this.registry.get('look') ?? 'summer';
     const layers: string[] = this.registry.get('layers') ?? [];
-    this.loadMissing(look, layers);
     const bg = look !== 'summer' && this.textures.exists(`v-${look}-${BG.file}`) ? `v-${look}-${BG.file}` : 'v-bg';
     this.add.image(ox, oy, bg).setOrigin(0).setScale(s);
 
     const plots: PlotView[] = this.registry.get('plots') ?? [];
     const byId = new Map(plots.map((p) => [p.id, p]));
+    const broken = plots.filter((p) => p.damaged && !p.locked && p.level > 0 && BUILDINGS[p.id]).map((p) => BUILDINGS[p.id].stages[stageOf(p.level)].file);
+    this.loadMissing(look, layers, broken);
     // Back to front, so nearer buildings cover the ones behind.
     const order = Object.keys(BUILDINGS).sort((a, b) => BUILDINGS[a].anchor[1] - BUILDINGS[b].anchor[1]);
     const k = this.registry.get('dpr') ?? 1;
@@ -101,16 +109,19 @@ export class VillageScene extends Phaser.Scene {
       const b = BUILDINGS[id];
       if (p.level > 0) {
         const st = b.stages[stageOf(p.level)];
-        const t = this.tex(look, st.file);
+        const whole = this.tex(look, st.file);
+        const hurt = p.damaged && look === 'summer' && this.textures.exists(`v-damaged-${st.file}`);
+        const t = hurt ? { key: `v-damaged-${st.file}`, pad: DAMAGED_PAD } : whole;
         const pic = this.add.image(ox + (st.x - t.pad) * s, oy + (st.y - t.pad) * s, t.key).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1);
         if (p.damaged) {
-          // A plain mark until the damaged pictures are painted: the building darkened, a red sign over it.
-          pic.setTint(0x8a7f78);
-          const r = 13 * k;
+          // The damaged picture where there is one; otherwise the building darkened. A red sign over it.
+          if (!hurt) pic.setTint(0x8a7f78);
+          // Over the damaged picture the sign is smaller and sits above the roof, so it does not hide the damage.
+          const r = (hurt ? 10 : 13) * k;
           const cx = pic.x + pic.displayWidth / 2;
-          const cy = pic.y + r;
+          const cy = hurt ? pic.y : pic.y + r;
           this.add.circle(cx, cy, r, 0x9c2a1e).setStrokeStyle(2 * k, 0xffffff);
-          this.add.text(cx, cy, '!', { fontFamily: 'sans-serif', fontStyle: 'bold', fontSize: `${18 * k}px`, color: '#ffffff' }).setOrigin(0.5);
+          this.add.text(cx, cy, '!', { fontFamily: 'sans-serif', fontStyle: 'bold', fontSize: `${(hurt ? 14 : 18) * k}px`, color: '#ffffff' }).setOrigin(0.5);
         }
       }
       if (p.building) {

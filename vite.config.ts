@@ -42,7 +42,7 @@ export default defineConfig({
         // only downloads the first world, so it finishes before the player
         // leaves the app. Their art is cached the first time it is shown (sw.ts).
         // The winter village and the Christmas decorations are cached the same way.
-        globIgnores: ['**/art/worlds/**', '**/art/village/winter/**', '**/art/village/xmas/**'],
+        globIgnores: ['**/art/worlds/**', '**/art/village/winter/**', '**/art/village/damaged/**', '**/art/village/xmas/**'],
       },
       manifest: {
         id: '/',
