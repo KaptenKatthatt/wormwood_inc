@@ -41,7 +41,9 @@
   $effect(() => { if (xday > 0) countdownShown(); });
   // The village's look (summer, or winter A, B or C in December) and the bought decorations.
   const look = $derived.by(() => { void $now; void $xmasDate; void $forcedLook; return villageLook(); });
-  const layers = $derived(CHRISTMAS ? decorLayers($xmas) : []);
+  // The window stars only exist for buildings at levels 4-7 so far.
+  const starsFit = $derived(plots.every((p) => p.locked || p.level === 0 || (p.level >= 4 && p.level <= 7)));
+  const layers = $derived(CHRISTMAS ? decorLayers($xmas, look, starsFit) : []);
 
   onMount(() => tutEvent('inVillage'));
   $effect(() => { if (constr) tutEvent('built'); });

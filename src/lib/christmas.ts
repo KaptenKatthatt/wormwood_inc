@@ -19,26 +19,37 @@ export const STAR_COOKIES = 2;
 /** Gingerbread per gem when topping up. */
 export const COOKIES_PER_GEM = 15;
 
-/**
- * Torches and the straw goat replaced the first proposal's window stars and
- * snow on the roofs (2026-11-19): each is one layer over the whole village.
- */
-export type DecorId = 'lights' | 'sheaves' | 'torches' | 'goat' | 'tree';
-/** In drawing order; `layer` is the picture in /art/village/xmas/. */
-export const DECOR: { id: DecorId; name: string; cookies: number; layer: string }[] = [
-  { id: 'lights', name: 'Ljusslingor på muren', cookies: 40, layer: 'jul-ljusslingor.webp' },
-  { id: 'sheaves', name: 'Julkärvar vid portarna', cookies: 80, layer: 'jul-karvar.webp' },
-  { id: 'torches', name: 'Marschaller längs vägarna', cookies: 150, layer: 'jul-marschaller.webp' },
-  { id: 'goat', name: 'Halmbock på torget', cookies: 250, layer: 'jul-bock.webp' },
-  { id: 'tree', name: 'Julgran på torget', cookies: 400, layer: 'jul-gran.webp' },
+/** The six decorations (Jonas, 2026-11-19), in the shop's order. */
+export type DecorId = 'lights' | 'sheaves' | 'stars' | 'torches' | 'goat' | 'tree';
+export const DECOR: { id: DecorId; name: string; cookies: number }[] = [
+  { id: 'lights', name: 'Ljusslingor på muren', cookies: 40 },
+  { id: 'sheaves', name: 'Julkärvar vid portarna', cookies: 80 },
+  { id: 'stars', name: 'Adventsstjärnor i fönstren', cookies: 100 },
+  { id: 'torches', name: 'Marschaller längs vägarna', cookies: 150 },
+  { id: 'goat', name: 'Halmbock på torget', cookies: 250 },
+  { id: 'tree', name: 'Julgran på torget', cookies: 400 },
 ];
 /** The star from door 24, drawn on the tree. */
 export const STAR_LAYER = 'jul-stjarna.webp';
+type VillageLook = 'summer' | 'a' | 'b' | 'c';
 
-/** The layers to draw over the village, bottom first. */
-export function decorLayers(s: { decor: DecorId[]; star: boolean }): string[] {
-  const out = DECOR.filter((d) => s.decor.includes(d.id)).map((d) => d.layer);
-  if (s.star && s.decor.includes('tree')) out.push(STAR_LAYER);
+/**
+ * The layers to draw over the village (pictures in /art/village/xmas/), bottom
+ * first. The goat and the tree have snow on them in the winter looks. The
+ * window stars are painted per winter look and so far only for buildings at
+ * levels 4-7, so they are drawn only when `starsFit` says every building is there.
+ */
+export function decorLayers(s: { decor: DecorId[]; star: boolean }, look: VillageLook = 'summer', starsFit = false): string[] {
+  const winter = look !== 'summer';
+  const has = (id: DecorId) => s.decor.includes(id);
+  const out: string[] = [];
+  if (has('lights')) out.push('jul-ljusslingor.webp');
+  if (has('sheaves')) out.push('jul-karvar.webp');
+  if (has('torches')) out.push('jul-marschaller.webp');
+  if (has('stars') && winter && starsFit) out.push(`jul-adventsstjarnor-${look}.webp`);
+  if (has('goat')) out.push(winter ? 'jul-bock-sno.webp' : 'jul-bock.webp');
+  if (has('tree')) out.push(winter ? 'jul-gran-sno.webp' : 'jul-gran.webp');
+  if (s.star && has('tree')) out.push(STAR_LAYER);
   return out;
 }
 

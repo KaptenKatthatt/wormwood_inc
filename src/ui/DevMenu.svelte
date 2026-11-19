@@ -118,7 +118,7 @@
   {#if CHRISTMAS}
     <fieldset>
       <legend>Julen (1-24 december)</legend>
-      <p>Nu {xday > 0 ? `på, lucka ${xday}` : 'av'}. Pepparkakor {$xmas.cookies}, öppnade luckor {$xmas.opened.length}, pynt {$xmas.decor.length} av 5. Följer dagskrokarna (från dag 2 eller Alltid på). Syns inte i testversionen än.</p>
+      <p>Nu {xday > 0 ? `på, lucka ${xday}` : 'av'}. Pepparkakor {$xmas.cookies}, öppnade luckor {$xmas.opened.length}, pynt {$xmas.decor.length} av 6. Följer dagskrokarna (från dag 2 eller Alltid på). Syns inte i testversionen än.</p>
       <label class="row">
         <input type="checkbox" checked={$settings.hooks.christmas} onchange={(e) => setHook('christmas', e.currentTarget.checked)} />
         <span><strong>Julhändelsen</strong>: adventskalender, pepparkakor, julpynt och nedräkning.</span>
