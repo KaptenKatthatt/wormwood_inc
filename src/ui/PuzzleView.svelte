@@ -29,6 +29,8 @@
   let rev = $state(0); // bumps after every move so the counters re-read the engine
   let dialog = $state<null | 'outOfMoves' | 'won' | 'lost' | 'noLives' | 'menu'>(null);
   let reward = $state<WinPay | null>(null);
+  /** The introduction replayed by a player past the first challenge: the win counts for nothing. */
+  let practiceRun = $state(false);
   let startedReal = 0;
   let tool = $state<null | 'hammer'>(null);
   let mixed = $state(0);
@@ -77,8 +79,13 @@
     }
     dialog = null;
     // Kvarnen (the mill) gives an extra move for every second level.
-    // In the introduction the first challenge is the shown move and three practice moves.
-    const lv = l.id === 1 && $tutorial.index !== null && TUT_STEPS[$tutorial.index]?.id === 'swap' ? introLevel(l) : { ...l, moves: l.moves + millMoves(effectiveVillage()) };
+    // In the introduction the challenge is the shown move and three practice moves, always on the
+    // first challenge's board. Replayed from the settings by a player further on, it is only
+    // practice: nothing is won and the player's own challenge waits (it used to go on as an
+    // ordinary challenge, which looked like the introduction had stopped; Jonas, 2026-11-19).
+    const introRun = $tutorial.index !== null && TUT_STEPS[$tutorial.index]?.id === 'swap';
+    practiceRun = introRun && l.id !== 1;
+    const lv = introRun ? introLevel(levelAt(1)) : { ...l, moves: l.moves + millMoves(effectiveVillage()) };
     game = new Match3(lv, makeRng(Math.floor(Math.random() * 2 ** 31)), hookOn('nearWin'));
     startedReal = Date.now();
     intro = l.intro && firstTime(`obstacle-${l.intro}`) ? l.intro : null;
@@ -125,10 +132,9 @@
     if (!g) return;
     const s = g.status();
     if (s === 'won') {
-      reward = levelWon(g.level.id, endInfo(), g.stars(), g.leftAtWin > 0 ? g.leftAtWin : 0);
+      reward = practiceRun ? null : levelWon(g.level.id, endInfo(), g.stars(), g.leftAtWin > 0 ? g.leftAtWin : 0);
       dialog = 'won';
       tutEvent('levelEnded');
-      
     } else if (s === 'out-of-moves') {
       stairEvent('loss');
       if (hookOn('extraMoves')) {
@@ -343,8 +349,13 @@
   </Modal>
 {:else if dialog === 'won' && game}
   <Modal title="Utmaningen klarad!">
+    {#if practiceRun}
+      <p class="stars" aria-label="3 av 3 stjärnor">{#each [1, 2, 3] as i}<span class="on">★</span>{/each}</p>
+      <p class="fine">Det här var bara övning. Din egen utmaning väntar på Kartan.</p>
+    {:else}
     <p class="stars" aria-label={`${reward?.stars ?? 1} av 3 stjärnor`}>{#each [1, 2, 3] as i}<span class:on={i <= (reward?.stars ?? 1)}>★</span>{/each}</p>
     <p class="big">+{(reward?.total ?? 0) * (paidDouble ? 2 : 1)} guld 🪙{#if paidDouble} <span class="x2">×2</span>{/if}</p>
+    {/if}
     {#if reward && reward.tired < 1}
       <p class="fine tired">Byborna är trötta efter alla vinster i dag: {Math.round(reward.tired * 100)} % guld. Fullt igen i morgon.</p>
     {/if}
