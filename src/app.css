@@ -5,6 +5,8 @@
   font-display: swap;
 }
 :root {
+  /* Where signs, dialogs and toasts start: the upper third of the screen, clear of the top bar (Jonas, 2026-11-19). */
+  --note-top: calc(68px + env(safe-area-inset-top));
   --panel: #f3ece4;
   --ink: #1f1a17;
   --muted: #5c524b;

@@ -13,6 +13,8 @@
   let host = $state<DOMRect | null>(null);
   /** Where the two hinted tiles are on the screen (sent by the board), for the first step. */
   let spot = $state<{ left: number; top: number; width: number; height: number } | null>(null);
+  /** The target sits in a centred dialog (not a bottom sheet), which then makes room above itself. */
+  let overModal = $state(false);
   let nextBtn = $state<HTMLButtonElement>();
   let frame = 0;
 
@@ -45,6 +47,7 @@
     rect = r && r.width > 0 ? r : null;
     const h = rect ? el?.closest('[role="dialog"]')?.getBoundingClientRect() ?? null : null;
     host = h && h.width > 0 ? h : null;
+    overModal = host !== null && el?.closest('.backdrop') != null;
     clip = rect && el ? clipOf(el, rect) : '';
     frame = requestAnimationFrame(track);
   }
@@ -77,18 +80,6 @@
   // so it never covers the tiles and does not jump about between moves.
   const practice = $derived(step?.repeat !== undefined);
   const practiceStyle = $derived(rect ? `bottom: ${window.innerHeight - rect.top + 6}px;` : 'top: 180px;');
-  // The first sign sits in the middle of the screen with everything but the two tiles dimmed
-  // (Jonas, 2026-11-19); it moves just above or below the tiles if it would cover them.
-  const BUBBLE_H = 150;
-  const midStyle = $derived.by(() => {
-    if (!lit) return '';
-    const h = window.innerHeight;
-    const top = h / 2 - BUBBLE_H / 2;
-    const covers = lit.top - 16 < top + BUBBLE_H && lit.top + lit.height + 16 > top;
-    if (!covers) return `top: ${top}px;`;
-    return lit.top - 16 - BUBBLE_H > 70 ? `bottom: ${h - lit.top + 16}px;` : `top: ${lit.top + lit.height + 16}px;`;
-  });
-
   // Bring the target into view when a step starts (Avsluta sits far down in the village).
   $effect(() => {
     if (!step) return;
@@ -106,21 +97,20 @@
     if (step && !step.waitFor) void tick().then(() => nextBtn?.focus());
   });
 
-  // Put the bubble below the target when it is in the top half, otherwise above it.
-  // A target inside a dialog gets the bubble above the whole dialog (below it when there is no
-  // room above), so the two never overlap (Jonas, 2026-11-19); the dialog's own backdrop dims the rest.
-  const below = $derived(host ? host.top < 170 : !rect || rect.top + rect.height / 2 < window.innerHeight / 2);
-  const bubbleStyle = $derived(
-    host
-      ? below
-        ? `top: ${Math.min(window.innerHeight - 170, host.bottom + 14)}px;`
-        : `bottom: ${window.innerHeight - host.top + 14}px;`
-      : !rect
-        ? 'top: 50%; transform: translateY(-50%);'
-        : below
-          ? `top: ${Math.min(window.innerHeight - 220, rect.bottom + 14)}px;`
-          : `bottom: ${Math.min(window.innerHeight - 220, window.innerHeight - rect.top + 14)}px;`,
-  );
+  // Every sign starts in the upper third of the screen, just under the top bar (Jonas, 2026-11-19).
+  // Only when it would cover what it points at (the two tiles, a button, a dialog) does it move to
+  // just below that. A dialog it points into starts lower meanwhile (Modal), so the sign sits above it.
+  const NOTE_TOP = 68, BUBBLE_H = 170;
+  const bubbleStyle = $derived.by(() => {
+    const t = host ?? lit ?? (rect && rect.height <= window.innerHeight * 0.4 ? rect : null);
+    const covers = t !== null && t.top < NOTE_TOP + BUBBLE_H && t.top + t.height > NOTE_TOP;
+    return covers ? `top: ${Math.min(window.innerHeight - 200, t.top + t.height + 14)}px;` : 'top: var(--note-top);';
+  });
+  $effect(() => {
+    const on = step !== null && !step.silent && overModal;
+    document.body.classList.toggle('coach-over-dialog', on);
+    return () => document.body.classList.remove('coach-over-dialog');
+  });
   const big = $derived(rect !== null && rect.height > window.innerHeight * 0.4);
 </script>
 
@@ -132,7 +122,7 @@
   {:else if rect}
     <div class="ring" class:big class:lit={host !== null} style={clip} style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
   {/if}
-  <div class="bubble" class:small={practice} class:below class:floating={big && !lit && !practice} style={practice ? practiceStyle : lit ? midStyle : big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
+  <div class="bubble" class:small={practice} style={practice ? practiceStyle : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
     <h2 id="coach-title">{step.title}</h2>
     <p id="coach-text" aria-live="polite">{tutText(step, $tutorial.left)}</p>
     <div class="row">
@@ -152,11 +142,6 @@
   @keyframes pulse { 50% { border-color: #fff6ee; } }
   .bubble { position: fixed; left: 12px; right: 12px; z-index: 16; margin: 0 auto; max-width: 440px; background: #fffaf0; color: #1f1a17;
     border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 24px rgb(0 0 0 / .35); display: grid; gap: 6px; }
-  /* over the boosters at the bottom, so the goal card at the top stays readable */
-  .bubble.floating { top: auto; bottom: calc(64px + env(safe-area-inset-bottom)); }
-  /* Over the board the bubble sits at the top, above the tiles, and stays small. */
-  .bubble.floating { padding: 10px 14px; gap: 4px; }
-  .bubble.floating .row { margin-top: 0; }
   /* the practice moves: a small sign that lets the board through around it */
   .bubble.small { padding: 10px 16px; gap: 0; max-width: 260px; text-align: center; }
   .bubble.small .row { margin-top: 0; }

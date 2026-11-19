@@ -133,6 +133,6 @@
   nav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 1px solid var(--line); background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
   .tab { background: none; border: 0; border-radius: 0; min-height: 56px; font-weight: 600; color: var(--muted); }
   .tab[aria-current='page'] { color: var(--falu); box-shadow: inset 0 3px 0 var(--falu); }
-  .toasts { position: fixed; bottom: calc(72px + env(safe-area-inset-bottom)); left: 0; right: 0; display: grid; justify-items: center; gap: 6px; pointer-events: none; z-index: 5; }
+  .toasts { position: fixed; top: var(--note-top); left: 0; right: 0; display: grid; justify-items: center; gap: 6px; pointer-events: none; z-index: 5; }
   .toast { background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: 6px; font-weight: 600; max-width: calc(100% - 32px); }
 </style>

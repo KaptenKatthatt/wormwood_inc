@@ -12,8 +12,11 @@
 </div>
 
 <style>
-  .backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .55); display: grid; place-items: center; padding: 16px; z-index: 10; }
-  .card { background: var(--panel); color: var(--ink); border-radius: 10px; padding: 20px; width: min(420px, 100%); display: grid; gap: 12px; max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .55); display: grid; place-items: start center; padding: var(--note-top) 16px 16px; z-index: 10; }
+  .card { background: var(--panel); color: var(--ink); border-radius: 10px; padding: 20px; width: min(420px, 100%); display: grid; gap: 12px; max-height: calc(100dvh - var(--note-top) - 16px); overflow-y: auto; }
+  /* The introduction's sign sits above a dialog it points into, so the dialog starts lower then. */
+  :global(body.coach-over-dialog) .backdrop { padding-top: calc(var(--note-top) + 184px); }
+  :global(body.coach-over-dialog) .card { max-height: calc(100dvh - var(--note-top) - 200px); }
   h2 { margin: 0; font-size: 1.3rem; }
   .card :global(p) { margin: 0; }
   .card :global(.buttons) { display: flex; flex-wrap: wrap; gap: 8px; }

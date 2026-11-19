@@ -27,7 +27,7 @@
 </div>
 
 <style>
-  .backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .55); display: grid; place-items: center; padding: 16px; z-index: 10; }
+  .backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .55); display: grid; place-items: start center; padding: var(--note-top) 16px 16px; z-index: 10; }
   .card { background: var(--panel); color: var(--ink); border-radius: 8px; padding: 20px; max-width: 420px; display: grid; gap: 10px; }
   h2 { margin: 0; }
   p { margin: 0; }
