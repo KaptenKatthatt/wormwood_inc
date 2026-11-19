@@ -271,7 +271,7 @@ Brytpunkten mäts två gånger: steget i första passet där personen slutar, oc
 **Ljust och varmt:** spelet är alltid ljust och följer inte systemets mörka läge. Ljust vatten, falurött brädram, ljusa trärutor.
 
 **Beslut:** en kombination av en rådgivare och byborna. Lite text att läsa.
-- **Rådgivaren**, en äldre släkting, skriver korta brev ("Min käre ...") vid varje nytt steg i trappan och när spelaren vill sluta. Högst två meningar per brev. Varm, omtänksam och tryggt välmenande. Bär kroken *Figurer som pressar*.
+- **Breven** (Jonas 2026-11-19): korta brev visas vid varje nytt steg i trappan och när spelaren vill sluta. De vänder sig direkt till spelaren och har ingen avsändare: ingen hälsning som "Kära du", ingen underskrift som "Din farbror", och helst inget "jag". Spelet har ingen bakgrundshistoria med Screwtape eller en släkting, det har Jonas aldrig godkänt. Högst två meningar per brev, i varm och vänlig ton. Bär kroken *Figurer som pressar*.
 - **Byborna** syns i byn och reagerar med korta pratbubblor på några ord: glada efter bygge, oroliga när anfallet närmar sig, ledsna när spelaren vill sluta.
 - **Trivselmätare** i byns överkant: en snabb överblick över hur byborna trivs (ansikte plus stapel). Trivseln stiger med byggen och sjunker vid anfall, skadade byggnader och när spelaren varit borta. Ger skuldkroken något att peka på. Trivselmätaren och rådgivarens brev ligger under krokbrytaren *Figurer som pressar*.
 
