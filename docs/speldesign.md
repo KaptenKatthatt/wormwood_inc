@@ -146,9 +146,9 @@ Skylten "Skärgårdsbyn" och Spela-knappen är ritade i kod, och skärmen visar 
 | Pynt | Pepparkakor |
 |---|---|
 | Ljusslingor på muren | 40 |
-| Julkärvar vid stugorna | 80 |
-| Adventsstjärnor i fönstren | 150 |
-| Snö på taken | 250 |
+| Julkärvar vid portarna | 80 |
+| Marschaller längs vägarna | 150 |
+| Halmbock på torget | 250 |
 | Julgran på torget | 400 |
 
 Allt pynt kostar 920 pepparkakor. En testare som spelar en vecka får ungefär 140 från luckorna och 250–300 från utmaningarna, så allt går inte att få utan att köpa. Det är avsikten.
@@ -157,7 +157,7 @@ Allt pynt kostar 920 pepparkakor. En testare som spelar en vecka får ungefär 1
 
 **Krokar och loggning.** Händelsen är en egen krok med fyra delar: daglig vana (luckan), rädsla att missa (nedräkningen och missade luckor), tidsbegränsad valuta och betala för att ta igen. Spelet loggar varje öppnad lucka, varje lucka som köpts i efterhand, varje pyntköp, varje påfyllning av pepparkakor och när spelaren såg nedräkningen. Dev-menyn får en brytare för händelsen och ett sätt att ställa datumet. Ny grafik (kalendern, pepparkakan, pyntet) visas för Jonas och godkänns innan den läggs ut.
 
-**Byn i vinterskrud (Jonas 2026-11-19).** Byn byter utseende i december. Sommarbyn visas till och med 30 november. Utseende A, lätt snö, visas 1–7 december. Utseende B, djup vinter, visas från 8 december. Utseende C, blå timmen, visas i stället för A och B när det är mörkt ute i Skåne, det vill säga när solen är nere i Eslöv (i december ungefär 15.35–08.30). Julpyntet ligger som lager ovanpå i alla utseenden. Dev-menyn får ett val som tvingar fram ett utseende. Alla byggnader finns målade i tre nivåer för varje utseende i `/mnt/project-files/jul/vinter/`. Granskningssida: https://claude.ai/artifact/5sQfYtKK6FypE6FBuXBrP3. Den färdiga grafiken väntar på Jonas ja. Byte av utseende för övriga årstider ligger i backloggen.
+**Byn i vinterskrud (Jonas 2026-11-19).** Byn byter utseende i december. Sommarbyn visas till och med 30 november. Utseende A, lätt snö, visas 1–7 december. Utseende B, djup vinter, visas från 8 december. Utseende C, blå timmen, visas i stället för A och B när det är mörkt ute i Skåne, det vill säga när solen är nere i Eslöv (i december ungefär 15.35–08.30). Julpyntet ligger som lager ovanpå i alla utseenden. Dev-menyn får ett val som tvingar fram ett utseende. Alla byggnader finns målade i tre nivåer för varje utseende i `/mnt/project-files/jul/vinter/`. Granskningssida: https://claude.ai/artifact/5sQfYtKK6FypE6FBuXBrP3. Jonas godkände alla tre utseendena, granen och bocken 2026-11-19. Byn skalas upp och tomtgränserna justeras i en annan tråd, så vinterbilderna målas om efter den nya byn innan de släpps. Vintern gäller till och med februari tills Jonas säger annat. Byte av utseende för övriga årstider ligger i backloggen.
 
 **Ingången.** Julskylten längst ner i byn öppnar kalendern och julmarknaden. Skylten visas från spelarens andra dag.
 
