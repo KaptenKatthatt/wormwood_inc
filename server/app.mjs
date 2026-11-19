@@ -159,6 +159,33 @@ export async function createApp(opts) {
   /** @param {any} v @param {number} n */
   const text = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
 
+  // ---- the old addresses ---------------------------------------------------
+  /**
+   * The game moved from spela. and wormwood. to skargardsbyn. and
+   * dev.skargardsbyn. (2026-11-18). A game installed from an old address is
+   * run by its service worker out of the cache and only ever asks the server
+   * for /sw.js; a redirect there is refused by the browser, so that game was
+   * stuck on its old version (Jonas, 2026-11-19: the test version does not
+   * update itself). The old addresses therefore answer /sw.js with a worker
+   * that empties the cache, retires itself and sends the player to the new
+   * address; everything else is redirected.
+   * @param {string} host
+   */
+  const movedTo = (host) => {
+    const m = /^(spela|wormwood)\.(.+)$/.exec(host);
+    return m ? `https://${m[1] === 'spela' ? '' : 'dev.'}skargardsbyn.${m[2]}` : null;
+  };
+  /** @param {string} to */
+  const retireWorker = (to) => `// Skargardsbyn has moved to ${to}
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil((async () => {
+  for (const key of await caches.keys()) await caches.delete(key);
+  const pages = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const page of pages) { try { await page.navigate(${JSON.stringify(to + '/')}); } catch { /* the page reloads itself and is redirected */ } }
+  await self.registration.unregister();
+})()));
+`;
+
   // ---- static --------------------------------------------------------------
   /** @param {import('node:http').ServerResponse} res @param {string} urlPath */
   async function serveStatic(res, urlPath, host = '') {
@@ -176,7 +203,7 @@ export async function createApp(opts) {
     }
     const ext = extname(file);
     const immutable = file.includes(`${distDir}/assets/`);
-    const noCache = ext === '.html' || file.endsWith('sw.js') || ext === '.webmanifest' || file.endsWith('registerSW.js');
+    const noCache = ext === '.html' || file.endsWith('sw.js') || ext === '.webmanifest' || file.endsWith('registerSW.js') || file.endsWith('version.json');
     res.writeHead(200, {
       'content-type': MIME[/** @type {keyof typeof MIME} */ (ext)] ?? 'application/octet-stream',
       'content-length': info.size,
@@ -197,6 +224,13 @@ export async function createApp(opts) {
 
     if (!path.startsWith('/api/')) {
       if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405).end(); return; }
+      const moved = movedTo(String(req.headers.host ?? ''));
+      if (moved && path === '/sw.js') {
+        res.writeHead(200, { 'content-type': MIME['.js'], 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
+        res.end(retireWorker(moved));
+        return;
+      }
+      if (moved) { res.writeHead(301, { location: moved + url, 'cache-control': 'no-store' }).end(); return; }
       return serveStatic(res, path, String(req.headers.host ?? ''));
     }
     if (limited(ip)) return json(res, 429, { error: 'för många anrop' });

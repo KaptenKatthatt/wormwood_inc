@@ -36,14 +36,23 @@ syntetiserade direkt i `compose.py`.
 | `sfx/win` | Gem Waltz, "cleared" | Haley Halcyon | CC-BY 4.0 | https://opengameart.org/content/gem-waltz-free-music-loop |
 | `sfx/lose` | Gem Waltz, "gameover" | Haley Halcyon | CC-BY 4.0 | https://opengameart.org/content/gem-waltz-free-music-loop |
 | `sfx/click` | Interface Sounds, select_001 | Kenney (kenney.nl) | CC0 | https://opengameart.org/content/interface-sounds |
+| `sfx/rocket` | raketen: luftsus ur "100 CC0 SFX #2" (air_02) och smäll ur "100 CC0 SFX" (explosion), över ett eget brus som stiger | rubberduck | CC0 | https://opengameart.org/content/100-cc0-sfx-2 |
+| `sfx/fireworks` | fyrverkeriet: "100 CC0 SFX" (explosion, shot_02) | rubberduck | CC0 | https://opengameart.org/content/100-cc0-sfx |
+| `sfx/shine` | fem i rad som går av: "100 CC0 SFX" (bell_01) över ett eget brus | rubberduck | CC0 | https://opengameart.org/content/100-cc0-sfx |
+| `sfx/crack` | sten, malm och klappersten som spricker: "75 CC0 breaking / falling / hit sfx" (rock_hit_01) | rubberduck | CC0 | https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx |
+| `sfx/break` | sten som går sönder: "75 CC0 breaking / falling / hit sfx" (rock_breaking_03) | rubberduck | CC0 | https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx |
+| `sfx/hammer` | hammaren: "100 CC0 SFX #2" (wood_hit_02) och rock_hit_01 ovan | rubberduck | CC0 | https://opengameart.org/content/100-cc0-sfx-2 |
 | `sfx/build-start` | hammarslag: "68 Workshop Sounds" (wood hammering) | bart | CC0 | https://opengameart.org/content/68-workshop-sounds |
 | `sfx/build-start` | handsåg: "30 CC0 SFX loops" (saw) | rubberduck | CC0 | https://opengameart.org/content/30-cc0-sfx-loops |
 | `music/ambience-sea` | vattenbädd: "Sea and river wave sounds" (Vistula) | RandomMind | CC0 | https://opengameart.org/content/sea-and-river-wave-sounds |
 | `music/ambience-sea` | vågor: "Beach Ocean Waves" | jasinski, uppladdat av qubodup | CC0 | https://opengameart.org/content/beach-ocean-waves |
 | `music/ambience-sea` | måsar: "Solo Seagull Sound Effects" | Rango Mango | CC0 | https://opengameart.org/content/solo-seagull-sound-effects |
 
-`sfx/build-start` är en mix av hammaren och sågen ovan med ett eget
-dragspelsackord på slutet (`tools/audio/build_start.py`). `music/ambience-sea`
+`sfx/build-start` är en mix av hammaren och sågen ovan
+(`tools/audio/build_start.py`). Dragspelsackordet som låg på slutet klipptes
+bort 2026-11-19 (Jonas: inget tut efter hammaren och sågen). Effekterna för
+specialbrickorna och stenarna mixas i `tools/audio/specials.py`; licenserna
+kontrollerades på OpenGameArt 2026-11-19. `music/ambience-sea`
 är en 48 sekunders loop mixad ur de tre CC0-inspelningarna
 (`tools/audio/ambience.py`).
 

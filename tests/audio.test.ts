@@ -12,6 +12,16 @@ describe('sound', () => {
     expect(puzzleMusicFor(3)).toBe('puzzle-brickor');
   });
 
+  it('a world with its own tune plays it on all its challenges, the others keep the two', () => {
+    expect(puzzleMusicFor(41, [2, 3])).toBe('world-2');
+    expect(puzzleMusicFor(80, [2, 3])).toBe('world-2');
+    expect(puzzleMusicFor(81, [2, 3])).toBe('world-3');
+    expect(puzzleMusicFor(121, [2, 3])).toBe('puzzle-brickor');
+    expect(puzzleMusicFor(40, [2, 3])).toBe('puzzle-gem-waltz');
+    // past the road it starts over in the first world
+    expect(puzzleMusicFor(201, [2, 3])).toBe('puzzle-brickor');
+  });
+
   it('every file the game asks for exists in both formats', () => {
     const names = [...SRC.matchAll(/'((?:music|sfx)\/[a-z-]+)'/g)].map((m) => m[1]);
     const listed = [...SRC.matchAll(/: '([a-z-]+)'/g)].map((m) => m[1]);

@@ -17,17 +17,28 @@ import { load, save } from '../state/storage';
 
 export type Sfx =
   | 'swap' | 'invalid' | 'win' | 'lose' | 'near' | 'purchase' | 'coins' | 'gems'
-  | 'buildStart' | 'buildDone' | 'attack' | 'defended' | 'notify' | 'click';
-export type Music = 'title' | 'village' | 'puzzle-brickor' | 'puzzle-gem-waltz';
+  | 'buildStart' | 'buildDone' | 'attack' | 'defended' | 'notify' | 'click'
+  // the special tiles and the hard blocks (Jonas, 2026-11-19)
+  | 'rocket' | 'fireworks' | 'shine' | 'crack' | 'break' | 'hammer';
+export type Music = 'title' | 'village' | 'puzzle-brickor' | 'puzzle-gem-waltz' | `world-${number}`;
 
 const SFX_FILES: Record<Sfx, string> = {
   swap: 'swap', invalid: 'invalid', win: 'win', lose: 'lose', near: 'near', purchase: 'purchase',
   coins: 'coins', gems: 'gems', buildStart: 'build-start', buildDone: 'build-done', attack: 'attack',
   defended: 'defended', notify: 'notify', click: 'click',
+  rocket: 'rocket', fireworks: 'fireworks', shine: 'shine', crack: 'crack', break: 'break', hammer: 'hammer',
 };
-const MUSIC_FILES: Record<Music, string> = {
+const MUSIC_FILES: Record<string, string> = {
   title: 'title-solsken', village: 'village-udden', 'puzzle-brickor': 'puzzle-brickor', 'puzzle-gem-waltz': 'puzzle-gem-waltz',
 };
+/**
+ * Each world has its own puzzle music (Jonas, 2026-11-19). A world listed
+ * here plays public/audio/music/world-<n>.{ogg,mp3} on all its challenges;
+ * a world that is not listed yet keeps the two tunes of the first world. Add
+ * the world's number here when its tune is in place.
+ */
+export const WORLD_TUNES: readonly number[] = [];
+for (const w of WORLD_TUNES) MUSIC_FILES[`world-${w}`] = `world-${w}`;
 /** Cascade steps: match-0 .. match-7 rise through a pentatonic scale. */
 const MATCH_STEPS = 8;
 
@@ -177,8 +188,13 @@ export function setMusic(name: Music | null, ambience = false): void {
   void syncAmbience();
 }
 
-/** The puzzle alternates between its two tunes from level to level (Jonas, 2026-11-17). */
-export function puzzleMusicFor(levelId: number): Music {
+/**
+ * The first world alternates between its two tunes from level to level
+ * (Jonas, 2026-11-17); the later worlds each have their own (2026-11-19).
+ */
+export function puzzleMusicFor(levelId: number, tunes: readonly number[] = WORLD_TUNES): Music {
+  const world = Math.floor((((levelId - 1) % 200) + 200) % 200 / 40) + 1;
+  if (tunes.includes(world)) return `world-${world}`;
   return levelId % 2 === 1 ? 'puzzle-brickor' : 'puzzle-gem-waltz';
 }
 

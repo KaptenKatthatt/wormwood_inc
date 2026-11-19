@@ -84,6 +84,8 @@ exp.subscribe((s) => save('expansion', s));
 /** Overlays the expansion opens. */
 export const hubOpen = writable<null | 'liga' | 'pass' | 'album' | 'kistor' | 'hjul' | 'kampar'>(null);
 export const adOpen = writable<null | { reward: 'life' | 'double'; gold?: number }>(null);
+/** The reward animation after a watched ad film (Jonas, 2026-11-19): the gold doubles on screen. */
+export const adReward = writable<null | { reward: 'life' | 'double'; gold: number }>(null);
 export const offerShown = writable<null | ReturnType<typeof personalOffer>>(null);
 export const friendNote = writable<null | { text: string; lives: number }>(null);
 export const gateOpenDialog = writable(false);
@@ -324,8 +326,8 @@ export function adWatched(): void {
   if (a.reward === 'life') lives.update((l) => { const s = settleLives(l, now()); return { ...s, count: Math.min(s.max, s.count + 1) }; });
   else addGold(a.gold ?? 0);
   log('ad_watched', { reward: a.reward, gold: a.gold });
-  toast(a.reward === 'life' ? '+1 liv' : `+${a.gold} guld`);
   adOpen.set(null);
+  adReward.set({ reward: a.reward, gold: a.gold ?? 0 });
 }
 
 export function adClosed(): void {

@@ -39,16 +39,28 @@ describe('server', () => {
     expect(r.headers.get('x-robots-tag')).toContain('noindex');
   });
 
-  const fetchHost = async (host: string) => {
+  /** GET with a chosen Host header; a redirect comes back as "301 <location>". */
+  const fetchHost = async (host: string, path = '/') => {
     const http = await import('node:http');
     return new Promise<string>((ok) => {
-      http.get(base + '/', { headers: { host } }, (r) => { let b = ''; r.on('data', (c) => (b += c)); r.on('end', () => ok(b)); });
+      http.get(base + path, { headers: { host } }, (r) => { let b = ''; r.on('data', (c) => (b += c)); r.on('end', () => ok(r.statusCode === 301 ? `301 ${r.headers.location}` : b)); });
     });
   };
 
-  it('serves the playtest build to the skargardsbyn. host (and the old spela.)', async () => {
+  it('serves the playtest build to the skargardsbyn. host', async () => {
     expect(await fetchHost('skargardsbyn.84.247.143.6.sslip.io')).toContain('testversion');
-    expect(await fetchHost('spela.84.247.143.6.sslip.io')).toContain('testversion');
+  });
+
+  it('retires a game installed from an old address: its worker empties the cache and goes to the new address', async () => {
+    const test = await fetchHost('spela.84.247.143.6.sslip.io', '/sw.js');
+    expect(test).toContain('caches.delete');
+    expect(test).toContain('unregister');
+    expect(test).toContain('"https://skargardsbyn.84.247.143.6.sslip.io/"');
+    expect(await fetchHost('wormwood.84.247.143.6.sslip.io', '/sw.js')).toContain('"https://dev.skargardsbyn.84.247.143.6.sslip.io/"');
+    // everything else on an old address is a redirect, with the path kept
+    expect(await fetchHost('spela.84.247.143.6.sslip.io', '/byn?x=1')).toBe('301 https://skargardsbyn.84.247.143.6.sslip.io/byn?x=1');
+    // the real addresses keep their own service worker path (a 404 here: the fake build has none)
+    expect(await fetchHost('skargardsbyn.84.247.143.6.sslip.io', '/sw.js')).not.toContain('unregister');
   });
 
   it('serves the dev build to dev.skargardsbyn.', async () => {

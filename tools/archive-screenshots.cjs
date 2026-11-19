@@ -61,7 +61,8 @@ const URL = process.argv[3] ?? 'https://dev.skargardsbyn.84.247.143.6.sslip.io/'
 
   await p.getByRole('button', { name: 'Byn' }).click();
   await shot('05-byn-start');
-  await p.getByRole('button', { name: 'Bygg', exact: true }).first().click();
+  await p.locator('[data-tut="build-open"]').click(); // the floating button opens the list
+  await p.locator('[data-tut="build-stugan"]').click();
   await shot('06-byn-bygger', 1500);
   await p.waitForTimeout(5000);
   await shot('07-byn-stugan-klar');

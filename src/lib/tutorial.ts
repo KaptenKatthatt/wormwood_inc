@@ -38,7 +38,7 @@ export const TUT_STEPS: TutStep[] = [
   { id: 'swap', tab: 'pussel', target: 'board', title: 'Byt plats på två brickor', text: 'Få tre likadana i rad. Följ handen.', waitFor: 'moved', hint: true },
   { id: 'play', tab: 'pussel', silent: true, title: 'Spela', text: '', waitFor: 'levelEnded' },
   { id: 'village', tab: 'byn', target: 'to-village|tab-byn', selfNav: true, title: 'Till byn', text: 'Använd guldet i byn.', waitFor: 'inVillage' },
-  { id: 'build', tab: 'byn', target: 'build-stugan', title: 'Bygg ditt första hus', text: 'Tryck Bygg vid Stugan.', waitFor: 'built' },
+  { id: 'build', tab: 'byn', target: 'build-stugan|build-open', title: 'Bygg ditt första hus', text: 'Tryck på Bygg och välj Stugan.', waitFor: 'built' },
 ];
 
 interface TutState { index: number | null; startedAt: number }

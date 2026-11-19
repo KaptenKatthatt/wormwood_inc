@@ -328,6 +328,9 @@ export function levelWon(levelId: number, extra: Record<string, unknown>, stars 
   return { total: gold + streakBonus, base, finale, starBonus, streakBonus, stars, tired };
 }
 
+/** True while a challenge is on screen: the main menu is hidden then (Jonas, 2026-11-19). */
+export const inLevel = writable(false);
+
 export function levelLost(levelId: number, extra: Record<string, unknown>): void {
   loseLife();
   tipOnce('lives', 'Ett liv gick åt. Ett nytt kommer av sig självt efter 30 minuter.');
@@ -372,7 +375,7 @@ export function startBuild(id: BuildingId): boolean {
   const block = buildBlock(v, id, p.gold);
   if (block) return false;
   const n = v.builds + 1;
-  const cost = priceFor(n, v);
+  const cost = priceFor(n, v, id);
   const t = addTimer('build', BUILDINGS.find((b) => b.id === id)!.name, buildTime(n));
   purse.set({ ...p, gold: p.gold - cost });
   village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id } });
@@ -394,7 +397,7 @@ export function topUpOffered(id: BuildingId, missing: number): void {
 /** Pays gems for the missing gold and starts the build. */
 export function topUpAndBuild(id: BuildingId): boolean {
   const v = get(village);
-  const missing = priceFor(v.builds + 1, v) - get(purse).gold;
+  const missing = priceFor(v.builds + 1, v, id) - get(purse).gold;
   if (missing <= 0) return startBuild(id);
   if (!payGems(topUpGems(missing), 'topUpGold', { building: id, missing })) return false;
   addGold(missing);

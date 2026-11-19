@@ -1,6 +1,6 @@
 import { play as playSound, playMatch } from '../lib/audio/sound';
 import Phaser from 'phaser';
-import { BOMB, HOBAL, KLAPPER, MALM, ROCKET_BOTH_WAYS, STEN, STOCK, TANG, isBlock, isFree, isRocket, type Cell, type Rocket, type Match3, type Special, type Step } from '../lib/match3/engine';
+import { BLOCK_HITS, BOMB, HOBAL, KLAPPER, MALM, ROCKET_BOTH_WAYS, STEN, STOCK, TANG, isBlock, isFree, isRocket, type Cell, type Rocket, type Match3, type Special, type Step } from '../lib/match3/engine';
 import { REGIONS, regionOf, type Obstacle, type Region } from '../lib/match3/levels';
 import { DEEP as DEEP0, FRAME as FRAME0 } from './palette';
 
@@ -8,6 +8,21 @@ import { DEEP as DEEP0, FRAME as FRAME0 } from './palette';
 // The skerries' cover is a fishing net (Jonas, 2026-11-18); its obstacle id stays 'is'.
 const PICTURE: Record<string, string> = { is: 'fisknat', 'is-sprucken': 'fisknat-trasigt' };
 const OBSTACLES = ['is', 'is-sprucken', 'sno', 'sno-tunn', 'mossa', 'tang', 'sten', 'stock', 'lera', 'hobal', 'kol', 'malm', 'nat', 'klapper', 'frost', 'snogubbe', 'sand'] as const;
+/**
+ * Cracks across a hard block, as lines of points in a -1..1 square: first a
+ * crack from top to bottom, then its branches. Ore (two hits) shows them all
+ * after its first hit; beach stones (three hits) get the trunk first.
+ */
+const CRACKS: [number, number][][] = [
+  [[-0.12, -0.82], [0.06, -0.42], [-0.2, -0.08], [0.12, 0.3], [-0.04, 0.8]],
+  [[0.06, -0.42], [0.42, -0.26], [0.7, -0.44]],
+  [[-0.2, -0.08], [-0.52, 0.08], [-0.76, 0.36]],
+  [[0.12, 0.3], [0.46, 0.44], [0.62, 0.72]],
+  [[-0.52, 0.08], [-0.6, -0.3]],
+  [[0.42, -0.26], [0.5, 0.06]],
+];
+/** Blocks of stone: they crack and break with a sound of their own. */
+const HARD = new Set([STEN, MALM, KLAPPER]);
 const BLOCK_PICTURE: Record<number, string> = { [TANG]: 'tang', [STEN]: 'sten', [STOCK]: 'stock', [MALM]: 'malm', [KLAPPER]: 'klapper', [HOBAL]: 'hobal' };
 
 type Tile = Phaser.GameObjects.Container;
@@ -175,8 +190,8 @@ export class Match3Scene extends Phaser.Scene {
       }),
     );
     this.tiles = e.board.map((row, r) => row.map((kind, c) => this.makeTile(kind, this.pos({ r, c }), e.special[r][c])));
-    // hard blocks show the hits they take
-    e.hp.forEach((row, r) => row.forEach((n, c) => { if (n > 0 && this.tiles[r][c]) this.hitsBadge(this.tiles[r][c]!, n); }));
+    // hard blocks that have already taken a hit show their cracks
+    e.hp.forEach((row, r) => row.forEach((n, c) => { if (n > 0 && this.tiles[r][c]) this.crackBlock(this.tiles[r][c]!, n); }));
     // Ice (snow in the fells) lies over the tile it locks.
     this.iceGfx = e.ice.map((row, r) => row.map((n, c) => (n ? this.makeCover({ r, c }, n) : null)));
     this.hintTweens = [];
@@ -326,13 +341,29 @@ export class Match3Scene extends Phaser.Scene {
     this.cursorBox = this.add.rectangle(p.x, p.y, this.cell, this.cell).setStrokeStyle(3 * this.k, this.deep, 1).setDepth(3);
   }
 
-  /** The number of hits a hard block (ore, beach stones) still takes, in a small round badge. */
-  private hitsBadge(t: Tile, left: number): void {
+  /**
+   * A hard block (ore, beach stones) cracks more with every hit, the way the
+   * net tears and the snow sinks: no number on it (Jonas, 2026-11-19). The
+   * last hit breaks it.
+   */
+  private crackBlock(t: Tile, left: number): void {
     t.list.filter((o) => o.name === 'hits').forEach((o) => o.destroy());
-    const rr = this.cell * 0.17;
-    const badge = this.add.circle(this.cell * 0.3, this.cell * 0.3, rr, this.deep).setStrokeStyle(2 * this.k, 0xffffff).setName('hits');
-    const txt = this.add.text(this.cell * 0.3, this.cell * 0.3, String(left), { fontFamily: 'system-ui, sans-serif', fontStyle: 'bold', fontSize: `${Math.round(rr * 1.3)}px`, color: '#ffffff' }).setOrigin(0.5).setName('hits');
-    t.add([badge, txt]);
+    const max = BLOCK_HITS[t.getData('kind') as number] ?? 1;
+    const hits = max - left;
+    if (hits <= 0) return;
+    // How much of the crack pattern shows: all of it just before the block breaks.
+    const lines = CRACKS.slice(0, Math.ceil((CRACKS.length * hits) / (max - 1)));
+    const u = this.cell * 0.44;
+    const g = this.add.graphics().setName('hits');
+    for (const [color, alpha, width, dx] of [[0xffffff, 0.5, 2.4, 1.6], [0x1d1712, 0.95, 3.2, 0]] as const) {
+      g.lineStyle(width * this.k, color, alpha);
+      for (const line of lines) {
+        g.beginPath();
+        line.forEach(([x, y], i) => (i ? g.lineTo(x * u + dx * this.k, y * u + dx * this.k) : g.moveTo(x * u + dx * this.k, y * u + dx * this.k)));
+        g.strokePath();
+      }
+    }
+    t.add(g);
   }
 
   private makeTile(kind: number, at: { x: number; y: number }, special: Special = null): Tile {
@@ -341,7 +372,7 @@ export class Match3Scene extends Phaser.Scene {
       const big = this.cell * (kind === STOCK ? 0.92 : 0.98);
       const name = kind === STEN && this.region.stone ? this.region.stone : BLOCK_PICTURE[kind];
       const img = this.add.image(0, 0, `ob-${name}`).setDisplaySize(big, big);
-      return this.add.container(at.x, at.y, [img]).setDepth(1);
+      return this.add.container(at.x, at.y, [img]).setDepth(1).setData('kind', kind);
     }
     if (!isFree(kind) && special === 'all') return this.shining(kind, at, size);
     if (!isFree(kind)) {
@@ -394,11 +425,14 @@ export class Match3Scene extends Phaser.Scene {
     if (!e || step.blasts.length === 0) return 0;
     const ms = 260 / Math.max(this.speed, 0.6);
     let wait = ms;
+    // one sound for each sort of special that goes off in this step
+    const heard = new Set<'rocket' | 'fireworks' | 'shine'>();
     for (const b of step.blasts) {
-      if (isRocket(b.special)) wait = Math.max(wait, this.rocketFlight(b.cell, b.special));
-      else if (b.special === 'area') wait = Math.max(wait, this.fireworks(b.cell));
-      else wait = Math.max(wait, this.shine(b.cell, step.cleared));
+      if (isRocket(b.special)) { heard.add('rocket'); wait = Math.max(wait, this.rocketFlight(b.cell, b.special)); }
+      else if (b.special === 'area') { heard.add('fireworks'); wait = Math.max(wait, this.fireworks(b.cell)); }
+      else { heard.add('shine'); wait = Math.max(wait, this.shine(b.cell, step.cleared)); }
     }
+    for (const name of heard) playSound(name);
     return wait;
   }
 
@@ -743,6 +777,7 @@ export class Match3Scene extends Phaser.Scene {
     this.hintTweens = [];
     const t = this.tiles[cell.r][cell.c];
     if (t) await this.tween(t, { angle: 25, scale: 1.2 }, 90);
+    playSound('hammer');
     const result = e.smash(cell);
     for (const [i, step] of result.steps.entries()) await this.play(step, i);
     if (result.shuffled) this.build();
@@ -790,14 +825,19 @@ export class Match3Scene extends Phaser.Scene {
         void this.tween(ice, { alpha: 0, scale: 1.3 }, 200).then(() => ice.destroy());
       }
     }
+    let crackSound = false;
     for (const { r, c, left } of step.blockHit ?? []) {
-      // a hard block shakes, sheds chips and shows how many hits are left
+      // a hard block shakes, sheds chips and cracks a little more
       const t = this.tiles[r][c];
       if (!t) continue;
       this.chips({ r, c }, 0xb8b0a4);
-      this.hitsBadge(t, left);
+      this.crackBlock(t, left);
+      crackSound = true;
       void this.tween(t, { angle: 8 }, 60).then(() => this.tween(t, { angle: 0 }, 80));
     }
+    // a hard block or a stone that goes in this step breaks with a crash; one that only cracks, with a knock
+    if (step.cleared.some(({ r, c }) => HARD.has(this.tiles[r][c]?.getData('kind') as number))) playSound('break');
+    else if (crackSound) playSound('crack');
     const rolls: Promise<void>[] = [];
     for (const { from, to, out } of step.rolled ?? []) {
       const bale = this.tiles[from.r][from.c];

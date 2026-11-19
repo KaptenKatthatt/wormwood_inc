@@ -22,8 +22,9 @@ describe('village', () => {
     expect(buildBlock(START_VILLAGE, 'sjoboden', 0)).toBe('cap');
     expect(buildBlock(START_VILLAGE, 'stugan', 0)).toBeNull();
     const v = { ...START_VILLAGE, levels: { ...START_VILLAGE.levels, stugan: 1 }, builds: 2 };
-    expect(buildBlock(v, 'sjoboden', 90)).toBe('gold');
-    expect(buildBlock(v, 'sjoboden', 100)).toBeNull();
+    // build 3 costs 100; Sjoboden is 20 % dearer than that
+    expect(buildBlock(v, 'sjoboden', 110)).toBe('gold');
+    expect(buildBlock(v, 'sjoboden', 120)).toBeNull();
     expect(buildBlock({ ...v, construction: { id: 'stugan', toLevel: 2, timerId: 'x' } }, 'sjoboden', 999)).toBe('busy');
   });
 
@@ -47,7 +48,7 @@ describe('topUpGems', () => {
   });
 });
 
-import { cleared, millMoves, priceFor, withAllBuildings } from '../src/lib/economy/village';
+import { BUILDINGS, cleared, millMoves, priceFor, withAllBuildings } from '../src/lib/economy/village';
 describe('the growing village', () => {
   it('clears land for new buildings as Stugan grows and stops at level 10', () => {
     const v = { ...START_VILLAGE, levels: { ...START_VILLAGE.levels, stugan: 2 } };
@@ -62,6 +63,21 @@ describe('the growing village', () => {
     const v = { ...START_VILLAGE, levels: { ...START_VILLAGE.levels, marknaden: 2, kvarnen: 3 } };
     expect(priceFor(10, v)).toBe(Math.round((buildCost(10) * 0.9) / 10) * 10);
     expect(millMoves(v)).toBe(1);
+  });
+  it('the buildings do not all cost the same (Jonas, 2026-11-19)', () => {
+    const v = START_VILLAGE;
+    expect(priceFor(5, v, 'stugan')).toBe(300);
+    expect(priceFor(5, v, 'kasernen')).toBe(200);
+    expect(priceFor(5, v, 'kapellet')).toBe(140);
+    expect(priceFor(5, v, 'vakttornet')).toBe(priceFor(5, v, 'tornet_s'));
+    expect(new Set(BUILDINGS.map((b) => priceFor(8, v, b.id))).size).toBeGreaterThanOrEqual(6);
+    // the two free builds of the introduction stay free whatever is built
+    for (const b of BUILDINGS) expect(priceFor(2, v, b.id)).toBe(0);
+    // the start keeps its pace: the eight buildings there from the start average close to 1
+    const first = BUILDINGS.filter((b) => !b.world && b.unlock <= 3);
+    const mean = first.reduce((a, b) => a + b.price, 0) / first.length;
+    expect(mean).toBeGreaterThan(0.95);
+    expect(mean).toBeLessThan(1.1);
   });
   it('fills in buildings missing from an old save', () => {
     const old = { levels: { stugan: 2, sjoboden: 1, kasernen: 0, vakttornet: 0, kapellet: 0 }, builds: 3, construction: null } as never;

@@ -4,7 +4,7 @@
   import VillageView from './ui/VillageView.svelte';
   import SettingsView from './ui/SettingsView.svelte';
   import Consent from './ui/Consent.svelte';
-  import { awayReport, calendarOpen, streakRepair, offerOpen, quitFlow, settings, shopOpen, toasts } from './lib/state/game';
+  import { awayReport, calendarOpen, inLevel, streakRepair, offerOpen, quitFlow, settings, shopOpen, toasts } from './lib/state/game';
   import Letter from './ui/Letter.svelte';
   import Offer from './ui/Offer.svelte';
   import Banners from './ui/Banners.svelte';
@@ -16,7 +16,8 @@
   import { log } from './lib/log/logger';
   import { TUT_STEPS, tutorial } from './lib/tutorial';
   import { EXPANSION } from './lib/config/flags';
-  import { adOpen, exp, friendNote, hubOpen, offerShown } from './lib/state/expansion';
+  import { adOpen, adReward, exp, friendNote, hubOpen, offerShown } from './lib/state/expansion';
+  import RewardBurst from './ui/RewardBurst.svelte';
   import { hookOn } from './lib/state/game';
   import NeighboursView from './ui/NeighboursView.svelte';
   import WeekHub from './ui/WeekHub.svelte';
@@ -73,11 +74,14 @@
   <main>
     {#if tab === 'pussel'}<PuzzleView onVillage={() => go('byn')} />{:else if tab === 'byn'}<VillageView onPlay={() => go('pussel')} />{:else if tab === 'grannar' && showNeighbours}<NeighboursView />{:else}<SettingsView />{/if}
   </main>
+  <!-- Inside a challenge the menu is away; the board has its own small menu button (Jonas, 2026-11-19). -->
+  {#if !(tab === 'pussel' && $inLevel)}
   <nav aria-label="Huvudmeny">
     {#each TABS as t}
       <button class="tab" data-tut={`tab-${t.id}`} aria-current={tab === t.id ? 'page' : undefined} onclick={() => go(t.id)}>{t.label}</button>
     {/each}
   </nav>
+  {/if}
   <div class="toasts" aria-live="polite">
     {#each $toasts as t (t.id)}<div class="toast">{t.text}</div>{/each}
   </div>
@@ -94,6 +98,7 @@
     {#if $offerShown && !$offerOpen}<PersonalOffer />{/if}
     {#if $friendNote && !$hubOpen}<FriendNote />{/if}
     {#if $adOpen}<AdOverlay />{/if}
+    {#if $adReward}<RewardBurst />{/if}
   {/if}
 </div>
 {/if}

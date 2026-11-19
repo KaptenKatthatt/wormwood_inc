@@ -44,6 +44,7 @@ const URL = process.argv[3] ?? 'https://dev.skargardsbyn.84.247.143.6.sslip.io/'
   await shot('04-till-byn', 900);
   await p.locator('[data-tut="to-village"]').first().click();
   await shot('05-bygg-forsta-huset');
+  await p.locator('[data-tut="build-open"]').click(); // the floating button opens the list
   await p.locator('[data-tut="build-stugan"]').click();
   await shot('06-klart', 1200);
   await b.close();

@@ -1,5 +1,5 @@
 import { mount } from 'svelte';
-import { registerSW } from 'virtual:pwa-register';
+import { keepUpdated } from './lib/pwa/update';
 import App from './App.svelte';
 import { testCode } from './lib/testCode';
 import './app.css';
@@ -57,27 +57,8 @@ document.addEventListener('visibilitychange', () => {
 
 log('open', { standalone: isStandalone(), version: __APP_VERSION__, code: testCode(playerId) });
 
-// Look for a new version on start, every 15 minutes, and whenever the game
-// comes back to the foreground (the home screen app is rarely restarted).
-registerSW({
-  immediate: true,
-  onRegisteredSW(_url, reg) {
-    if (!reg) return;
-    const check = () => { if (navigator.onLine) void reg.update().catch(() => {}); };
-    setInterval(check, 15 * 60 * 1000);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
-  },
-});
-if ('serviceWorker' in navigator) {
-  // Reload once when a new version takes control, so the player sees it.
-  const hadController = !!navigator.serviceWorker.controller;
-  let reloaded = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || reloaded) return;
-    reloaded = true;
-    location.reload();
-  });
-}
+// Looks for a new build and takes it in by itself (src/lib/pwa/update.ts).
+keepUpdated();
 
 export default mount(App, { target: document.getElementById('app')! });
 

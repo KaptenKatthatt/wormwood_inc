@@ -125,11 +125,34 @@ export function helpLives(rng: Rng): number {
 
 export const AD_SECONDS = 10; // Jonas, 2026-11-18 (was 5)
 export const ADS_PER_DAY = 5;
-/** Made-up products for the pretend ads (no real brands). */
-export const AD_TEXTS = [
-  'Prova Bärplock, det nya spelet där du plockar bär i skogen!',
-  'Kaffe från Brygghuset Nordanvind. Nu i ny förpackning.',
-  'Sommarstugor till salu vid sjön. Ring Mäklarhuset Vassen.',
-  'Ladda ner Fiskelyckan och vinn fina priser varje dag!',
+/**
+ * The pretend ad films (Jonas, 2026-11-19: make all the ad films). Made-up
+ * products, no real brands. Each is ten seconds in three scenes over its own
+ * picture (public/art/ads/<id>.webp); the last scene carries the call to action.
+ */
+export interface AdFilm {
+  id: 'barplock' | 'nordanvind' | 'vassen' | 'fiskelyckan';
+  brand: string;
+  /** Small line over the brand. */
+  kicker: string;
+  /** One line per scene. */
+  scenes: [string, string, string];
+  cta: string;
+  /** Brand colour and the ink on it. */
+  accent: string;
+  ink: string;
+  /** A serif wordmark for the calm ads, the game font for the loud ones. */
+  serif?: boolean;
+}
+export const ADS: AdFilm[] = [
+  { id: 'barplock', brand: 'Bärplock', kicker: 'Nytt spel', scenes: ['Plocka bär i skogen', 'Fyll korgen före dina vänner', 'Spela gratis i dag!'], cta: 'Ladda ner', accent: '#7b2d8e', ink: '#ffffff' },
+  { id: 'nordanvind', brand: 'Nordanvind', kicker: 'Brygghuset', scenes: ['Kaffe från Brygghuset Nordanvind', 'Rostat långsamt. Drucket vid havet.', 'Nu i ny förpackning'], cta: 'Finns i din butik', accent: '#3b2a20', ink: '#f6e7cf', serif: true },
+  { id: 'vassen', brand: 'Vassen', kicker: 'Mäklarhuset', scenes: ['Sommarstugor till salu vid sjön', 'Egen brygga och kvällssol', 'Visning i helgen'], cta: 'Ring Mäklarhuset Vassen', accent: '#1f5d4c', ink: '#ffffff', serif: true },
+  { id: 'fiskelyckan', brand: 'Fiskelyckan', kicker: 'Mobilspel', scenes: ['Kasta ut och dra upp storfångsten', 'Vinn fina priser varje dag', 'Ladda ner Fiskelyckan nu!'], cta: 'Ladda ner', accent: '#e8590c', ink: '#ffffff' },
 ];
-
+/** The films take turns, starting anywhere, so a player who watches four sees them all. */
+let adTurn = Math.floor(Math.random() * ADS.length);
+export function nextAd(): AdFilm {
+  adTurn = (adTurn + 1) % ADS.length;
+  return ADS[adTurn];
+}

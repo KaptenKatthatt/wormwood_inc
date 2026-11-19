@@ -15,11 +15,18 @@ const APP_NAME = DEV ? 'Skärgårdsbyn dev' : 'Skärgårdsbyn';
 const ICONS = DEV ? '/icons/dev' : '/icons';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+/**
+ * Every build has its own id. The game compares it with /version.json on the
+ * server to see that a newer build is out, also when the service worker's own
+ * update has not come through (src/lib/pwa/update.ts).
+ */
+const BUILD_ID = `${pkg.version}-${Date.now().toString(36)}`;
 
 export default defineConfig({
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  define: { __APP_VERSION__: JSON.stringify(pkg.version), __BUILD_ID__: JSON.stringify(BUILD_ID) },
   plugins: [
     svelte(),
+    { name: 'version-file', generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: pkg.version, build: BUILD_ID }) }); } },
     { name: 'app-name', transformIndexHtml: (html: string) => html.replace('/icons/apple-touch-icon.png', `${ICONS}/apple-touch-icon.png`).replace('content="Skärgårdsbyn"', `content="${APP_NAME}"`).replace('<title>Skärgårdsbyn</title>', `<title>${APP_NAME}</title>`) },
     VitePWA({
       strategies: 'injectManifest',

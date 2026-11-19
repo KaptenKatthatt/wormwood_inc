@@ -5,7 +5,7 @@
 # Addresses (Jonas, 2026-11-18: the game is called Skargardsbyn everywhere):
 #   https://dev.skargardsbyn.84.247.143.6.sslip.io/  the dev build (dev menu)
 #   https://skargardsbyn.84.247.143.6.sslip.io/      the playtest build
-# The old wormwood. and spela. addresses redirect there, so old links keep working.
+# The old wormwood. and spela. addresses lead there, so old links keep working.
 http://dev.skargardsbyn.84.247.143.6.sslip.io, http://skargardsbyn.84.247.143.6.sslip.io {
 	bind 84.247.143.6
 	redir https://{host}{uri} permanent
@@ -17,12 +17,17 @@ dev.skargardsbyn.84.247.143.6.sslip.io, skargardsbyn.84.247.143.6.sslip.io {
 	reverse_proxy 127.0.0.1:8787
 }
 
-http://wormwood.84.247.143.6.sslip.io, wormwood.84.247.143.6.sslip.io {
+# The old addresses also go to the game's server (2026-11-19), not to a redir:
+# it redirects every page itself, and answers /sw.js with a worker that retires
+# a game installed from the old address (a redirected /sw.js is refused by the
+# browser, which left such a game stuck on its old version).
+http://wormwood.84.247.143.6.sslip.io, http://spela.84.247.143.6.sslip.io {
 	bind 84.247.143.6
-	redir https://dev.skargardsbyn.84.247.143.6.sslip.io{uri} permanent
+	redir https://{host}{uri} permanent
 }
 
-http://spela.84.247.143.6.sslip.io, spela.84.247.143.6.sslip.io {
+wormwood.84.247.143.6.sslip.io, spela.84.247.143.6.sslip.io {
 	bind 84.247.143.6
-	redir https://skargardsbyn.84.247.143.6.sslip.io{uri} permanent
+	encode gzip zstd
+	reverse_proxy 127.0.0.1:8787
 }

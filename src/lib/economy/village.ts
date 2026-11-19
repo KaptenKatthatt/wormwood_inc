@@ -4,7 +4,7 @@
  * others. Three of them stand on land that is cleared when Stugan reaches
  * level 3, 5 and 7 (the village grows outward). One building is built at a
  * time. Cost and time follow the number of the build (the first two are free
- * and take 5 seconds), not the building.
+ * and take 5 seconds); each building also has its own price factor.
  */
 import { HOUR, MINUTE } from '../time/clock';
 
@@ -21,6 +21,14 @@ export interface BuildingDef {
   short?: string;
   /** The expansion's buildings: the land is cleared when the player reaches this world. */
   world?: number;
+  /**
+   * How dear this building is next to the others (Jonas, 2026-11-19: the
+   * buildings do not all cost the same). The price is the build number's cost
+   * times this; the main house and what earns gold cost more, towers and the
+   * chapel less. The average over the first builds stays near 1, so the pace
+   * of the start is unchanged.
+   */
+  price: number;
 }
 
 /**
@@ -35,22 +43,22 @@ export const SIDES = ['norr', 'öster', 'söder', 'väster'] as const;
 export const MAX_LEVEL = 10;
 
 export const BUILDINGS: BuildingDef[] = [
-  { id: 'stugan', name: 'Stugan', unlock: 0, effect: 'Huvudbyggnaden. Dess nivå är taket för de andra, och nivå 3, 5 och 7 röjer ny mark.' },
-  { id: 'sjoboden', name: 'Sjöboden', unlock: 0, effect: '+10 % guld per klarad utmaning för varje nivå.' },
-  { id: 'kasernen', name: 'Kasernen', unlock: 0, effect: 'Här tränas soldater när byn anfalls.' },
-  { id: 'vakttornet', name: 'Vakttornet i norr', short: 'Torn N', unlock: 0, effect: '+30 i försvar mot anfall norrifrån för varje nivå, +15 från andra håll.' },
-  { id: 'kapellet', name: 'Kapellet', unlock: 0, effect: 'Gör byborna gladare för varje nivå.' },
-  { id: 'kvarnen', name: 'Kvarnen', unlock: 3, effect: '+1 drag i varje utmaning för varannan nivå.' },
-  { id: 'smedjan', name: 'Smedjan', unlock: 5, effect: '+5 i försvar per soldat för varje nivå.' },
-  { id: 'marknaden', name: 'Marknaden', unlock: 7, effect: 'Byggen kostar 5 % mindre för varje nivå.' },
-  { id: 'tornet_o', name: 'Vakttornet i öster', short: 'Torn Ö', unlock: 2, effect: '+30 i försvar mot anfall österifrån för varje nivå, +15 från andra håll.' },
-  { id: 'tornet_s', name: 'Vakttornet i söder', short: 'Torn S', unlock: 4, effect: '+30 i försvar mot anfall söderifrån för varje nivå, +15 från andra håll.' },
-  { id: 'tornet_v', name: 'Vakttornet i väster', short: 'Torn V', unlock: 6, effect: '+30 i försvar mot anfall västerifrån för varje nivå, +15 från andra håll.' },
+  { id: 'stugan', name: 'Stugan', price: 1.5, unlock: 0, effect: 'Huvudbyggnaden. Dess nivå är taket för de andra, och nivå 3, 5 och 7 röjer ny mark.' },
+  { id: 'sjoboden', name: 'Sjöboden', price: 1.2, unlock: 0, effect: '+10 % guld per klarad utmaning för varje nivå.' },
+  { id: 'kasernen', name: 'Kasernen', price: 1.0, unlock: 0, effect: 'Här tränas soldater när byn anfalls.' },
+  { id: 'vakttornet', name: 'Vakttornet i norr', price: 0.8, short: 'Torn N', unlock: 0, effect: '+30 i försvar mot anfall norrifrån för varje nivå, +15 från andra håll.' },
+  { id: 'kapellet', name: 'Kapellet', price: 0.7, unlock: 0, effect: 'Gör byborna gladare för varje nivå.' },
+  { id: 'kvarnen', name: 'Kvarnen', price: 1.3, unlock: 3, effect: '+1 drag i varje utmaning för varannan nivå.' },
+  { id: 'smedjan', name: 'Smedjan', price: 1.1, unlock: 5, effect: '+5 i försvar per soldat för varje nivå.' },
+  { id: 'marknaden', name: 'Marknaden', price: 1.4, unlock: 7, effect: 'Byggen kostar 5 % mindre för varje nivå.' },
+  { id: 'tornet_o', name: 'Vakttornet i öster', price: 0.8, short: 'Torn Ö', unlock: 2, effect: '+30 i försvar mot anfall österifrån för varje nivå, +15 från andra håll.' },
+  { id: 'tornet_s', name: 'Vakttornet i söder', price: 0.8, short: 'Torn S', unlock: 4, effect: '+30 i försvar mot anfall söderifrån för varje nivå, +15 från andra håll.' },
+  { id: 'tornet_v', name: 'Vakttornet i väster', price: 0.8, short: 'Torn V', unlock: 6, effect: '+30 i försvar mot anfall västerifrån för varje nivå, +15 från andra håll.' },
   // The expansion (Jonas, 2026-11-17: 12 buildings): one new plot for each new world.
-  { id: 'ladan', name: 'Ladan', unlock: 0, world: 2, effect: 'Guldet i erövrade byar ruttnar en timme senare för varje nivå.' },
-  { id: 'skolan', name: 'Skolan', unlock: 0, world: 3, effect: '+3 % chans till en kista efter varje klarad utmaning för varje nivå.' },
-  { id: 'hamnen', name: 'Hamnen', unlock: 0, world: 4, effect: '+10 % guld från erövrade byar för varje nivå.' },
-  { id: 'gastgiveriet', name: 'Gästgiveriet', short: 'Gästgiv.', unlock: 0, world: 5, effect: '+5 % guld per klarad utmaning för varje nivå.' },
+  { id: 'ladan', name: 'Ladan', price: 0.9, unlock: 0, world: 2, effect: 'Förråden i byar du tagit över rymmer en timmes guld till för varje nivå.' },
+  { id: 'skolan', name: 'Skolan', price: 1.1, unlock: 0, world: 3, effect: '+3 % chans till en kista efter varje klarad utmaning för varje nivå.' },
+  { id: 'hamnen', name: 'Hamnen', price: 1.3, unlock: 0, world: 4, effect: '+10 % guld från erövrade byar för varje nivå.' },
+  { id: 'gastgiveriet', name: 'Gästgiveriet', price: 1.2, short: 'Gästgiv.', unlock: 0, world: 5, effect: '+5 % guld per klarad utmaning för varje nivå.' },
 ];
 
 /** The buildings without the expansion's four (the pilot's village). */
@@ -70,10 +78,11 @@ export function buildCost(n: number): number {
   return 600 + 150 * (n - COSTS.length);
 }
 
-/** The price with Marknaden's discount, rounded to 10. */
-export function priceFor(n: number, v: VillageState): number {
+/** The price of building `id` as build number n: its own factor and Marknaden's discount, rounded to 10. */
+export function priceFor(n: number, v: VillageState, id?: BuildingId): number {
   const discount = Math.min(0.5, 0.05 * (v.levels.marknaden ?? 0));
-  return Math.round((buildCost(n) * (1 - discount)) / 10) * 10;
+  const factor = BUILDINGS.find((b) => b.id === id)?.price ?? 1;
+  return Math.round((buildCost(n) * factor * (1 - discount)) / 10) * 10;
 }
 
 /** Game time for build number n (1-based). From build 13 it grows about quadratically from 1 to 2 hours. */
@@ -126,7 +135,7 @@ export function buildBlock(v: VillageState, id: BuildingId, gold: number): Build
   if (v.levels[id] >= MAX_LEVEL) return 'max';
   if (v.construction) return 'busy';
   if (id !== 'stugan' && v.levels[id] + 1 > v.levels.stugan) return 'cap';
-  if (gold < priceFor(v.builds + 1, v)) return 'gold';
+  if (gold < priceFor(v.builds + 1, v, id)) return 'gold';
   return null;
 }
 

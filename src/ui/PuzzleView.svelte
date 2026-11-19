@@ -8,17 +8,18 @@
   import { Match3, isRocket, type SwapResult } from '../lib/match3/engine';
   import { OBSTACLE_TIPS, goalText, levelAt, regionOf, tileUrl, type Level, type Obstacle } from '../lib/match3/levels';
   import { EXPANSION } from '../lib/config/flags';
-  import { adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
+  import { adReward, adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
   import { GATE_SKIP_GEMS, HELPERS_NEEDED } from '../lib/expansion/conquest';
   import { makeRng } from '../lib/match3/rng';
   import { PRICE } from '../lib/economy/shop';
   import { formatDuration } from '../lib/time/clock';
   import { nextLifeIn } from '../lib/time/lives';
   import {
-    buyExtraMoves, buyLives, canAffordBooster, challengeNo, canPlay, freeBoosters, hookOn, payBooster, levelLost, levelStats, levelWon, lives, logHook, now, purse, stairEvent, stairs,
+    buyExtraMoves, buyLives, canAffordBooster, challengeNo, canPlay, freeBoosters, hookOn, inLevel, payBooster, levelLost, levelStats, levelWon, lives, logHook, now, purse, stairEvent, stairs,
     type WinPay,
   } from '../lib/state/game';
   import { log } from '../lib/log/logger';
+  import { audioSettings } from '../lib/audio/sound';
   import { DEV_MENU } from '../lib/config/flags';
   import { tutEvent, tutorial, TUT_STEPS } from '../lib/tutorial';
 
@@ -26,15 +27,21 @@
 
   let game = $state<Match3 | null>(null);
   let rev = $state(0); // bumps after every move so the counters re-read the engine
-  let dialog = $state<null | 'outOfMoves' | 'won' | 'lost' | 'noLives'>(null);
+  let dialog = $state<null | 'outOfMoves' | 'won' | 'lost' | 'noLives' | 'menu'>(null);
   let reward = $state<WinPay | null>(null);
   let startedReal = 0;
   let tool = $state<null | 'hammer'>(null);
   let mixed = $state(0);
   let doubled = $state(false);
+  /** The ad film was watched to the end: the win dialog shows the doubled gold. */
+  let paidDouble = $state(false);
+  $effect(() => { if ($adReward?.reward === 'double') paidDouble = true; });
   /** The obstacle shown with an arrow and a sentence, the first time it appears. */
   let intro = $state<Obstacle | null>(null);
   const hint = $derived($tutorial.index !== null && TUT_STEPS[$tutorial.index]?.hint === true);
+
+  // The main menu hides while a challenge is on screen.
+  $effect(() => { inLevel.set(game !== null); return () => inLevel.set(false); });
 
   const level = $derived(game?.level);
   const region = $derived(regionOf(level?.id ?? 1));
@@ -170,6 +177,17 @@
     lose();
   }
 
+  /**
+   * Leaving from the board's menu. As in the big puzzle games it costs a life
+   * once a move has been made; before the first move it is free.
+   */
+  function leave() {
+    const g = game!;
+    if (g.movesUsed > 0) levelLost(g.level.id, { ...endInfo(), left: true });
+    else log('level_left', { level: g.level.id });
+    toMap();
+  }
+
   function lose() {
     levelLost(game!.level.id, endInfo());
     dialog = 'lost';
@@ -204,6 +222,7 @@
   /** Back to the map after a win; from step 2 the next challenge starts by itself after 3 s. */
   function toMap(afterWin = false) {
     doubled = false;
+    paidDouble = false;
     game = null;
     dialog = null;
     if (afterWin && hookOn('autoNext') && $stairs.step >= 2 && $tutorial.index === null) startCountdown();
@@ -254,6 +273,9 @@
 {#if game && level && info}
   <section class="view" style:background-image={`url('${region.background}')`}>
     <div class="bar top">
+      <button class="menu" onclick={() => { if (game?.status() === 'playing') dialog = 'menu'; }} aria-label="Meny: pausa eller lämna utmaningen" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+      </button>
       <div class="goal" data-tut="goal">
         <strong class="name">{level.name}</strong>
         <span class="what">
@@ -315,7 +337,7 @@
 {:else if dialog === 'won' && game}
   <Modal title="Utmaningen klarad!">
     <p class="stars" aria-label={`${reward?.stars ?? 1} av 3 stjärnor`}>{#each [1, 2, 3] as i}<span class:on={i <= (reward?.stars ?? 1)}>★</span>{/each}</p>
-    <p class="big">+{reward?.total ?? 0} guld 🪙</p>
+    <p class="big">+{(reward?.total ?? 0) * (paidDouble ? 2 : 1)} guld 🪙{#if paidDouble} <span class="x2">×2</span>{/if}</p>
     {#if reward && reward.tired < 1}
       <p class="fine tired">Byborna är trötta efter alla vinster i dag: {Math.round(reward.tired * 100)} % guld. Fullt igen i morgon.</p>
     {/if}
@@ -338,6 +360,16 @@
       <button class="ghost" onclick={() => toMap()}>Till kartan</button>
       <button class="ghost" data-tut="to-village" onclick={onVillage}>Till byn</button>
     </div>
+  </Modal>
+{:else if dialog === 'menu' && game}
+  <Modal title="Paus">
+    <div class="switches">
+      <label><input type="checkbox" checked={$audioSettings.music} onchange={(e) => audioSettings.update((a) => ({ ...a, music: e.currentTarget.checked }))} /> Musik</label>
+      <label><input type="checkbox" checked={$audioSettings.sfx} onchange={(e) => audioSettings.update((a) => ({ ...a, sfx: e.currentTarget.checked }))} /> Ljudeffekter</label>
+    </div>
+    <div class="buttons"><button class="primary" onclick={() => (dialog = null)}>Fortsätt spela</button></div>
+    <div class="buttons"><button class="ghost" onclick={leave}>Lämna utmaningen</button></div>
+    <p class="fine">{game.movesUsed > 0 ? 'Du förlorar ett liv om du lämnar utmaningen nu.' : 'Du har inte gjort något drag än, så det kostar inget liv att lämna.'}</p>
   </Modal>
 {:else if dialog === 'noLives'}
   <Modal title="Slut på liv">
@@ -374,6 +406,11 @@
   .view { display: flex; flex-direction: column; height: 100%; background-color: #7fb6dc; background-image: url('/art/bakgrund.jpg'); background-position: center; background-size: cover; background-repeat: no-repeat; }
   .canvas { position: relative; flex: 1; min-height: 0; }
   .bar.top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .menu { flex: none; width: 46px; height: 46px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-items: center; background: #fff8ec; color: var(--deep); border: 3px solid #7a2418; box-shadow: 0 3px 0 var(--deep); }
+  .menu svg { width: 24px; height: 24px; }
+  .switches { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .switches label { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; }
+  .switches input { width: 22px; height: 22px; accent-color: var(--falu); }
   .goal { flex: 1; min-width: 0; display: grid; gap: 0; background: #fff8ec; border: 3px solid #7a2418; border-radius: 14px; padding: 4px 10px 6px; box-shadow: 0 3px 0 var(--deep); color: var(--deep); }
   .goal .name { font-size: 1.1rem; line-height: 1.1; font-weight: 800; }
   .what { display: flex; align-items: center; gap: 6px; font-weight: 800; line-height: 1.2; }
@@ -400,6 +437,7 @@
   .lbl { background: rgb(255 248 236 / .95); border: 2px solid #7a2418; border-radius: 10px; padding: 1px 6px 0; color: var(--deep); font-weight: 800; font-size: 13px; line-height: 1.15; text-align: center; box-shadow: 0 2px 0 var(--deep); }
   .fine { color: var(--muted); font-size: .9rem; }
   .big { font-size: 1.25rem; }
+  .x2 { background: #c9473a; color: #fff; border-radius: 999px; padding: 0 8px; font-weight: 800; font-size: 1rem; }
   .stars { margin: 0; font-size: 2.6rem; line-height: 1; letter-spacing: .08em; color: #d8ccc0; -webkit-text-stroke: 1.5px #7a2418; }
   .stars .on { color: #f2c230; }
 </style>
