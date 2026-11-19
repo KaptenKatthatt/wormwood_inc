@@ -354,16 +354,18 @@ export class Match3Scene extends Phaser.Scene {
     // How much of the crack pattern shows: all of it just before the block breaks.
     const lines = CRACKS.slice(0, Math.ceil((CRACKS.length * hits) / (max - 1)));
     const u = this.cell * 0.44;
-    const g = this.add.graphics().setName('hits');
-    for (const [color, alpha, width, dx] of [[0xffffff, 0.5, 2.4, 1.6], [0x1d1712, 0.95, 3.2, 0]] as const) {
+    // One graphics object per pass, so the dark line is certain to lie over its pale edge.
+    // Wide lines with a pale edge, so the damage reads on a small phone screen (Jonas, 2026-11-19).
+    for (const [color, alpha, width] of [[0xfff6e0, 0.85, 8], [0x0d0a08, 1, 4.4]] as const) {
+      const g = this.add.graphics().setName('hits');
       g.lineStyle(width * this.k, color, alpha);
       for (const line of lines) {
         g.beginPath();
-        line.forEach(([x, y], i) => (i ? g.lineTo(x * u + dx * this.k, y * u + dx * this.k) : g.moveTo(x * u + dx * this.k, y * u + dx * this.k)));
+        line.forEach(([x, y], i) => (i ? g.lineTo(x * u, y * u) : g.moveTo(x * u, y * u)));
         g.strokePath();
       }
+      t.add(g);
     }
-    t.add(g);
   }
 
   private makeTile(kind: number, at: { x: number; y: number }, special: Special = null): Tile {

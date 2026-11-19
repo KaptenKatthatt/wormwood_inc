@@ -131,7 +131,7 @@ export const ADS_PER_DAY = 5;
  * picture (public/art/ads/<id>.webp); the last scene carries the call to action.
  */
 export interface AdFilm {
-  id: 'barplock' | 'nordanvind' | 'vassen' | 'fiskelyckan';
+  id: 'barplock' | 'nordanvind' | 'vassen' | 'fiskelyckan' | 'guldregn' | 'fulltraff' | 'fyndo' | 'kungarskrig';
   brand: string;
   /** Small line over the brand. */
   kicker: string;
@@ -143,12 +143,20 @@ export interface AdFilm {
   ink: string;
   /** A serif wordmark for the calm ads, the game font for the loud ones. */
   serif?: boolean;
+  /** Shouts: flashing button, shaking name. These are meant to clash with the game, as real ads do (Jonas, 2026-11-19). */
+  loud?: boolean;
+  /** The small print a gambling ad carries. */
+  legal?: string;
 }
 export const ADS: AdFilm[] = [
   { id: 'barplock', brand: 'Bärplock', kicker: 'Nytt spel', scenes: ['Plocka bär i skogen', 'Fyll korgen före dina vänner', 'Spela gratis i dag!'], cta: 'Ladda ner', accent: '#7b2d8e', ink: '#ffffff' },
   { id: 'nordanvind', brand: 'Nordanvind', kicker: 'Brygghuset', scenes: ['Kaffe från Brygghuset Nordanvind', 'Rostat långsamt. Drucket vid havet.', 'Nu i ny förpackning'], cta: 'Finns i din butik', accent: '#3b2a20', ink: '#f6e7cf', serif: true },
   { id: 'vassen', brand: 'Vassen', kicker: 'Mäklarhuset', scenes: ['Sommarstugor till salu vid sjön', 'Egen brygga och kvällssol', 'Visning i helgen'], cta: 'Ring Mäklarhuset Vassen', accent: '#1f5d4c', ink: '#ffffff', serif: true },
   { id: 'fiskelyckan', brand: 'Fiskelyckan', kicker: 'Mobilspel', scenes: ['Kasta ut och dra upp storfångsten', 'Vinn fina priser varje dag', 'Ladda ner Fiskelyckan nu!'], cta: 'Ladda ner', accent: '#e8590c', ink: '#ffffff' },
+  { id: 'guldregn', brand: 'Guldregn', kicker: 'Casino', scenes: ['100 gratissnurr väntar på dig!', 'Jackpotten växer just nu!!', 'Snurra NU och vinn STORT!'], cta: 'SNURRA NU', accent: '#ffd21f', ink: '#3a0a5c', loud: true, legal: '18+ | Spela ansvarsfullt | Regler och villkor gäller' },
+  { id: 'fulltraff', brand: 'Fullträff', kicker: 'Odds och betting', scenes: ['Matchen börjar NU!', 'Dubbla oddset på ditt första spel!', 'Alla andra har redan spelat.'], cta: 'SPELA NU', accent: '#39ff14', ink: '#04140a', loud: true, legal: '18+ | Spela ansvarsfullt | Regler och villkor gäller' },
+  { id: 'fyndo', brand: 'Fyndo', kicker: 'Shoppingappen', scenes: ['ALLT för 9 kronor!!', '90 % rabatt, bara i dag!', 'Erbjudandet går ut om 59 sekunder'], cta: 'HANDLA NU', accent: '#ffe600', ink: '#b3001b', loud: true },
+  { id: 'kungarskrig', brand: 'Kungars Krig', kicker: 'Strategispel', scenes: ['Bara 1 % klarar nivå 5!', 'Din borg brinner. Vad gör DU?', 'Ladda ner och bevisa det!'], cta: 'SPELA GRATIS', accent: '#c81e1e', ink: '#ffffff', loud: true },
 ];
 /** The films take turns, starting anywhere, so a player who watches four sees them all. */
 let adTurn = Math.floor(Math.random() * ADS.length);

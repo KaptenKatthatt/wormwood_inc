@@ -15,7 +15,7 @@
   import { formatDuration } from '../lib/time/clock';
   import { nextLifeIn } from '../lib/time/lives';
   import {
-    buyExtraMoves, buyLives, canAffordBooster, challengeNo, canPlay, freeBoosters, hookOn, inLevel, payBooster, levelLost, levelStats, levelWon, lives, logHook, now, purse, stairEvent, stairs,
+    buyExtraMoves, buyLives, canAffordBooster, challengeNo, canPlay, freeBoosters, hookOn, inLevel, levelMenuAsked, payBooster, levelLost, levelStats, levelWon, lives, logHook, now, purse, stairEvent, stairs,
     type WinPay,
   } from '../lib/state/game';
   import { log } from '../lib/log/logger';
@@ -42,6 +42,12 @@
 
   // The main menu hides while a challenge is on screen.
   $effect(() => { inLevel.set(game !== null); return () => inLevel.set(false); });
+  // The menu button sits in the top bar (Hud); it asks, and the challenge opens Paus while a game is on.
+  $effect(() => {
+    if (!$levelMenuAsked) return;
+    levelMenuAsked.set(false);
+    if (game?.status() === 'playing' && dialog === null) dialog = 'menu';
+  });
 
   const level = $derived(game?.level);
   const region = $derived(regionOf(level?.id ?? 1));
@@ -273,9 +279,6 @@
 {#if game && level && info}
   <section class="view" style:background-image={`url('${region.background}')`}>
     <div class="bar top">
-      <button class="menu" onclick={() => { if (game?.status() === 'playing') dialog = 'menu'; }} aria-label="Meny: pausa eller lämna utmaningen" aria-haspopup="dialog">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
-      </button>
       <div class="goal" data-tut="goal">
         <strong class="name">{level.name}</strong>
         <span class="what">
@@ -406,8 +409,6 @@
   .view { display: flex; flex-direction: column; height: 100%; background-color: #7fb6dc; background-image: url('/art/bakgrund.jpg'); background-position: center; background-size: cover; background-repeat: no-repeat; }
   .canvas { position: relative; flex: 1; min-height: 0; }
   .bar.top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
-  .menu { flex: none; width: 46px; height: 46px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-items: center; background: #fff8ec; color: var(--deep); border: 3px solid #7a2418; box-shadow: 0 3px 0 var(--deep); }
-  .menu svg { width: 24px; height: 24px; }
   .switches { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   .switches label { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; }
   .switches input { width: 22px; height: 22px; accent-color: var(--falu); }

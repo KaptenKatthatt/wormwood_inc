@@ -330,6 +330,8 @@ export function levelWon(levelId: number, extra: Record<string, unknown>, stars 
 
 /** True while a challenge is on screen: the main menu is hidden then (Jonas, 2026-11-19). */
 export const inLevel = writable(false);
+/** The menu button in the top bar asks the challenge to open its pause dialog. */
+export const levelMenuAsked = writable(false);
 
 export function levelLost(levelId: number, extra: Record<string, unknown>): void {
   loseLife();

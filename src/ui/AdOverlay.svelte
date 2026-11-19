@@ -27,7 +27,7 @@
   const scene = $derived(Math.min(2, Math.floor(t / (AD_SECONDS / 3))));
 </script>
 
-<div class="ad" class:serif={ad.serif} role="dialog" aria-modal="true" aria-label={`Reklam för ${ad.brand}`} style:--accent={ad.accent} style:--ink={ad.ink}>
+<div class="ad" class:serif={ad.serif} class:loud={ad.loud} role="dialog" aria-modal="true" aria-label={`Reklam för ${ad.brand}`} style:--accent={ad.accent} style:--ink={ad.ink}>
   <img class="film" src={`/art/ads/${ad.id}.webp`} alt="" style:animation-duration={`${AD_SECONDS}s`} />
   <div class="veil"></div>
   <div class="bar" role="progressbar" aria-label="Filmen" aria-valuemin="0" aria-valuemax={AD_SECONDS} aria-valuenow={Math.floor(t)}>
@@ -47,6 +47,7 @@
   <div class="foot">
     {#key scene}<p class="line">{ad.scenes[scene]}</p>{/key}
     {#if scene === 2}<span class="cta" aria-hidden="true">{ad.cta}</span>{/if}
+    {#if ad.legal}<p class="legal">{ad.legal}</p>{/if}
     <p class="fine" aria-live="polite">{done ? 'Klart!' : `Belöningen kommer om ${left} s`}</p>
     {#if done}
       <button class="primary get" onclick={adWatched}>Hämta {$adOpen?.reward === 'life' ? 'livet' : 'guldet'}</button>
@@ -77,6 +78,17 @@
   @keyframes rise { from { transform: translateY(14px); opacity: 0; } }
   .cta { background: var(--accent); color: var(--ink); border: 2px solid rgb(255 255 255 / .85); border-radius: 999px; padding: 8px 22px; font-weight: 800; font-size: 1.1rem; animation: pulse 1s ease-in-out infinite alternate; }
   @keyframes pulse { to { transform: scale(1.07); } }
+  /* The loud ads: the name shakes, the lines slam in and the button flashes. */
+  .loud .brand { font-size: clamp(2rem, 11vw, 3.2rem); max-width: 94vw; text-transform: uppercase; font-style: italic; color: var(--accent); text-shadow: 0 3px 0 #000, 0 0 22px var(--accent); animation: shake .5s linear infinite; }
+  .loud .line { font-size: 1.8rem; text-transform: uppercase; font-style: italic; animation: slam .3s cubic-bezier(.2, 2.2, .4, 1) both; }
+  .loud .cta { font-size: 1.35rem; padding: 10px 28px; border-radius: 10px; border-color: #fff; animation: flash .35s steps(2, jump-none) infinite; }
+  .loud .film { animation-name: thump; animation-timing-function: ease-in-out; }
+  @keyframes shake { 0%, 100% { transform: rotate(-2deg) scale(1); } 50% { transform: rotate(2deg) scale(1.06); } }
+  @keyframes slam { from { transform: scale(2.2); opacity: 0; } }
+  @keyframes flash { from { filter: none; transform: scale(1); } to { filter: brightness(1.5) saturate(1.4); transform: scale(1.1); } }
+  @keyframes thump { 0% { transform: scale(1); } 20% { transform: scale(1.12); } 40% { transform: scale(1.05); } 60% { transform: scale(1.18); } 80% { transform: scale(1.1); } 100% { transform: scale(1.24); } }
+  @media (prefers-reduced-motion: reduce) { .loud .brand, .loud .cta, .loud .line { animation: none; } .loud .film { animation-name: drift; } }
+  .legal { margin: 0; font-size: .7rem; opacity: .85; letter-spacing: .02em; }
   .fine { margin: 0; opacity: .9; font-size: .9rem; }
   .get { min-width: 220px; font-size: 1.15rem; box-shadow: 0 4px 0 rgb(0 0 0 / .4); }
 </style>
