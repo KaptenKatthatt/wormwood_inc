@@ -59,17 +59,27 @@ export interface AudioSettings { music: boolean; ambience: boolean; sfx: boolean
 export const audioSettings = writable<AudioSettings>({ music: true, ambience: true, sfx: true, ...load<Partial<AudioSettings>>('audio', {}) });
 audioSettings.subscribe((s) => save('audio', s));
 
-const LEVEL = { music: 0.45, ambience: 0.35, sfx: 0.8 };
+/**
+ * Levels into the master chain. Jonas found everything quiet on the phone
+ * (2026-11-19): the music played 20 dB under full level, and the effects
+ * could not go higher without clipping when several sounded at once. The
+ * master chain below (boost, compressor, soft clip) lets the whole mix sit
+ * about 10 dB higher and never clip.
+ */
+const LEVEL = { music: 0.6, ambience: 0.45, sfx: 1.2 };
+const MASTER = { boost: 3, headroom: 1.25, drive: 2 };
+const LATENCY = 'balanced' as const;
 /**
  * Tracks that play louder than the common music level. The title tune plays
  * alone, with no game sounds around it, and Jonas found it very quiet in the
- * test app (2026-11-19), so it gets twice the level. "Julmarknad" is lifted to
+ * test app (2026-11-19), so it sits a little above the rest. "Julmarknad" is lifted to
  * sit level with the Christmas melodies it takes turns with.
  */
-const TRACK_GAIN: Partial<Record<string, number>> = { title: 2, 'world-5': 1.3 };
+const TRACK_GAIN: Partial<Record<string, number>> = { title: 1.3, 'world-5': 1.3 };
 
 let ctx: AudioContext | null = null;
 let musicGain: GainNode, ambienceGain: GainNode, sfxGain: GainNode;
+let master: AudioNode;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 let ext = 'mp3';
 
@@ -102,18 +112,54 @@ function buffer(path: string): Promise<AudioBuffer | null> {
   return p;
 }
 
+/**
+ * Everything the game plays goes through here: a boost, a compressor that holds
+ * the loud moments down, and a soft clip that keeps the sum under full level
+ * however many sounds play at once (hard clipping crackles).
+ */
+function buildMaster(c: AudioContext): AudioNode {
+  const boost = c.createGain();
+  boost.gain.value = MASTER.boost;
+  const comp = c.createDynamicsCompressor();
+  comp.threshold.value = -20;
+  comp.knee.value = 8;
+  comp.ratio.value = 10;
+  comp.attack.value = 0.004;
+  comp.release.value = 0.15;
+  const pre = c.createGain();
+  pre.gain.value = 1 / MASTER.headroom;
+  const clip = c.createWaveShaper();
+  const n = 2049;
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) curve[i] = Math.tanh(((i / (n - 1)) * 2 - 1) * MASTER.drive) / Math.tanh(MASTER.drive);
+  clip.curve = curve;
+  clip.oversample = '4x';
+  boost.connect(comp);
+  comp.connect(pre);
+  pre.connect(clip);
+  clip.connect(c.destination);
+  return boost;
+}
+
 /** Creates the audio graph once. A context made before any touch starts suspended
  * unless the browser allows autoplay for the site. */
 function ensureContext(): AudioContext | null {
   if (ctx) return ctx;
   const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;
-  ctx = new AC();
+  // 'balanced' gives the phone a larger audio buffer than the default, so a busy
+  // moment on screen (a rocket going off) does not make the sound stutter.
+  try {
+    ctx = new AC({ latencyHint: LATENCY });
+  } catch {
+    ctx = new AC();
+  }
   ext = pickFormat();
+  master = buildMaster(ctx);
   musicGain = ctx.createGain();
   ambienceGain = ctx.createGain();
   sfxGain = ctx.createGain();
-  for (const g of [musicGain, ambienceGain, sfxGain]) g.connect(ctx.destination);
+  for (const g of [musicGain, ambienceGain, sfxGain]) g.connect(master);
   applyVolumes();
   // Warm the small effects so the first match is not late.
   for (const f of [...Object.values(SFX_FILES), ...Array.from({ length: MATCH_STEPS }, (_, i) => `match-${i}`)]) void buffer(`sfx/${f}`);
@@ -268,7 +314,7 @@ export function playAd(id: string): () => void {
     // Its own gain: the track plays even when only one of music and effects is on.
     const out = audio.createGain();
     out.gain.value = LEVEL.sfx;
-    out.connect(audio.destination);
+    out.connect(master);
     src.connect(out);
     src.start();
   });
