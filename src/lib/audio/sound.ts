@@ -83,6 +83,8 @@ const TRACK_GAIN: Partial<Record<string, number>> = { title: 1.3 };
 let ctx: AudioContext | null = null;
 let musicGain: GainNode, ambienceGain: GainNode, sfxGain: GainNode;
 let master: AudioNode;
+/** The last gain before the speakers: zero while the app is away. */
+let outGain: GainNode | null = null;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 let ext = 'mp3';
 
@@ -141,10 +143,45 @@ function buildMaster(c: AudioContext): AudioNode {
   comp.connect(pre);
   pre.connect(clip);
   const out = c.createGain();
-  out.gain.value = MASTER.out;
+  out.gain.value = away() ? 0 : MASTER.out;
+  outGain = out;
   clip.connect(out);
   out.connect(c.destination);
   return boost;
+}
+
+/** True while the player cannot see the game: another app, the home screen, a locked phone. */
+function away(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState !== 'visible';
+}
+
+/**
+ * Silence the moment the game is left (Jonas, 2026-11-19: the music kept
+ * playing on the phone after he closed the game). Suspending the context alone
+ * was not enough there, so the output is also turned to zero at once, and a
+ * context that starts running again while the game is away is suspended again.
+ */
+function hush(): void {
+  if (!ctx) return;
+  if (outGain) {
+    outGain.gain.cancelScheduledValues(ctx.currentTime);
+    outGain.gain.value = 0;
+  }
+  if (ctx.state !== 'closed') void ctx.suspend().catch(() => undefined);
+}
+
+/** The player is back: sound on again. */
+function unhush(): void {
+  if (away()) return;
+  if (!ctx) {
+    tryAutoplay();
+    return;
+  }
+  if (outGain) {
+    outGain.gain.cancelScheduledValues(ctx.currentTime);
+    outGain.gain.value = MASTER.out;
+  }
+  if (ctx.state !== 'closed') void ctx.resume().catch(() => undefined);
 }
 
 /** Creates the audio graph once. A context made before any touch starts suspended
@@ -161,6 +198,7 @@ function ensureContext(): AudioContext | null {
     ctx = new AC();
   }
   ext = pickFormat();
+  ctx.addEventListener('statechange', () => { if (ctx?.state === 'running' && away()) hush(); });
   master = buildMaster(ctx);
   musicGain = ctx.createGain();
   ambienceGain = ctx.createGain();
@@ -176,7 +214,8 @@ function ensureContext(): AudioContext | null {
 function unlock(): void {
   const c = ensureContext();
   if (!c) return;
-  if (c.state === 'suspended' && document.visibilityState === 'visible') void c.resume();
+  if (away()) return;
+  if (c.state === 'suspended') void c.resume();
   void syncMusic();
   void syncAmbience();
 }
@@ -381,14 +420,13 @@ export function initSound(): void {
     const el = (e.target as Element | null)?.closest?.('button');
     if (el && !el.closest('[data-no-click-sound]')) play('click');
   }, { capture: true });
-  document.addEventListener('visibilitychange', () => {
-    if (!ctx) {
-      tryAutoplay();
-      return;
-    }
-    if (document.visibilityState === 'hidden') void ctx.suspend();
-    else void ctx.resume();
-  });
+  document.addEventListener('visibilitychange', () => (away() ? hush() : unhush()));
+  // Not every way of leaving reports a visibility change in time: closing the
+  // app from the task list, or the phone freezing the page.
+  window.addEventListener('pagehide', hush);
+  document.addEventListener('freeze', hush);
+  window.addEventListener('pageshow', unhush);
+  document.addEventListener('resume', unhush);
   audioSettings.subscribe(() => {
     applyVolumes();
     void syncMusic();
