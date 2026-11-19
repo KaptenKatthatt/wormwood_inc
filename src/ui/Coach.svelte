@@ -21,12 +21,31 @@
     return sel ? document.querySelector(sel) : null;
   }
 
+  /**
+   * Keeps the ring inside the list its target scrolls in (Jonas, 2026-11-19: scrolling the build
+   * list sent the ring up over the heading). The ring is cut at the list's edge, like the row itself.
+   */
+  let clip = $state('');
+  function clipOf(el: Element, r: DOMRect): string {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      const o = getComputedStyle(p).overflowY;
+      if (o !== 'auto' && o !== 'scroll') continue;
+      const b = p.getBoundingClientRect();
+      // the ring is 6 px wider than its target on every side
+      const top = Math.max(0, b.top - (r.top - 6)), bottom = Math.max(0, r.bottom + 6 - b.bottom);
+      if (top === 0 && bottom === 0) return '';
+      return `clip-path: inset(${top}px 0 ${bottom}px 0);`;
+    }
+    return '';
+  }
+
   function track() {
     const el = targetEl();
     const r = el?.getBoundingClientRect() ?? null;
     rect = r && r.width > 0 ? r : null;
     const h = rect ? el?.closest('[role="dialog"]')?.getBoundingClientRect() ?? null : null;
     host = h && h.width > 0 ? h : null;
+    clip = rect && el ? clipOf(el, rect) : '';
     frame = requestAnimationFrame(track);
   }
 
@@ -54,10 +73,10 @@
   });
   const lit = $derived(step?.hint && spot ? spot : null);
   const dim = $derived(step?.id === 'swap');
-  // The practice sign is small and keeps one place, just under the board, so it never covers
-  // the goal or the tiles and does not jump about between moves.
+  // The practice sign is small and keeps one place, just above the board (Jonas, 2026-11-19),
+  // so it never covers the tiles and does not jump about between moves.
   const practice = $derived(step?.repeat !== undefined);
-  const practiceStyle = $derived(rect ? `top: ${Math.min(window.innerHeight - 84, rect.bottom + 8)}px;` : 'bottom: 96px;');
+  const practiceStyle = $derived(rect ? `bottom: ${window.innerHeight - rect.top + 6}px;` : 'top: 180px;');
   // The first sign sits in the middle of the screen with everything but the two tiles dimmed
   // (Jonas, 2026-11-19); it moves just above or below the tiles if it would cover them.
   const BUBBLE_H = 150;
@@ -111,7 +130,7 @@
   {:else if lit}
     <div class="ring dim" style:top={`${lit.top - 4}px`} style:left={`${lit.left - 4}px`} style:width={`${lit.width + 8}px`} style:height={`${lit.height + 8}px`} aria-hidden="true"></div>
   {:else if rect}
-    <div class="ring" class:big class:lit={host !== null} style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
+    <div class="ring" class:big class:lit={host !== null} style={clip} style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
   {/if}
   <div class="bubble" class:small={practice} class:below class:floating={big && !lit && !practice} style={practice ? practiceStyle : lit ? midStyle : big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
     <h2 id="coach-title">{step.title}</h2>
