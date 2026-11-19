@@ -7,7 +7,27 @@ import { DEV_MENU } from '../config/flags';
  */
 import { load, randomId, save } from '../state/storage';
 
-interface LogEvent { t: number; gameT?: number; name: string; data?: Record<string, unknown> }
+/** What every event carries, so that one line can be analysed on its own. */
+export interface LogContext {
+  /** Day of the test: 1 on the first day the game was opened. */
+  day: number;
+  /** Minutes of game time since the introduction ended. */
+  min: number;
+  /** The hook staircase's step. */
+  step: number;
+  /** Challenges won at least once. */
+  won: number;
+}
+
+interface LogEvent {
+  t: number; gameT?: number; name: string; data?: Record<string, unknown>;
+  /** The player's event number, counting up over every session, so lost or doubled events show. */
+  seq: number;
+  /** The app version that made the event. */
+  v: string;
+  site: 'test' | 'dev';
+  ctx?: LogContext;
+}
 
 const session = randomId();
 let queue: LogEvent[] = load('logQueue', []);
@@ -15,11 +35,14 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let consent = (): boolean => false;
 let pid = (): string => '';
 let gameTime = (): number | undefined => undefined;
+let context = (): LogContext | undefined => undefined;
+let seq: number = load('logSeq', 0);
 
-export function initLogger(opts: { consent: () => boolean; playerId: () => string; gameTime: () => number }): void {
+export function initLogger(opts: { consent: () => boolean; playerId: () => string; gameTime: () => number; context?: () => LogContext }): void {
   consent = opts.consent;
   pid = opts.playerId;
   gameTime = opts.gameTime;
+  if (opts.context) context = opts.context;
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flush(true);
   });
@@ -40,7 +63,11 @@ export function log(name: string, data?: Record<string, unknown>): void {
   if (import.meta.env.DEV) console.debug('[log]', name, data ?? '');
   // Events from the playtest build are marked too (the server also files the two sites apart).
   if (!DEV_MENU) data = { ...data, build: 'test' };
-  queue.push({ t: Date.now(), gameT: gameTime(), name, data });
+  let ctx: LogContext | undefined;
+  try { ctx = context(); } catch { /* the context must never stop the log */ }
+  seq += 1;
+  save('logSeq', seq);
+  queue.push({ t: Date.now(), gameT: gameTime(), name, data, seq, v: __APP_VERSION__, site: DEV_MENU ? 'dev' : 'test', ctx });
   if (queue.length > 500) queue = queue.slice(-500);
   save('logQueue', queue);
   // Send at most every 5 s, and at once when many events are waiting.

@@ -3,7 +3,7 @@ import { keepUpdated } from './lib/pwa/update';
 import App from './App.svelte';
 import { testCode } from './lib/testCode';
 import './app.css';
-import { cancelAwayPushes, clock, daily, markSeen, minutesIn, offerCalendar, playerId, restartHookClock, scheduleAwayPushes, settings, tick, welcomeBack } from './lib/state/game';
+import { cancelAwayPushes, clock, daily, levelStats, markSeen, stairs, minutesIn, offerCalendar, playerId, restartHookClock, scheduleAwayPushes, settings, tick, welcomeBack } from './lib/state/game';
 import { dayKey, daysBetween } from './lib/daily';
 
 import { onTutorialFinish, startTutorial, tutorialDone } from './lib/tutorial';
@@ -19,7 +19,15 @@ import { scheduleQuestionnairePush } from './lib/state/questionnaire';
 window.addEventListener('pagehide', () => log('pagehide', { minutesIn: minutesIn() }));
 // Sound first, so it hears the events below. It stays silent until the first touch.
 initSoundDirector(location.hash.slice(1) || 'pussel');
-initLogger({ consent: () => get(settings).logging === true, playerId: () => playerId, gameTime: () => clock.now() });
+initLogger({
+  consent: () => get(settings).logging === true, playerId: () => playerId, gameTime: () => clock.now(),
+  context: () => ({
+    day: daysBetween(get(daily).firstDay, dayKey(clock.now())) + 1,
+    min: minutesIn(),
+    step: get(stairs).step,
+    won: Object.values(get(levelStats)).filter((l) => l.wins > 0).length,
+  }),
+});
 listenForInstall();
 
 // The clock ticks every second while open; when the page comes back after

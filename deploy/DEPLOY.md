@@ -40,3 +40,14 @@ One file per day, one JSON object per line:
 tail -f /var/lib/wormwood/logs/$(date -u +%F).ndjson      # the playtest site (the study's data)
 tail -f /var/lib/wormwood/logs/dev/$(date -u +%F).ndjson  # the dev site
 ```
+
+Every event line carries the site the server saw (`site`), the app version
+(`v`), the player's own event number (`seq`, holes mean lost events) and the
+player's place in the test (`ctx`: test day, minutes in, hook step, challenges
+won). To get tables for the analysis (one row per player, one per player and
+hook, and every event flat):
+
+```bash
+node /opt/wormwood/app/tools/log-report.mjs /var/lib/wormwood/logs /var/lib/wormwood/report
+```
+

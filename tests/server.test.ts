@@ -85,8 +85,20 @@ describe('server', () => {
     const test = (await readFile(join(dataDir, 'logs', files[0]), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
     expect(test).toHaveLength(1);
     expect(test[0]).toMatchObject({ playerId: 'abcdefgh1234', name: 'start', data: { a: 1 } });
+    // Events from before 0.26.11 carry no version, number or context.
+    expect(test[0]).toMatchObject({ site: 'test', seq: null, v: null, ctx: null });
     const [devFile] = await readdir(join(dataDir, 'logs', 'dev'));
     expect(JSON.parse((await readFile(join(dataDir, 'logs', 'dev', devFile), 'utf8')).trim())).toMatchObject({ playerId: 'devdevdev123', name: 'devstart' });
+  });
+
+  it('keeps the version, the event number and the context on every line', async () => {
+    const e = { t: 5, name: 'hook', seq: 7, v: '0.26.11', site: 'test', ctx: { day: 2, min: 12.5, step: 3, won: 4, extra: 'x' }, data: { hook: 'ad' } };
+    expect(await postHost('dev.skargardsbyn.84.247.143.6.sslip.io', '/api/log', { playerId: 'ctxctxctx123', session: 's3', events: [e] })).toBe(200);
+    const dir = join(dataDir, 'logs', 'dev');
+    const lines = (await Promise.all((await readdir(dir)).map((f) => readFile(join(dir, f), 'utf8')))).join('').trim().split('\n').map((l) => JSON.parse(l));
+    // The site is the one the server saw, not the one the event claims.
+    expect(lines.find((l) => l.playerId === 'ctxctxctx123')).toMatchObject({ site: 'dev', seq: 7, v: '0.26.11', ctx: { day: 2, min: 12.5, step: 3, won: 4 }, name: 'hook' });
+    expect(lines.find((l) => l.playerId === 'ctxctxctx123').ctx.extra).toBeUndefined();
   });
 
   it('rejects bad player ids', async () => {

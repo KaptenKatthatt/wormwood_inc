@@ -250,21 +250,29 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
       // { playerId, session, events: [{ t, name, data }] }
       if (!validId(body.playerId) || !Array.isArray(body.events)) return json(res, 400, { error: 'fel format' });
       const received = now();
+      // Dev and test are kept apart (Jonas, 2026-11-18): the playtest site's
+      // events are the study's data in logs/, the dev site's go to logs/dev/.
+      const testSite = isTestHost(String(req.headers.host ?? ''));
+      // Every line stands on its own for the analysis (Jonas, 2026-11-19): the
+      // site the server saw, the version, the player's event number and the
+      // player's place in the test (ctx).
+      const num = (/** @type {unknown} */ x) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
       const lines = body.events.slice(0, 200).map((/** @type {any} */ e) =>
         JSON.stringify({
           received,
+          site: testSite ? 'test' : 'dev',
           playerId: body.playerId,
           session: text(body.session, 64),
-          t: typeof e?.t === 'number' ? e.t : null,
-          gameT: typeof e?.gameT === 'number' ? e.gameT : null,
+          seq: num(e?.seq),
+          v: text(e?.v, 24) || null,
+          t: num(e?.t),
+          gameT: num(e?.gameT),
           name: text(e?.name, 64),
+          ctx: e?.ctx && typeof e.ctx === 'object' ? { day: num(e.ctx.day), min: num(e.ctx.min), step: num(e.ctx.step), won: num(e.ctx.won) } : null,
           data: e?.data && typeof e.data === 'object' ? e.data : null,
         }),
       );
       const day = new Date(received).toISOString().slice(0, 10);
-      // Dev and test are kept apart (Jonas, 2026-11-18): the playtest site's
-      // events are the study's data in logs/, the dev site's go to logs/dev/.
-      const testSite = isTestHost(String(req.headers.host ?? ''));
       const logDir = testSite ? join(dataDir, 'logs') : join(dataDir, 'logs', 'dev');
       await mkdir(logDir, { recursive: true });
       await appendFile(join(logDir, `${day}.ndjson`), lines.join('\n') + '\n');
