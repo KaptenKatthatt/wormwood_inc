@@ -4,11 +4,13 @@
    * three scenes, with a bar that runs from one side of the screen to the
    * other while it plays (Jonas, 2026-11-19), then the reward.
    */
-  import { adClosed, adOpen, adWatched } from '../lib/state/expansion';
+  import { adClosed, adGroup, adOpen, adWatched } from '../lib/state/expansion';
   import { AD_SECONDS, nextAd } from '../lib/expansion/social';
+  import { get } from 'svelte/store';
   import { log } from '../lib/log/logger';
 
-  const ad = nextAd();
+  // The film was picked when the ad was offered, from the player's group.
+  const ad = get(adOpen)?.ad ?? nextAd(adGroup());
   /** Seconds played. Driven by the clock, so the bar also runs in calm mode. */
   let t = $state(0);
   $effect(() => {
@@ -19,7 +21,7 @@
       if (t < AD_SECONDS) frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
-    log('ad_shown', { ad: ad.id });
+    log('ad_shown', { ad: ad.id, adGroup: adGroup() });
     return () => cancelAnimationFrame(frame);
   });
   const left = $derived(Math.ceil(AD_SECONDS - t));
@@ -37,7 +39,7 @@
     <span class="tag">Reklam</span>
     {#if !done}
       <span class="count" aria-live="off">{left}</span>
-      <button class="close" data-no-click-sound onclick={adClosed} aria-label="Stäng reklamen utan belöning">✕</button>
+      <button class="close" data-no-click-sound onclick={() => adClosed(t)} aria-label="Stäng reklamen utan belöning">✕</button>
     {/if}
   </div>
   <div class="mark">

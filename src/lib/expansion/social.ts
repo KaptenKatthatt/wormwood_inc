@@ -158,9 +158,25 @@ export const ADS: AdFilm[] = [
   { id: 'fyndo', brand: 'Fyndo', kicker: 'Shoppingappen', scenes: ['ALLT för 9 kronor!!', '90 % rabatt, bara i dag!', 'Erbjudandet går ut om 59 sekunder'], cta: 'HANDLA NU', accent: '#ffe600', ink: '#b3001b', loud: true },
   { id: 'kungarskrig', brand: 'Kungars Krig', kicker: 'Strategispel', scenes: ['Bara 1 % klarar nivå 5!', 'Din borg brinner. Vad gör DU?', 'Ladda ner och bevisa det!'], cta: 'SPELA GRATIS', accent: '#c81e1e', ink: '#ffffff', loud: true },
 ];
-/** The films take turns, starting anywhere, so a player who watches four sees them all. */
+/**
+ * Two groups of players (Jonas, 2026-11-19): one only ever sees the four calm
+ * films that suit the game, the other only the four loud ones, so the log can
+ * show what the kind of advertising does. 'all' is for looking at them in dev.
+ */
+export type AdGroup = 'calm' | 'loud';
+/** The group follows from the player id, so it never changes for a player and splits players about evenly. */
+export function adGroupFor(playerId: string): AdGroup {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < playerId.length; i++) h = Math.imul(h ^ playerId.charCodeAt(i), 0x01000193) >>> 0;
+  return ((h >>> 7) & 1) === 0 ? 'calm' : 'loud';
+}
+export function adsFor(group: AdGroup | 'all'): AdFilm[] {
+  return group === 'all' ? ADS : ADS.filter((a) => Boolean(a.loud) === (group === 'loud'));
+}
+/** The films of the group take turns, starting anywhere, so a player who watches four sees them all. */
 let adTurn = Math.floor(Math.random() * ADS.length);
-export function nextAd(): AdFilm {
-  adTurn = (adTurn + 1) % ADS.length;
-  return ADS[adTurn];
+export function nextAd(group: AdGroup | 'all' = 'all'): AdFilm {
+  const films = adsFor(group);
+  adTurn = (adTurn + 1) % films.length;
+  return films[adTurn];
 }

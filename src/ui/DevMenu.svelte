@@ -8,7 +8,8 @@
   import { challengeNo } from '../lib/state/game';
   import { TOTAL_CHALLENGES, WORLDS, worldOf } from '../lib/match3/levels';
   import { WEEK_STEPS, type WeekStep } from '../lib/expansion/week';
-  import { devWeekStep, exp, testDay } from '../lib/state/expansion';
+  import { adGroupChoice, devWeekStep, exp, testDay } from '../lib/state/expansion';
+  import { adGroupFor } from '../lib/expansion/social';
   import { EXPANSION_HOOKS } from '../lib/hooks';
   const tday = $derived.by(() => { void $now; void $daily; return testDay(); });
   /** Dev only (Jonas, 2026-11-18): switch freely between the worlds without moving the week staircase. */
@@ -89,6 +90,18 @@
       <button class="ghost" onclick={devMissDay}>Missa en dag (sviten bryts)</button>
     </div>
   </fieldset>
+  {#if EXPANSION}
+  <fieldset>
+    <legend>Reklamfilmer</legend>
+    <p>Det här spelar-id:t hör till gruppen {adGroupFor(playerId) === 'calm' ? 'lugna' : 'skrikiga'}. Testpersoner får alltid sin grupp.</p>
+    {#each [[null, 'Min grupp'], ['calm', 'Bara de lugna'], ['loud', 'Bara de skrikiga'], ['all', 'Alla åtta']] as [g, name]}
+      <label class="row">
+        <input type="radio" name="adgroup" checked={$adGroupChoice === g} onchange={() => adGroupChoice.set(g as 'calm' | 'loud' | 'all' | null)} />
+        <span><strong>{name}</strong></span>
+      </label>
+    {/each}
+  </fieldset>
+  {/if}
 
   {#if CHRISTMAS}
     <fieldset>

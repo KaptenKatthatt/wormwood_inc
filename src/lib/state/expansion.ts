@@ -6,7 +6,7 @@
  * before. Every hook moment is logged with logHook, like the first pass.
  */
 import { get, writable } from 'svelte/store';
-import { EXPANSION } from '../config/flags';
+import { DEV_MENU, EXPANSION } from '../config/flags';
 import { HOUR } from '../time/clock';
 import { makeRng } from '../match3/rng';
 import { worldOf, WORLDS } from '../match3/levels';
@@ -18,7 +18,7 @@ import { tutorialActive } from '../tutorial';
 import type { HookId } from '../hooks';
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor, type WeekStep } from '../expansion/week';
 import {
-  ADS_PER_DAY, ALBUM_REWARD, ALBUM_SIZE, GOLD_PASS_GEMS, HELP_COOLDOWN, HELP_DELAY, LEAGUE_DAYS, LEAGUE_PRIZES, PASS_DAYS,
+  ADS_PER_DAY, adGroupFor, nextAd, type AdFilm, type AdGroup, ALBUM_REWARD, ALBUM_SIZE, GOLD_PASS_GEMS, HELP_COOLDOWN, HELP_DELAY, LEAGUE_DAYS, LEAGUE_PRIZES, PASS_DAYS,
   SET_REWARD, drawSticker, helpLives, leagueRank, leagueTable, passReward, passTier, passXp, setComplete, stickerName, type PassReward,
 } from '../expansion/social';
 import {
@@ -83,7 +83,14 @@ exp.subscribe((s) => save('expansion', s));
 
 /** Overlays the expansion opens. */
 export const hubOpen = writable<null | 'liga' | 'pass' | 'album' | 'kistor' | 'hjul' | 'kampar'>(null);
-export const adOpen = writable<null | { reward: 'life' | 'double'; gold?: number }>(null);
+export const adOpen = writable<null | { reward: 'life' | 'double'; gold?: number; ad: AdFilm }>(null);
+/** Which films this player gets. The dev menu can override the group the player id gives. */
+export const adGroupChoice = writable<AdGroup | 'all' | null>(load('adGroup', null));
+adGroupChoice.subscribe((g) => save('adGroup', g));
+export function adGroup(): AdGroup | 'all' {
+  // Without the dev menu (the test build) nothing can override the group.
+  return (DEV_MENU ? get(adGroupChoice) : null) ?? adGroupFor(playerId);
+}
 /** The reward animation after a watched ad film (Jonas, 2026-11-19): the gold doubles on screen. */
 export const adReward = writable<null | { reward: 'life' | 'double'; gold: number }>(null);
 export const offerShown = writable<null | ReturnType<typeof personalOffer>>(null);
@@ -314,8 +321,9 @@ export function adsLeft(): number {
 
 export function offerAd(reward: 'life' | 'double', gold = 0): void {
   if (!weekOn('ads') || adsLeft() <= 0) return;
-  adOpen.set({ reward, gold });
-  logHook('ads', { reward }, 'yes');
+  const ad = nextAd(adGroup());
+  adOpen.set({ reward, gold, ad });
+  logHook('ads', { reward, ad: ad.id, adGroup: adGroup() }, 'yes');
 }
 
 export function adWatched(): void {
@@ -325,13 +333,15 @@ export function adWatched(): void {
   exp.update((x) => ({ ...x, ads: { day: today, count: (x.ads.day === today ? x.ads.count : 0) + 1 } }));
   if (a.reward === 'life') lives.update((l) => { const s = settleLives(l, now()); return { ...s, count: Math.min(s.max, s.count + 1) }; });
   else addGold(a.gold ?? 0);
-  log('ad_watched', { reward: a.reward, gold: a.gold });
+  log('ad_watched', { reward: a.reward, gold: a.gold, ad: a.ad.id, adGroup: adGroup() });
   adOpen.set(null);
   adReward.set({ reward: a.reward, gold: a.gold ?? 0 });
 }
 
-export function adClosed(): void {
-  logHook('ads', { closedEarly: true }, 'no');
+/** Closed before the end, without the reward: how far the player got is what the two groups are compared on. */
+export function adClosed(secondsWatched = 0): void {
+  const a = get(adOpen);
+  logHook('ads', { closedEarly: true, reward: a?.reward, ad: a?.ad.id, adGroup: adGroup(), secondsWatched: Math.round(secondsWatched * 10) / 10 }, 'no');
   adOpen.set(null);
 }
 

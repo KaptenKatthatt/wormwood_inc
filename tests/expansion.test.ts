@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_LEVELS, CHALLENGE_COUNT, LEVELS, TOTAL_CHALLENGES, WORLDS, levelAt, makeChallenge, worldOf } from '../src/lib/match3/levels';
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor } from '../src/lib/expansion/week';
+import { ADS, adGroupFor, adsFor, nextAd } from '../src/lib/expansion/social';
 import { ALBUM_SIZE, drawSticker, leagueRank, leagueTable, passReward, passTier, setComplete } from '../src/lib/expansion/social';
 import { PITY_HARD, WHEEL, drawChampion, legendaryChance, nearJackpot, openChest, spinWheel } from '../src/lib/expansion/luck';
 import { ERA_FACTOR, NEIGHBOURS, activeHelpers, battle, neighbourDefence, personalOffer, storehouse, vipTier } from '../src/lib/expansion/conquest';
@@ -175,6 +176,29 @@ describe('the world maps', () => {
         expect(y).toBeLessThan(5632 - 60);
       }
       for (let i = 1; i < list.length; i++) expect(Math.hypot(list[i][0] - list[i - 1][0], list[i][1] - list[i - 1][1])).toBeGreaterThan(90);
+    }
+  });
+});
+
+describe('ad films in two groups', () => {
+  it('has four calm and four loud films, and a picture for each', async () => {
+    const { existsSync } = await import('node:fs');
+    expect(adsFor('calm').map((a) => a.id)).toEqual(['barplock', 'nordanvind', 'vassen', 'fiskelyckan']);
+    expect(adsFor('loud')).toHaveLength(4);
+    expect(adsFor('loud').every((a) => a.loud)).toBe(true);
+    for (const a of ADS) expect(existsSync(`public/art/ads/${a.id}.webp`), a.id).toBe(true);
+  });
+  it('gives a player the same group every time and splits players about evenly', () => {
+    expect(adGroupFor('abc123')).toBe(adGroupFor('abc123'));
+    const loud = Array.from({ length: 400 }, (_, i) => adGroupFor(`player-${i * 7919}`)).filter((g) => g === 'loud').length;
+    expect(loud).toBeGreaterThan(160);
+    expect(loud).toBeLessThan(240);
+  });
+  it('only shows films from the group, and all four in four showings', () => {
+    for (const g of ['calm', 'loud'] as const) {
+      const seen = new Set(Array.from({ length: 4 }, () => nextAd(g).id));
+      expect(seen.size).toBe(4);
+      expect([...seen].every((id) => adsFor(g).some((a) => a.id === id))).toBe(true);
     }
   });
 });
