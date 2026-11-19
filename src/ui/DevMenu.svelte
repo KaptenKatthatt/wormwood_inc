@@ -18,10 +18,11 @@
     toast(`Hoppade till utmaning ${n} (${worldOf(n).name})`);
   }
   let pick = $state(1);
-  import { CHRISTMAS } from '../lib/config/flags';
-  import { devAskQuestionnaire, devResetQuestionnaire, devStudyEnd, qState } from '../lib/state/questionnaire';
+  import { CHRISTMAS } from '../lib/config/flags'  import { devAskQuestionnaire, devResetQuestionnaire, devStudyEnd, qState } from '../lib/state/questionnaire';
   import { DUE_DAY, STUDY_END } from '../lib/questionnaire';
-  import { devXmasDate, xmas, xmasDate, xmasDay } from '../lib/state/christmas';
+  import { devXmasDate, forcedLook, villageLook, xmas, xmasDate, xmasDay } from '../lib/state/christmas';
+  import { LOOKS } from '../lib/season';
+  const look = $derived.by(() => { void $now; void $xmasDate; void $forcedLook; return villageLook(); });
   const xday = $derived.by(() => { void $now; void $daily; void $settings; void $xmasDate; return xmasDay(); });
 
   const mins = $derived.by(() => { void $now; return minutesIn(); });
@@ -115,6 +116,13 @@
         {/each}
         <button class="ghost" disabled={!$xmasDate} onclick={() => devXmasDate(null)}>Riktigt datum</button>
         <button class="ghost" onclick={() => xmas.update((s) => ({ ...s, cookies: s.cookies + 100 }))}>+100 🍪</button>
+      </div>
+      <p>Byns utseende nu: {LOOKS.find((l) => l.id === look)?.name}. Sommar till 30/11, A 1-7/12, B från 8/12, C när solen är nere i Eslöv.</p>
+      <div class="buttons">
+        <button class="ghost" aria-pressed={$forcedLook === 'auto'} onclick={() => forcedLook.set('auto')}>Efter datum och sol</button>
+        {#each LOOKS as l}
+          <button class="ghost" aria-pressed={$forcedLook === l.id} onclick={() => forcedLook.set(l.id)}>{l.name}</button>
+        {/each}
       </div>
     </fieldset>
   {/if}
