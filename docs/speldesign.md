@@ -137,9 +137,9 @@ Skylten "Skärgårdsbyn" och Spela-knappen är ritade i kod, och skärmen visar 
 
 ### Julen i Skärgårdsbyn (1–24 december)
 
-**Adventskalendern.** En lucka om dagen. Varje lucka ger 20 pepparkakor och en liten gåva: 100–300 guld, ett liv eller, i lucka 6, 13 och 20, en ädelsten. En missad lucka kan öppnas i efterhand för 5 ädelstenar. Luckor från dagar innan spelaren började räknas också som missade. Lucka 24 ger stjärnan till julgranens topp, och den går inte att få på annat sätt.
+**Adventskalendern.** En lucka om dagen. Varje lucka ger 30 pepparkakor och en liten gåva: 100–300 guld, ett liv eller, i lucka 6, 13 och 20, en ädelsten. En missad lucka kan öppnas i efterhand för 3 ädelstenar. Luckor från dagar innan spelaren började räknas också som missade. Lucka 24 ger stjärnan till julgranens topp, och den går inte att få på annat sätt.
 
-**Pepparkakor.** Julvalutan. En vunnen utmaning ger 5 pepparkakor plus 1 per stjärna. Den som saknar pepparkakor kan fylla på med ädelstenar, 10 pepparkakor per ädelsten.
+**Pepparkakor.** Julvalutan. En vunnen utmaning ger 10 pepparkakor plus 2 per stjärna. Den som saknar pepparkakor kan fylla på med ädelstenar, 15 pepparkakor per ädelsten.
 
 **Julpynt till byn.** Pyntet köps för pepparkakor och syns i byn:
 
@@ -151,9 +151,9 @@ Skylten "Skärgårdsbyn" och Spela-knappen är ritade i kod, och skärmen visar 
 | Halmbock på torget | 250 |
 | Julgran på torget | 400 |
 
-Pyntlistan är inte godkänd av Jonas: marschaller och halmbock ersatte adventsstjärnor i fönstren och snö på taken när grafiken målades, och Jonas har inte sagt ja till bytet (2026-11-19). Siffrorna är inte heller godkända.
+Pyntlistan är inte godkänd av Jonas: marschaller och halmbock ersatte adventsstjärnor i fönstren och snö på taken när grafiken målades, och Jonas har inte sagt ja till bytet (2026-11-19). 
 
-Allt pynt kostar 920 pepparkakor. En testare som spelar en vecka får ungefär 140 från luckorna och 250–300 från utmaningarna, så allt går inte att få utan att köpa. Det är avsikten.
+Allt pynt kostar 920 pepparkakor. Jonas bad 2026-11-19 om snällare pepparkakor, och siffrorna ovan är de snällare (förut 20 per lucka, 5 plus 1 per stjärna, 5 ädelstenar för en missad lucka och 10 pepparkakor per ädelsten). En testare som spelar en vecka får nu ungefär 210 från luckorna och 500–600 från utmaningarna, alltså det mesta av pyntet på en vecka och allt på två, utan att köpa. Uppskattningen bygger på ungefär 40 vunna utmaningar i veckan.
 
 **Nedräkningen.** En skylt visar "Julmarknaden stänger om X dagar". Efter den 24 december går pyntet inte att köpa. Det som är köpt står kvar.
 
