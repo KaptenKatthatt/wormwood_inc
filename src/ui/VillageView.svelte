@@ -3,6 +3,10 @@
   import { VillageScene, type PlotView } from '../game/VillageScene';
   import { bubble, hookOn, now, pressQuit, purse, skipBuild, skipRepair, stairs, startBuild, timers, topUpAndBuild, topUpOffered, village } from '../lib/state/game';
   import { tutEvent } from '../lib/tutorial';
+  import { CHRISTMAS } from '../lib/config/flags';
+  import { daily, settings } from '../lib/state/game';
+  import { countdownShown, xmas, xmasDate, xmasDay, xmasOpen } from '../lib/state/christmas';
+  import { countdownText } from '../lib/christmas';
   import { onMount } from 'svelte';
   import { BASE_BUILDINGS, BUILDINGS as ALL_BUILDINGS, MAX_LEVEL, buildBlock, buildTime, cleared, priceFor, skipGems, topUpGems } from '../lib/economy/village';
   import { EXPANSION } from '../lib/config/flags';
@@ -27,6 +31,10 @@
     })),
   );
 
+  // Christmas in Skargardsbyn: the sign with the countdown opens the calendar and the market.
+  const xday = $derived.by(() => { void $now; void $settings; void $daily; void $xmasDate; return CHRISTMAS ? xmasDay() : 0; });
+  $effect(() => { if (xday > 0) countdownShown(); });
+
   onMount(() => tutEvent('inVillage'));
   $effect(() => { if (constr) tutEvent('built'); });
   const damaged = $derived($stairs.damaged);
@@ -50,6 +58,11 @@
     {/if}
   </div>
   <div class="panel">
+    {#if xday > 0}
+      <button class="xmas" onclick={() => xmasOpen.set(true)}>🎄 {countdownText(xday)} · 🍪 {$xmas.cookies}</button>
+    {:else if CHRISTMAS && $xmas.decor.length > 0}
+      <button class="xmas" onclick={() => xmasOpen.set(true)}>🎄 Ditt julpynt</button>
+    {/if}
     {#if constr && timer}
       <div class="building">
         <span><strong>{BUILDINGS.find((b) => b.id === constr.id)?.name}</strong> byggs till nivå {constr.toLevel}: {formatDuration(left)} kvar</span>
@@ -114,6 +127,7 @@
   .lvl { color: var(--muted); font-size: .9rem; }
   .fine { color: var(--muted); font-size: .85rem; }
   .why { grid-column: 2; font-size: .8rem; color: var(--muted); text-align: right; }
+  .xmas { background: var(--falu); color: #fff; border: 0; border-radius: 8px; padding: 10px; font: inherit; font-weight: 700; min-height: 44px; }
   .play { margin-top: 4px; }
   .quit { margin-top: 8px; }
   .locked { opacity: .7; }

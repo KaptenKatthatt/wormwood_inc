@@ -137,6 +137,10 @@ export const expansionHooks: {
   goldBonus: () => number;
 } = { onWin: () => {}, onLoss: () => {}, onReset: () => {}, onReturn: () => {}, onAwayPush: () => {}, onTick: () => {}, goldBonus: () => 0 };
 
+/** Others that want to know about a win or a reset (the Christmas event). */
+export const winListeners: ((info: WinInfo) => void)[] = [];
+export const resetListeners: (() => void)[] = [];
+
 /** The last challenge on the road: 40 in the pilot, 200 with the expansion. */
 export const LAST_CHALLENGE = EXPANSION ? TOTAL_CHALLENGES : CHALLENGE_COUNT;
 
@@ -320,6 +324,7 @@ export function levelWon(levelId: number, extra: Record<string, unknown>, stars 
   levelStats.update((s) => ({ ...s, [levelId]: { wins: (s[levelId]?.wins ?? 0) + 1, losses: s[levelId]?.losses ?? 0 } }));
   log('level_won', { level: levelId, gold, gems, weekend, streakBonus, stars, movesLeft, tired, minutesIn: minutesIn(), ...extra });
   expansionHooks.onWin({ level: levelId, stars, gold });
+  for (const f of winListeners) f({ level: levelId, stars, gold });
   return { total: gold + streakBonus, base, finale, starBonus, streakBonus, stars, tired };
 }
 
@@ -454,6 +459,7 @@ export function resetAll(): void {
   save('startedAt', startedAt);
   save('welcomed', false);
   expansionHooks.onReset();
+  for (const f of resetListeners) f();
   tick();
 }
 

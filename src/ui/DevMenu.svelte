@@ -18,6 +18,9 @@
     toast(`Hoppade till utmaning ${n} (${worldOf(n).name})`);
   }
   let pick = $state(1);
+  import { CHRISTMAS } from '../lib/config/flags';
+  import { devXmasDate, xmas, xmasDate, xmasDay } from '../lib/state/christmas';
+  const xday = $derived.by(() => { void $now; void $daily; void $settings; void $xmasDate; return xmasDay(); });
 
   const mins = $derived.by(() => { void $now; return minutesIn(); });
   const dayOn = $derived.by(() => { void $now; void $daily; void $settings; return dayHooksOn(); });
@@ -85,6 +88,25 @@
     </div>
   </fieldset>
 
+  {#if CHRISTMAS}
+    <fieldset>
+      <legend>Julen (1-24 december)</legend>
+      <p>Nu {xday > 0 ? `på, lucka ${xday}` : 'av'}. Pepparkakor {$xmas.cookies}, öppnade luckor {$xmas.opened.length}, pynt {$xmas.decor.length} av 5. Följer dagskrokarna (från dag 2 eller Alltid på). Syns inte i testversionen än.</p>
+      <label class="row">
+        <input type="checkbox" checked={$settings.hooks.christmas} onchange={(e) => setHook('christmas', e.currentTarget.checked)} />
+        <span><strong>Julhändelsen</strong>: adventskalender, pepparkakor, julpynt och nedräkning.</span>
+      </label>
+      <label class="jump">Låtsasdatum <input class="date" type="date" value={$xmasDate ?? ''} onchange={(e) => devXmasDate(e.currentTarget.value)} /></label>
+      <div class="buttons">
+        {#each [['1 dec', '12-01'], ['10 dec', '12-10'], ['24 dec', '12-24'], ['27 dec', '12-27']] as [name, md]}
+          <button class="ghost" onclick={() => devXmasDate(`${new Date($now).getFullYear()}-${md}`)}>{name}</button>
+        {/each}
+        <button class="ghost" disabled={!$xmasDate} onclick={() => devXmasDate(null)}>Riktigt datum</button>
+        <button class="ghost" onclick={() => xmas.update((s) => ({ ...s, cookies: s.cookies + 100 }))}>+100 🍪</button>
+      </div>
+    </fieldset>
+  {/if}
+
   {#if EXPANSION}
     <fieldset>
       <legend>Veckotrappan (utbyggnaden)</legend>
@@ -139,6 +161,7 @@
   .row input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--falu); flex: none; }
   .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .jump { display: flex; align-items: center; gap: 8px; }
+  .jump input.date { width: 11em; }
   .jump input { width: 5.5em; min-height: 44px; font: inherit; padding: 0 8px; }
   button[aria-pressed='true'] { outline: 3px solid var(--falu); }
   dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: .9rem; }

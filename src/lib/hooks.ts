@@ -12,7 +12,9 @@ export type HookId =
   | 'league' | 'askHelp' | 'album' | 'ads' | 'pass'
   | 'chests' | 'wheel' | 'heroes'
   | 'conquest' | 'troops' | 'powerCreep' | 'personalOffer' | 'vip'
-  | 'neighboursNeeded' | 'fakeGifts';
+  | 'neighboursNeeded' | 'fakeGifts'
+  // Christmas in Skargardsbyn, 1-24 December (Jonas, 2026-11-19).
+  | 'christmas';
 
 export const HOOKS: { id: HookId; step: number; name: string; what: string }[] = [
   { id: 'starterHelp', step: 1, name: 'Starthjälp', what: 'Startbidrag i guld och ädelstenar, de två första byggena gratis och klara på sekunder. Gäller från nästa nollställning.' },
@@ -52,6 +54,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'vip', step: 8, name: 'Lojalitetsnivå', what: 'Brons, silver och guld efter köpta kronor, med mer guld per bana. Lexikonet: Lojalitetsprogram och VIP.' },
   { id: 'neighboursNeeded', step: 9, name: 'Grannar krävs', what: 'Vintermarknaden öppnar först med tre grannar som hjälper till, och de vill ha hjälp tillbaka. Lexikonet: Värva vänner.' },
   { id: 'fakeGifts', step: 9, name: 'Gåvor från grannar', what: 'Påhittade grannar skickar gåvor och slår spelarens rekord, som om de vore riktiga spelare. Lexikonet: Falska vänhandlingar.' },
+  { id: 'christmas', step: 0, name: 'Julen i Skärgårdsbyn', what: 'Den 1-24 december: adventskalender med en lucka om dagen (missade luckor kostar 5 ädelstenar), pepparkakor som julvaluta, julpynt till byn och en nedräkning till att julmarknaden stänger. Datumet ställs under Julen här i menyn.' },
 ];
 
 /** The hooks that belong to the expansion (off in builds without it). */

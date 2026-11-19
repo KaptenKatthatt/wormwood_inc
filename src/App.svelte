@@ -25,6 +25,9 @@
   import FriendNote from './ui/FriendNote.svelte';
   import IntroScreen from './ui/IntroScreen.svelte';
   import StreakRepair from './ui/StreakRepair.svelte';
+  import Christmas from './ui/Christmas.svelte';
+  import { xmasOpen } from './lib/state/christmas';
+  import { CHRISTMAS } from './lib/config/flags';
   // The start screen shows each time the app opens (Jonas, 2026-11-18).
   let intro = $state(true);
 
@@ -80,6 +83,7 @@
   </div>
   {#if $offerOpen && !tutStep}<Offer />{/if}
   {#if $awayReport && !tutStep}<AwayReport />{:else if $streakRepair && !tutStep}<StreakRepair />{:else if $calendarOpen && !tutStep}<Calendar />{/if}
+  {#if CHRISTMAS && $xmasOpen && !tutStep}<Christmas />{/if}
   {#if $shopOpen}<Shop />{/if}
   <Coach />
   {#if !tutStep}<Letter />{/if}
