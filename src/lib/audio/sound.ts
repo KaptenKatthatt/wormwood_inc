@@ -46,7 +46,7 @@ for (const w of WORLD_TUNES) MUSIC_FILES[`world-${w}`] = `world-${w}`;
  * "include them all and alternate between them").
  */
 export const WORLD_EXTRA: Readonly<Record<number, readonly string[]>> = {
-  5: ['jingle', 'deck', 'wish', 'staffan', 'gran'],
+  5: ['jingle', 'deck', 'wish', 'staffan', 'ogran'],
 };
 for (const [w, names] of Object.entries(WORLD_EXTRA)) for (const name of names) MUSIC_FILES[`world-${w}-${name}`] = `world-${w}-${name}`;
 /** Cascade steps: match-0 .. match-7 rise through a pentatonic scale. */
@@ -67,7 +67,9 @@ audioSettings.subscribe((s) => save('audio', s));
  * about 10 dB higher and never clip.
  */
 const LEVEL = { music: 0.6, ambience: 0.45, sfx: 1.2 };
-const MASTER = { boost: 3, headroom: 1.25, drive: 2 };
+// out: the level of the finished mix. 0.26.3 was too loud on the phone, so Jonas
+// asked for the top volume 20 % down (2026-11-19).
+const MASTER = { boost: 3, headroom: 1.25, drive: 2, out: 0.8 };
 const LATENCY = 'balanced' as const;
 /**
  * Tracks that play louder than the common music level. The title tune plays
@@ -137,7 +139,10 @@ function buildMaster(c: AudioContext): AudioNode {
   boost.connect(comp);
   comp.connect(pre);
   pre.connect(clip);
-  clip.connect(c.destination);
+  const out = c.createGain();
+  out.gain.value = MASTER.out;
+  clip.connect(out);
+  out.connect(c.destination);
   return boost;
 }
 

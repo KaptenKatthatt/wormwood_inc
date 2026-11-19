@@ -24,7 +24,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
 from compose import ACCORDION, AC_BASS, CELESTA, GLOCK, HARP, HORN, MARIMBA, MUSICBOX, PIZZ, TUBULAR  # noqa: E402
-from midisynth import Song, encode, n  # noqa: E402
+from midisynth import RATE, Song, encode, n  # noqa: E402
 from title_tunes import TRIADS, bass_root, finish, up  # noqa: E402
 
 DRUMS = 9
@@ -115,8 +115,11 @@ STAFFAN = dict(
 )
 
 # O Tannenbaum (traditional German melody, 16th-18th century; "O gran"). F major, 3/4.
+# Jonas 2026-11-19 14.56: slower, and a less sharp sound. So: a calmer tempo, the
+# celesta leads instead of the music box, no glockenspiel on top, softer bells.
 TANNEN = dict(
-    meter=3, bpm=126,
+    soft=True,
+    meter=3, bpm=100,
     mel="""F4:.75 F4:.25 F4:1.5 G4:.5 | A4:.75 A4:.25 A4:1.5 A4:.5 | G4:.5 A4:.5 Bb4:1 E4:1 | G4:1 F4:1 z:.5 C4:.5 |
            F4:.75 F4:.25 F4:1.5 G4:.5 | A4:.75 A4:.25 A4:1.5 A4:.5 | G4:.5 A4:.5 Bb4:1 E4:1 | G4:1 F4:1 z:.5 C5:.5 |
            C5:.5 A4:.5 D5:1.5 C5:.5 | C5:.5 Bb4:.5 Bb4:1.5 Bb4:.5 | Bb4:.5 G4:.5 C5:1.5 Bb4:.5 | Bb4:.5 A4:.5 A4:1 z:.5 C4:.5 |
@@ -146,6 +149,7 @@ def carol(t: dict):
     s.instrument("drums", 0, DRUMS, volume=70, pan=64, reverb=30)
     s.instrument("glock", GLOCK, 10, volume=58, pan=88, reverb=65)
     s.instrument("pizz", PIZZ, 11, volume=58, pan=30, reverb=50)
+    soft = bool(t.get("soft"))
     beat = 0.0
     for kind in t["passes"]:
         full = kind == "full"
@@ -157,12 +161,15 @@ def carol(t: dict):
                 if p is not None:
                     vel = 100 if abs(tt - b0) < 1e-6 else 90
                     if kind in ("box", "full"):
-                        s.note("box", tt, n(p) + 12, d * 0.95, vel)
+                        if soft:  # the celesta is rounder than the music box
+                            s.note("celesta", tt, n(p) + 12, d * 0.98, vel - 4)
+                        else:
+                            s.note("box", tt, n(p) + 12, d * 0.95, vel)
                     if kind in ("acc", "full"):
                         s.note("lead", tt, n(p), d * 0.88, vel - (16 if full else 6))
-                    if kind == "acc" and d >= 1:
+                    if kind == "acc" and d >= 1 and not soft:
                         s.note("glock", tt, n(p) + 24, 0.4, 56)  # a sparkle on the longer notes
-                    if full and d >= 1:
+                    if full and d >= 1 and not soft:
                         s.note("celesta", tt, n(p) + 12, d * 0.9, 62)
                 tt += d
             # which chord sounds on each beat of the bar
@@ -199,17 +206,26 @@ def carol(t: dict):
                     s.note("marimba", b0 + k + 0.5, up(tri[(k + 1) % 3], 2), 0.3, 60 if full else 50)
                     if full:
                         s.note("marimba", b0 + k, up(tri[k % 3], 2), 0.3, 46)
-                s.note("drums", b0 + k, SLEIGH, 0.2, 64 if strong else 50)
-                if kind != "box":
+                s.note("drums", b0 + k, SLEIGH, 0.2, (44 if strong else 32) if soft else (64 if strong else 50))
+                if kind != "box" and not soft:
                     s.note("drums", b0 + k + 0.5, SLEIGH, 0.2, 40)
             if bi % 4 == 0:
-                s.note("drums", b0, TRIANGLE, 0.3, 52)
+                if not soft:
+                    s.note("drums", b0, TRIANGLE, 0.3, 52)
                 if full:
                     s.note("bell", b0, up(TRIADS[chord_on(0)][0], 2), 2.5, 58)
         beat += len(bars) * m
     data, secs = finish(s, beat)
     # The music box has sharp attacks, so the peak-normalised mix comes out quieter than
     # the other worlds' music. Lift it and round the peaks off softly.
+    if soft:
+        # Take the edge off: a gentle low-pass from about 4.5 kHz, done on the spectrum
+        # of the whole loop, so the loop point stays seamless.
+        spec = np.fft.rfft(data.astype(np.float64), axis=0)
+        freq = np.fft.rfftfreq(len(data), 1 / RATE)
+        spec *= (1 / np.sqrt(1 + (freq / 4500.0) ** 4))[:, None]
+        data = np.fft.irfft(spec, n=len(data), axis=0)
+        return (np.tanh(data * 1.6) * 0.85).astype(np.float32), secs
     return (np.tanh(data * 1.7) * 0.85).astype(np.float32), secs
 
 
