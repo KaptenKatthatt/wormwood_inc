@@ -20,6 +20,8 @@ from __future__ import annotations
 import os
 import sys
 
+import numpy as np
+
 sys.path.insert(0, os.path.dirname(__file__))
 from compose import ACCORDION, AC_BASS, CELESTA, GLOCK, HARP, HORN, MARIMBA, MUSICBOX, PIZZ, TUBULAR  # noqa: E402
 from midisynth import Song, encode, n  # noqa: E402
@@ -205,7 +207,10 @@ def carol(t: dict):
                 if full:
                     s.note("bell", b0, up(TRIADS[chord_on(0)][0], 2), 2.5, 58)
         beat += len(bars) * m
-    return finish(s, beat)
+    data, secs = finish(s, beat)
+    # The music box has sharp attacks, so the peak-normalised mix comes out quieter than
+    # the other worlds' music. Lift it and round the peaks off softly.
+    return (np.tanh(data * 1.7) * 0.85).astype(np.float32), secs
 
 
 TUNES = {
