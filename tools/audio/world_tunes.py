@@ -14,6 +14,8 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from compose import ACCORDION, AC_BASS, CELESTA, CLARINET, GLOCK, MARIMBA, MUSICBOX, PIZZ, WOODBLOCK  # noqa: E402
 from midisynth import Song, encode, n  # noqa: E402
+from title_tunes import soften  # noqa: E402
+from midisynth import normalize  # noqa: E402
 from title_tunes import (  # noqa: E402
     CRAB, POLKA, RECORDER, SAIL, TRIADS, WHISTLE, bass_root, finish, halves, melody, up,
 )
@@ -189,14 +191,16 @@ def world(tune: dict, bpm: float, lead: int, lead2: int, groove: str = "pop", oc
                     s.note("anvil", t, "B6", 0.2, 78 if full else 62)
                     s.note("anvil", t, "F#7", 0.2, 50 if full else 40)
                 elif extra == "sleigh":
-                    s.note("drums", t, SLEIGH, 0.2, 62)
-                    s.note("drums", t + off, SLEIGH, 0.2, 44)
-                    if k == 0:
-                        s.note("drums", t, TRIANGLE, 0.3, 50)
+                    # quiet bells on the beat only, no triangle (Jonas 2026-11-19: the
+                    # percussion was sharp and hurt the ears)
+                    s.note("drums", t, SLEIGH, 0.2, 40 if k % 2 == 0 else 30)
                 elif extra == "mill":
                     s.note("wood", t, "A4" if k % 2 == 0 else "E5", 0.15, 58 if k % 2 == 0 else 44)
         beat += 32
-    return finish(s, beat)
+    data, secs = finish(s, beat)
+    if extra == "sleigh":  # the music box and the bells, rounded off
+        data = normalize(soften(data), 0.8)
+    return data, secs
 
 
 TUNES = {
@@ -217,6 +221,10 @@ TUNES = {
     "world5_julmarknad": lambda: world(JUL, 116, RECORDER, ACCORDION, "pop", octave=-1, sparkle=CELESTA, extra="sleigh"),
     "world5_julmarknad_musicbox": lambda: world(JUL, 110, MUSICBOX, RECORDER, "polka", octave=-1, chords=ACCORDION,
                                                 sparkle=CELESTA, extra="sleigh"),
+    # In the game since 2026-11-19 15.01: the celesta leads (rounder than the music box),
+    # the accordion answers, no recorder in the Christmas music.
+    "world5_julmarknad_soft": lambda: world(JUL, 110, CELESTA, ACCORDION, "polka", octave=-1, chords=ACCORDION,
+                                            sparkle=CELESTA, extra="sleigh"),
     "world5_julmarknad_whistle": lambda: world(JUL, 120, WHISTLE, ACCORDION, "pop", octave=-1, sparkle=GLOCK, extra="sleigh"),
 }
 

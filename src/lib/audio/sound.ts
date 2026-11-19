@@ -55,8 +55,9 @@ const MATCH_STEPS = 8;
 /** Jingles that duck the music while they play (seconds). */
 const DUCK: Partial<Record<Sfx, number>> = { win: 4.5, lose: 5.5, buildDone: 3.5, attack: 3, defended: 2.5 };
 
-export interface AudioSettings { music: boolean; ambience: boolean; sfx: boolean }
-export const audioSettings = writable<AudioSettings>({ music: true, ambience: true, sfx: true, ...load<Partial<AudioSettings>>('audio', {}) });
+/** musicVol and sfxVol are the player's own sliders, 0 to 1 (Jonas, 2026-11-19). */
+export interface AudioSettings { music: boolean; ambience: boolean; sfx: boolean; musicVol: number; sfxVol: number }
+export const audioSettings = writable<AudioSettings>({ music: true, ambience: true, sfx: true, musicVol: 1, sfxVol: 1, ...load<Partial<AudioSettings>>('audio', {}) });
 audioSettings.subscribe((s) => save('audio', s));
 
 /**
@@ -77,7 +78,7 @@ const LATENCY = 'balanced' as const;
  * test app (2026-11-19), so it sits a little above the rest. "Julmarknad" is lifted to
  * sit level with the Christmas melodies it takes turns with.
  */
-const TRACK_GAIN: Partial<Record<string, number>> = { title: 1.3, 'world-5': 1.3 };
+const TRACK_GAIN: Partial<Record<string, number>> = { title: 1.3 };
 
 let ctx: AudioContext | null = null;
 let musicGain: GainNode, ambienceGain: GainNode, sfxGain: GainNode;
@@ -196,13 +197,27 @@ function tryAutoplay(): void {
   if (c.state === 'suspended') void c.resume().catch(() => undefined);
 }
 
+/** A slider position as a gain. Squared, so the middle of the slider sounds like half. */
+export function sliderGain(v: number): number {
+  const x = Math.min(1, Math.max(0, Number.isFinite(v) ? v : 1));
+  return x * x;
+}
+function musicLevel(): number {
+  const s = get(audioSettings);
+  return s.music ? LEVEL.music * sliderGain(s.musicVol) : 0;
+}
+function sfxLevel(): number {
+  const s = get(audioSettings);
+  return s.sfx ? LEVEL.sfx * sliderGain(s.sfxVol) : 0;
+}
+
 function applyVolumes(): void {
   if (!ctx) return;
   const s = get(audioSettings);
   const t = ctx.currentTime;
-  musicGain.gain.setTargetAtTime(s.music ? LEVEL.music : 0, t, 0.15);
+  musicGain.gain.setTargetAtTime(musicLevel(), t, 0.15);
   ambienceGain.gain.setTargetAtTime(s.ambience ? LEVEL.ambience : 0, t, 0.15);
-  sfxGain.gain.setTargetAtTime(s.sfx ? LEVEL.sfx : 0, t, 0.05);
+  sfxGain.gain.setTargetAtTime(sfxLevel(), t, 0.05);
 }
 
 function loop(buf: AudioBuffer, out: AudioNode): AudioBufferSourceNode {
@@ -282,8 +297,8 @@ function duck(seconds: number): void {
   const g = musicGain.gain;
   const t = ctx.currentTime;
   g.cancelScheduledValues(t);
-  g.setTargetAtTime(LEVEL.music * 0.25, t, 0.05);
-  g.setTargetAtTime(LEVEL.music, t + seconds, 0.4);
+  g.setTargetAtTime(musicLevel() * 0.25, t, 0.05);
+  g.setTargetAtTime(musicLevel(), t + seconds, 0.4);
 }
 
 async function playFile(path: string, rate = 1): Promise<void> {
@@ -328,7 +343,7 @@ export function playAd(id: string): () => void {
     stopped = true;
     try { src?.stop(); } catch { /* already ended */ }
     g.cancelScheduledValues(audio.currentTime);
-    g.setTargetAtTime(get(audioSettings).music ? LEVEL.music : 0, audio.currentTime, 0.4);
+    g.setTargetAtTime(musicLevel(), audio.currentTime, 0.4);
   };
 }
 

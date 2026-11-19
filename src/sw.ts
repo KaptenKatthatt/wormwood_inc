@@ -17,11 +17,16 @@ cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 // Music and sound effects are not precached (several MB); each file is kept
 // the first time it is played, so sound works offline after that. Rename the
-// cache (audio-v2 …) if a file is replaced under the same name.
+// cache (audio-v3 …) if a file is replaced under the same name; v2 came with
+// the softer Christmas music of 2026-11-19.
+const AUDIO_CACHE = 'audio-v2';
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('audio-') && k !== AUDIO_CACHE).map((k) => caches.delete(k)))));
+});
 registerRoute(
   ({ url }) => url.origin === self.location.origin && url.pathname.startsWith('/audio/'),
   async ({ request }) => {
-    const cache = await caches.open('audio-v1');
+    const cache = await caches.open(AUDIO_CACHE);
     const hit = await cache.match(request);
     if (hit) return hit;
     const res = await fetch(request);

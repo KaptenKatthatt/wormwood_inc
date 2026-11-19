@@ -10,6 +10,7 @@
   import InstallGuide from './InstallGuide.svelte';
   import Credits from './Credits.svelte';
   import { audioSettings } from '../lib/audio/sound';
+  import VolumeRow from './VolumeRow.svelte';
   import { doneTesting, openQuestionnaire, qState } from '../lib/state/questionnaire';
 
   let pushStatus = $state('');
@@ -41,18 +42,20 @@
 
 <section class="settings">
   <h2>Ljud</h2>
-  <label class="row">
-    <input type="checkbox" checked={$audioSettings.music} onchange={(e) => audioSettings.update((a) => ({ ...a, music: e.currentTarget.checked }))} />
-    <span><strong>Musik</strong></span>
-  </label>
+  <VolumeRow kind="music" label="Musik" />
+  <VolumeRow kind="sfx" label="Ljudeffekter" />
   <label class="row">
     <input type="checkbox" checked={$audioSettings.ambience} onchange={(e) => audioSettings.update((a) => ({ ...a, ambience: e.currentTarget.checked }))} />
     <span><strong>Havsljud</strong> i byn</span>
   </label>
+<<<<<<< HEAD
   <label class="row">
     <input type="checkbox" checked={$audioSettings.sfx} onchange={(e) => audioSettings.update((a) => ({ ...a, sfx: e.currentTarget.checked }))} />
     <span><strong>Ljudeffekter</strong></span>
   </label>
+=======
+  <p class="credits">Musiken "Udden" och "Brickor" och de flesta ljuden är gjorda för spelet. "Gem Waltz" av Haley Halcyon, CC BY 4.0. Övriga ljud från Kenney, bart, rubberduck, RandomMind, jasinski och Rango Mango (CC0), via OpenGameArt.</p>
+>>>>>>> df2c448efc6e22a5097bdd8c248670a9a9c49bfc
 
   <h2>Hjälp</h2>
   <button class="ghost" onclick={() => startTutorial(true)}>Visa introduktionen igen</button>
