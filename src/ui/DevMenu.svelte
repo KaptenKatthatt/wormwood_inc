@@ -20,6 +20,8 @@
   }
   let pick = $state(1);
   import { CHRISTMAS } from '../lib/config/flags';
+  import { devAskQuestionnaire, devResetQuestionnaire, devStudyEnd, qState } from '../lib/state/questionnaire';
+  import { DUE_DAY, STUDY_END } from '../lib/questionnaire';
   import { devXmasDate, forcedLook, villageLook, xmas, xmasDate, xmasDay } from '../lib/state/christmas';
   import { LOOKS } from '../lib/season';
   const look = $derived.by(() => { void $now; void $xmasDate; void $forcedLook; return villageLook(); });
@@ -72,6 +74,16 @@
       {#each [2, 3, 4, 5] as k}
         <button class="ghost" disabled={$stairs.step >= k} onclick={() => devStep(k as Step)}>Till steg {k}</button>
       {/each}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Frågeformuläret (ersätter intervjun)</legend>
+    <p>Spelet frågar själv från dag {DUE_DAY}. Berättelsen om studien visas först när testaren är klar eller från {STUDY_END}. Nu: {({ part1: 'del 1', choice: 'valet', waiting: 'spelar vidare', debrief: 'berättelsen', part2: 'sista frågorna', done: 'klart' })[$qState.stage]}, frågat {$qState.asks} gånger. Kräver att testdata skickas.</p>
+    <div class="row">
+      <button class="ghost" onclick={devAskQuestionnaire}>Fråga nu</button>
+      <button class="ghost" onclick={devStudyEnd}>Som när studien är slut</button>
+      <button class="ghost" onclick={devResetQuestionnaire}>Nollställ formuläret</button>
     </div>
   </fieldset>
 

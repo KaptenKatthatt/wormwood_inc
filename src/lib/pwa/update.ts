@@ -15,8 +15,9 @@
  * comes in the middle of a challenge: it waits until the player is out of it.
  */
 import { registerSW } from 'virtual:pwa-register';
-import { get } from 'svelte/store';
+import { derived, get } from 'svelte/store';
 import { inLevel } from '../state/game';
+import { qOpen } from '../state/questionnaire';
 import { log } from '../log/logger';
 
 const CHECK_EVERY = 15 * 60 * 1000;
@@ -24,13 +25,14 @@ const CHECK_EVERY = 15 * 60 * 1000;
 const PATIENCE = 45 * 1000;
 
 let reloading = false;
-/** Reloads now, or as soon as the challenge on screen is over. */
+/** Reloads now, or as soon as the player is out of the challenge or the questionnaire on screen. */
 function reloadWhenFree(): void {
   if (reloading) return;
   reloading = true;
-  if (!get(inLevel)) { location.reload(); return; }
-  const stop = inLevel.subscribe((busy) => {
-    if (busy) return;
+  const busy = derived([inLevel, qOpen], ([level, q]) => level || q !== null);
+  if (!get(busy)) { location.reload(); return; }
+  const stop = busy.subscribe((b) => {
+    if (b) return;
     queueMicrotask(() => stop());
     location.reload();
   });
