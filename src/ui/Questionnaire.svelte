@@ -7,7 +7,7 @@
   import { tick } from 'svelte';
   import Modal from './Modal.svelte';
   import { MORE, PART1, answered, debrief, part2, pick, type Question } from '../lib/questionnaire';
-  import { answerAsk, chooseContinue, closeQuestionnaire, finishDebrief, finishPart1, finishPart2, qOpen, qState, reached, setAnswer } from '../lib/state/questionnaire';
+  import { answerAsk, chooseContinue, closeQuestionnaire, mandatory, finishDebrief, finishPart1, finishPart2, qOpen, qState, reached, setAnswer } from '../lib/state/questionnaire';
   import { playerId } from '../lib/state/game';
   import { testCode } from '../lib/testCode';
 
@@ -15,6 +15,8 @@
   const second = part2(r);
   const paragraphs = debrief(r);
   let mayUse = $state<boolean | null>(null);
+  // From the day the study ends the form cannot be put off.
+  const must = mandatory();
   let top = $state<HTMLElement>();
 
   const stage = $derived($qState.stage);
@@ -88,11 +90,12 @@
   <div class="form" role="dialog" aria-modal="true" aria-labelledby="q-title" bind:this={top}>
     {#if stage === 'part1'}
       <h2 id="q-title" tabindex="-1">Några frågor om spelet</h2>
+      {#if must}<p><strong>Testet är slut. Tack för att du var med!</strong> Svara på frågorna för att spela vidare. Det tar några minuter.</p>{/if}
       <p>Det finns inga rätta eller fel svar. Tryck på det som stämmer för dig.</p>
       {#each PART1 as q, i (q.id)}{@render question(q, i + 1)}{/each}
       {#if !part1Done}<p class="fine" id="q-why">Svara på alla frågor för att gå vidare.</p>{/if}
       <button class="primary" disabled={!part1Done} aria-describedby={part1Done ? undefined : 'q-why'} onclick={() => next(finishPart1)}>Vidare</button>
-      <button class="ghost" onclick={closeQuestionnaire}>Fortsätt senare</button>
+      {#if !must}<button class="ghost" onclick={closeQuestionnaire}>Fortsätt senare</button>{/if}
     {:else if stage === 'choice'}
       <h2 id="q-title" tabindex="-1">Tack för svaren!</h2>
       <p>De är sparade. Vill du fortsätta testa spelet?</p>
@@ -120,7 +123,7 @@
       </fieldset>
       {#if !part2Done}<p class="fine" id="q-why2">Svara på alla frågor för att skicka.</p>{/if}
       <button class="primary" disabled={!part2Done} aria-describedby={part2Done ? undefined : 'q-why2'} onclick={() => next(() => finishPart2(mayUse === true))}>Skicka svaren</button>
-      <button class="ghost" onclick={closeQuestionnaire}>Fortsätt senare</button>
+      {#if !must}<button class="ghost" onclick={closeQuestionnaire}>Fortsätt senare</button>{/if}
     {:else}
       <h2 id="q-title" tabindex="-1">Tack för hjälpen!</h2>
       {#if $qState.mayUse === false}

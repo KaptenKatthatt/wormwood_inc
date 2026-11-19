@@ -79,7 +79,7 @@
 
   <fieldset>
     <legend>Frågeformuläret (ersätter intervjun)</legend>
-    <p>Spelet frågar själv från dag {DUE_DAY}. Berättelsen om studien visas först när testaren är klar eller från {STUDY_END}. Nu: {({ part1: 'del 1', choice: 'valet', waiting: 'spelar vidare', debrief: 'berättelsen', part2: 'sista frågorna', done: 'klart' })[$qState.stage]}, frågat {$qState.asks} gånger. Kräver att testdata skickas.</p>
+    <p>Spelet frågar själv från dag {DUE_DAY}. Berättelsen om studien visas först när testaren är klar eller från {STUDY_END}. Från det datumet måste formuläret besvaras för att spela vidare. Nu: {({ part1: 'del 1', choice: 'valet', waiting: 'spelar vidare', debrief: 'berättelsen', part2: 'sista frågorna', done: 'klart' })[$qState.stage]}, frågat {$qState.asks} gånger. Kräver att testdata skickas.</p>
     <div class="row">
       <button class="ghost" onclick={devAskQuestionnaire}>Fråga nu</button>
       <button class="ghost" onclick={devStudyEnd}>Som när studien är slut</button>

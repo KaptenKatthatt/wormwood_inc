@@ -9,7 +9,7 @@ import { dayKey } from '../daily';
 import { EXPANSION } from '../config/flags';
 import { flush, log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
-import { MAX_ASKS, PART1, afterPart1, endPushDelay, forLog, part2, pushDelay, shouldAsk, startQ, testDayOf, type Answer, type QState, type Reached } from '../questionnaire';
+import { MAX_ASKS, PART1, afterPart1, mustAnswer, endPushDelay, forLog, part2, pushDelay, shouldAsk, startQ, testDayOf, type Answer, type QState, type Reached } from '../questionnaire';
 import { exp } from './expansion';
 import { clock, daily, playerId, resetListeners, settings, stairs } from './game';
 import { load, save } from './storage';
@@ -34,8 +34,20 @@ export function reached(): Reached {
   };
 }
 
+/** Must the form be answered now, before the game goes on? */
+export const mandatory = (): boolean => (devEnded ? get(qState).stage !== 'done' : mustAnswer(get(qState), today(), get(settings).logging === true));
+/** Dev menu: behave as if the study had ended. */
+let devEnded = false;
+
 /** Called when the game opens or comes back to the foreground. */
 export function offerQuestionnaire(): void {
+  if (get(qOpen) === 'form') return;
+  if (mandatory()) {
+    resume();
+    qOpen.set('form');
+    log('questionnaire_open', { from: 'study_end', stage: get(qState).stage, testDay: testDay() });
+    return;
+  }
   if (get(qOpen)) return;
   const s = get(qState);
   const day = testDay();
@@ -61,6 +73,7 @@ export function openQuestionnaire(): void {
 }
 
 export function closeQuestionnaire(): void {
+  if (get(qState).stage === 'done') devEnded = false;
   log('questionnaire_close', { stage: get(qState).stage });
   qOpen.set(null);
 }
@@ -73,7 +86,7 @@ export function finishPart1(): void {
   const s = get(qState);
   log('questionnaire_part1', { testDay: testDay(), answers: forLog(PART1, s.answers) });
   flush(false);
-  enter({ ...s, stage: afterPart1(today()) }, 'study_end');
+  enter({ ...s, stage: mandatory() ? 'debrief' : afterPart1(today()) }, 'study_end');
 }
 
 /** The tester's own answer after part 1: play on, or done testing. */
@@ -146,11 +159,14 @@ export function devAskQuestionnaire(): void {
 
 /** Dev menu: as if the study had ended for a tester who played on. */
 export function devStudyEnd(): void {
-  qState.update((s) => ({ ...s, stage: 'waiting', asks: 0 }));
-  qOpen.set('ask');
+  if (get(qState).stage === 'done') qState.set(startQ());
+  devEnded = true;
+  qOpen.set(null);
+  offerQuestionnaire();
 }
 
 export function devResetQuestionnaire(): void {
+  devEnded = false;
   qState.set(startQ());
   qOpen.set(null);
 }

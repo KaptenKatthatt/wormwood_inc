@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DUE_DAY, MAX_ASKS, MAX_TEXT, PART1, STUDY_END, afterPart1, endPushDelay, answered, debrief, forLog, part2, pick, pushDelay, shouldAsk, startQ, testDayOf, type Reached } from '../src/lib/questionnaire';
+import { DUE_DAY, MAX_ASKS, MAX_TEXT, PART1, STUDY_END, afterPart1, mustAnswer, endPushDelay, answered, debrief, forLog, part2, pick, pushDelay, shouldAsk, startQ, testDayOf, type Reached } from '../src/lib/questionnaire';
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).getTime();
 const early: Reached = { steps: [1, 2], weekStep: 5, secondDay: false };
@@ -27,6 +27,15 @@ describe('questionnaire', () => {
     expect(shouldAsk(waiting, 29, STUDY_END, true)).toBe(true);
     // A late tester is asked for part 1 when the study ends, even before day 8.
     expect(shouldAsk(startQ(), 3, STUDY_END, true)).toBe(true);
+  });
+
+  it('makes the form a must from the day the study ends, for testers in the study, until it is done', () => {
+    expect(STUDY_END).toBe('2026-12-19');
+    expect(mustAnswer(startQ(), '2026-12-18', true)).toBe(false);
+    expect(mustAnswer(startQ(), STUDY_END, true)).toBe(true);
+    expect(mustAnswer({ ...startQ(), stage: 'waiting', asks: 3 }, '2026-12-25', true)).toBe(true);
+    expect(mustAnswer(startQ(), STUDY_END, false)).toBe(false);
+    expect(mustAnswer({ ...startQ(), stage: 'done' }, STUDY_END, true)).toBe(false);
   });
 
   it('times the last notification to noon the day the study ends, at most 14 days ahead', () => {

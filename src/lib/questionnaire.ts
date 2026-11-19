@@ -19,7 +19,7 @@ export const PUSH_HOUR = 12;
 
 /**
  * The day (local) from which the debriefing is shown to everyone: the study is
- * as good as over. Before it, only a tester who says they are done testing
+ * as good as over (19 December, confirmed by Jonas on 2026-11-19). Before it, only a tester who says they are done testing
  * gets it (Jonas, 2026-11-19): reading it would spoil the rest of their test.
  */
 export const STUDY_END = '2026-12-19';
@@ -55,6 +55,15 @@ export const studyOver = (today: string): boolean => today >= STUDY_END;
 export function shouldAsk(s: QState, testDay: number, today: string, logging: boolean): boolean {
   if (!logging || s.stage === 'done' || s.askedDay >= testDay || s.asks >= MAX_ASKS) return false;
   return s.stage === 'waiting' ? studyOver(today) : testDay >= DUE_DAY || studyOver(today);
+}
+
+/**
+ * From the day the study ends the form must be answered before the game goes
+ * on (Jonas, 2026-11-19); after it the tester may play as long as they like.
+ * Only for testers in the study, that is, who said yes to the logging.
+ */
+export function mustAnswer(s: QState, today: string, logging: boolean): boolean {
+  return logging && s.stage !== 'done' && studyOver(today);
 }
 
 /** After part 1: straight to the debriefing when the study is over, else the tester chooses. */
