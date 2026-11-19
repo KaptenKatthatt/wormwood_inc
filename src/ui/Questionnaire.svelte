@@ -6,7 +6,7 @@
    */
   import { tick } from 'svelte';
   import Modal from './Modal.svelte';
-  import { PART1, answered, debrief, part2, type Question } from '../lib/questionnaire';
+  import { MORE, PART1, answered, debrief, part2, pick, type Question } from '../lib/questionnaire';
   import { answerAsk, closeQuestionnaire, finishDebrief, finishPart1, finishPart2, qOpen, qState, reached, setAnswer } from '../lib/state/questionnaire';
   import { playerId } from '../lib/state/game';
   import { testCode } from '../lib/testCode';
@@ -23,12 +23,7 @@
 
   const str = (id: string): string => { const a = $qState.answers[id]; return typeof a === 'string' ? a : ''; };
   const list = (id: string): string[] => { const a = $qState.answers[id]; return Array.isArray(a) ? a : []; };
-  function toggle(id: string, option: string, on: boolean) {
-    // "None of it" stands alone: it clears the others, and any other clears it.
-    const rest = list(id).filter((o) => o !== option && o !== 'none' && !(on && option === 'none'));
-    setAnswer(id, on ? [...rest, option] : rest);
-  }
-
+  let moreOpen = $state<Record<string, boolean>>({});
   /** Each new step starts at its top, with the heading in focus for screen readers. */
   async function next(step: () => void) {
     step();
@@ -59,16 +54,18 @@
     {:else if q.kind === 'multi'}
       <div class="stack">
         {#each q.options as o}
-          <label class="check"><input type="checkbox" checked={list(q.id).includes(o.id)} onchange={(e) => toggle(q.id, o.id, e.currentTarget.checked)} /><span>{o.label}</span></label>
+          <label class="check"><input type="checkbox" checked={list(q.id).includes(o.id)} onchange={(e) => setAnswer(q.id, pick(q.options, list(q.id), o.id, e.currentTarget.checked))} /><span>{o.label}</span></label>
         {/each}
       </div>
-    {:else}
-      <textarea rows="3" maxlength="1000" aria-label={q.text} placeholder="Skriv om du vill" value={str(q.id)} oninput={(e) => setAnswer(q.id, e.currentTarget.value)}></textarea>
     {/if}
-    {#if 'more' in q && q.more}
-      <label class="more">{q.more}
-        <textarea rows="2" maxlength="1000" placeholder="Skriv om du vill" value={str(`${q.id}More`)} oninput={(e) => setAnswer(`${q.id}More`, e.currentTarget.value)}></textarea>
-      </label>
+    {#if q.kind !== 'scale'}
+      {#if moreOpen[q.id] || str(`${q.id}More`)}
+        <label class="more">{MORE}
+          <textarea rows="2" maxlength="1000" value={str(`${q.id}More`)} oninput={(e) => setAnswer(`${q.id}More`, e.currentTarget.value)}></textarea>
+        </label>
+      {:else}
+        <button class="link" onclick={() => (moreOpen[q.id] = true)}>{MORE}</button>
+      {/if}
     {/if}
   </fieldset>
 {/snippet}
@@ -86,10 +83,10 @@
   <div class="form" role="dialog" aria-modal="true" aria-labelledby="q-title" bind:this={top}>
     {#if stage === 'part1'}
       <h2 id="q-title" tabindex="-1">Några frågor om spelet</h2>
-      <p>Det finns inga rätta eller fel svar. Svara som du själv tycker. Textrutorna är frivilliga.</p>
+      <p>Det finns inga rätta eller fel svar. Tryck på det som stämmer för dig.</p>
       <p class="fine">Del 1 av 2</p>
       {#each PART1 as q, i (q.id)}{@render question(q, i + 1)}{/each}
-      {#if !part1Done}<p class="fine" id="q-why">Svara på frågorna med val för att gå vidare.</p>{/if}
+      {#if !part1Done}<p class="fine" id="q-why">Svara på alla frågor för att gå vidare.</p>{/if}
       <button class="primary" disabled={!part1Done} aria-describedby={part1Done ? undefined : 'q-why'} onclick={() => next(finishPart1)}>Vidare</button>
       <button class="ghost" onclick={closeQuestionnaire}>Fortsätt senare</button>
     {:else if stage === 'debrief'}
@@ -108,7 +105,7 @@
         </div>
         <p class="fine">Du kan ändra dig senare. Säg då din testkod <strong class="code">{testCode(playerId)}</strong> till Jonas.</p>
       </fieldset>
-      {#if !part2Done}<p class="fine" id="q-why2">Svara på frågorna med val för att skicka.</p>{/if}
+      {#if !part2Done}<p class="fine" id="q-why2">Svara på alla frågor för att skicka.</p>{/if}
       <button class="primary" disabled={!part2Done} aria-describedby={part2Done ? undefined : 'q-why2'} onclick={() => next(() => finishPart2(mayUse === true))}>Skicka svaren</button>
       <button class="ghost" onclick={closeQuestionnaire}>Fortsätt senare</button>
     {:else}
@@ -144,7 +141,8 @@
   .stack { display: grid; gap: 4px; }
   .check { display: flex; gap: 10px; align-items: center; min-height: 48px; }
   .check input { width: 24px; height: 24px; accent-color: var(--falu); flex: none; }
-  .more { display: grid; gap: 4px; font-weight: 600; }
+  .more { display: grid; gap: 4px; font-size: .95rem; color: var(--muted); }
+  .link { justify-self: start; background: none; border: 0; padding: 0 4px; min-height: 44px; font-weight: 600; color: var(--muted); text-decoration: underline; }
   textarea { font: inherit; width: 100%; border: 2px solid var(--muted); border-radius: 8px; padding: 8px 10px; background: #fffaf3; color: var(--ink); resize: vertical; }
   textarea:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
   .code { font-family: ui-monospace, monospace; letter-spacing: .08em; }

@@ -49,30 +49,103 @@ export const testDayOf = (firstDay: string, today: string): number => daysBetwee
 
 // ---------------------------------------------------------------- the questions
 
+/** An option marked alone clears the others when it is picked, and is cleared by any other. */
+export interface Option { id: string; label: string; alone?: boolean }
+
+/**
+ * Ready-made options first (Jonas, 2026-11-19): free text alone is too much
+ * work to fill in. Every question with options has a small voluntary text box.
+ */
 export type Question =
   | { id: string; kind: 'scale'; text: string; low: string; high: string }
-  | { id: string; kind: 'multi' | 'single'; text: string; options: { id: string; label: string }[]; more?: string }
-  | { id: string; kind: 'text'; text: string };
+  | { id: string; kind: 'multi' | 'single'; text: string; options: Option[] };
+
+export const MORE = 'Vill du säga mer? (frivilligt)';
+const MANY = 'Välj en eller flera.';
+const OTHER: Option = { id: 'other', label: 'Annat' };
 
 /** Part 1: before the debriefing. Neutral words only. */
 export const PART1: Question[] = [
   { id: 'fun', kind: 'scale', text: 'Hur roligt var spelet?', low: 'Inte alls', high: 'Mycket' },
   {
-    id: 'opened', kind: 'multi', text: 'Vad fick dig oftast att öppna spelet? Välj en eller flera.',
+    id: 'opened', kind: 'multi', text: `Vad fick dig oftast att öppna spelet? ${MANY}`,
     options: [
       { id: 'spare', label: 'Jag hade en stund över' },
       { id: 'push', label: 'Jag fick en notis' },
       { id: 'progress', label: 'Jag ville bygga klart eller komma vidare' },
       { id: 'miss', label: 'Jag ville inte missa något' },
-      { id: 'other', label: 'Annat' },
+      OTHER,
     ],
   },
-  { id: 'stopped', kind: 'text', text: 'Om du slutade spela eller spelade mindre efter ett tag: vad berodde det på?' },
-  { id: 'feel', kind: 'text', text: 'Var det något i spelet som kändes irriterande, stressigt eller tjatigt? Något som kändes trevligt?' },
-  { id: 'bought', kind: 'text', text: 'Köpte du något för låtsaspengarna? Hur tänkte du?' },
   {
-    id: 'realMoney', kind: 'single', text: 'Hade du betalat riktiga pengar för något i spelet?', more: 'För vad?',
+    id: 'stopped', kind: 'multi', text: `Om du slutade spela eller spelade mindre efter ett tag: vad berodde det på? ${MANY}`,
+    options: [
+      { id: 'still', label: 'Jag spelar lika mycket som i början', alone: true },
+      { id: 'bored', label: 'Det blev tråkigt eller enformigt' },
+      { id: 'hard', label: 'Banorna blev för svåra' },
+      { id: 'wait', label: 'Det blev för mycket väntan på liv och byggen' },
+      { id: 'pay', label: 'Det kändes som att man måste betala för att komma vidare' },
+      { id: 'much', label: 'Det dök upp för mycket erbjudanden och notiser' },
+      { id: 'time', label: 'Jag hade inte tid eller glömde bort det' },
+      OTHER,
+    ],
+  },
+  {
+    id: 'annoying', kind: 'multi', text: `Var det något i spelet som kändes irriterande, stressigt eller tjatigt? ${MANY}`,
+    options: [
+      { id: 'wait', label: 'Att vänta på liv och byggen' },
+      { id: 'popups', label: 'Erbjudanden och rutor som dök upp' },
+      { id: 'push', label: 'Notiserna' },
+      { id: 'timers', label: 'Nedräkningar och tidsgränser' },
+      { id: 'near', label: 'Att förlora en bana precis före målet' },
+      { id: 'attack', label: 'Anfallen mot byn' },
+      { id: 'none', label: 'Nej, inget', alone: true },
+      OTHER,
+    ],
+  },
+  {
+    id: 'liked', kind: 'multi', text: `Vad tyckte du bäst om? ${MANY}`,
+    options: [
+      { id: 'puzzle', label: 'Att lösa pusslen' },
+      { id: 'village', label: 'Att bygga och se byn växa' },
+      { id: 'look', label: 'Bilderna och musiken' },
+      { id: 'rewards', label: 'Belöningarna och gåvorna' },
+      { id: 'compete', label: 'Att tävla och försvara byn' },
+      { id: 'none', label: 'Inget särskilt', alone: true },
+      OTHER,
+    ],
+  },
+  {
+    id: 'bought', kind: 'single', text: 'Köpte du något för låtsaspengarna?',
+    options: [{ id: 'often', label: 'Ja, flera gånger' }, { id: 'once', label: 'Ja, någon gång' }, { id: 'no', label: 'Nej' }],
+  },
+  {
+    id: 'boughtWhy', kind: 'multi', text: `Hur tänkte du när du köpte, eller lät bli? ${MANY}`,
+    options: [
+      { id: 'faster', label: 'Jag ville komma vidare snabbare' },
+      { id: 'keep', label: 'Jag ville inte förlora det jag hade' },
+      { id: 'deal', label: 'Erbjudandet verkade bra' },
+      { id: 'pretend', label: 'Det var ändå bara låtsaspengar' },
+      { id: 'never', label: 'Jag köper aldrig saker i spel' },
+      { id: 'notWorth', label: 'Det var inte värt det' },
+      OTHER,
+    ],
+  },
+  {
+    id: 'realMoney', kind: 'single', text: 'Hade du betalat riktiga pengar för något i spelet?',
     options: [{ id: 'yes', label: 'Ja' }, { id: 'maybe', label: 'Kanske' }, { id: 'no', label: 'Nej' }],
+  },
+  {
+    id: 'realFor', kind: 'multi', text: `Om du skulle betala riktiga pengar för något, vad vore det? ${MANY}`,
+    options: [
+      { id: 'moves', label: 'Extra drag' },
+      { id: 'lives', label: 'Fler liv' },
+      { id: 'skip', label: 'Att slippa vänta på byggen' },
+      { id: 'gems', label: 'Ädelstenar eller guld' },
+      { id: 'shield', label: 'Skydd mot anfall' },
+      { id: 'none', label: 'Ingenting', alone: true },
+      OTHER,
+    ],
   },
 ];
 
@@ -117,10 +190,10 @@ export function part2(r: Reached): Question[] {
   const parts = PARTS.filter((p) => p.when(r)).map(({ id, label }) => ({ id, label }));
   const qs: Question[] = [
     {
-      id: 'noticed', kind: 'single', text: 'Märkte du något av det här medan du spelade?', more: 'Vad märkte du?',
+      id: 'noticed', kind: 'single', text: 'Märkte du något av det här medan du spelade?',
       options: [{ id: 'clearly', label: 'Ja, tydligt' }, { id: 'some', label: 'Lite' }, { id: 'no', label: 'Nej' }],
     },
-    { id: 'strongest', kind: 'multi', text: 'Vad påverkade dig mest? Välj en eller flera.', options: [...parts, { id: 'none', label: 'Inget av det' }] },
+    { id: 'strongest', kind: 'multi', text: `Vad påverkade dig mest? ${MANY}`, options: [...parts, { id: 'none', label: 'Inget av det', alone: true }] },
   ];
   if (r.weekStep >= 6) {
     qs.push({
@@ -128,14 +201,30 @@ export function part2(r: Reached): Question[] {
       options: [{ id: 'yes', label: 'Ja' }, { id: 'no', label: 'Nej' }, { id: 'unsure', label: 'Osäker' }],
     });
   }
-  qs.push({ id: 'after', kind: 'text', text: 'Hur känns det nu att du var med utan att veta om det?' });
+  qs.push({
+    id: 'after', kind: 'multi', text: `Hur känns det nu att du var med utan att veta om det? ${MANY}`,
+    options: [
+      { id: 'fine', label: 'Helt okej' },
+      { id: 'learned', label: 'Intressant, jag lärde mig något' },
+      { id: 'guessed', label: 'Jag misstänkte det redan' },
+      { id: 'fooled', label: 'Lite lurad' },
+      { id: 'angry', label: 'Irriterad eller arg' },
+      OTHER,
+    ],
+  });
   return qs;
 }
 
-/** Is a question answered? Only the choices and the scale are required; free text is voluntary. */
+/** Picks or drops an option of a question with several answers, keeping the "alone" options alone. */
+export function pick(options: Option[], chosen: string[], id: string, on: boolean): string[] {
+  const alone = (x: string) => options.find((o) => o.id === x)?.alone === true;
+  const rest = chosen.filter((x) => x !== id && (!on || (!alone(id) && !alone(x))));
+  return on ? [...rest, id] : rest;
+}
+
+/** Is a question answered? The text boxes are voluntary. */
 export function answered(q: Question, answers: Record<string, Answer>): boolean {
   const a = answers[q.id];
-  if (q.kind === 'text') return true;
   if (q.kind === 'multi') return Array.isArray(a) && a.length > 0;
   return a !== undefined && a !== '';
 }
@@ -143,15 +232,11 @@ export function answered(q: Question, answers: Record<string, Answer>): boolean 
 /** The answers of one part, ready for the log: only that part's questions, free text trimmed and cut. */
 export function forLog(qs: Question[], answers: Record<string, Answer>): Record<string, Answer> {
   const out: Record<string, Answer> = {};
-  const put = (id: string) => {
-    const a = answers[id];
-    if (a === undefined) return;
-    if (typeof a === 'string') { const t = a.trim().slice(0, MAX_TEXT); if (t) out[id] = t; }
-    else out[id] = a;
-  };
   for (const q of qs) {
-    put(q.id);
-    if ('more' in q && q.more) put(`${q.id}More`);
+    const a = answers[q.id];
+    if (a !== undefined) out[q.id] = a;
+    const more = answers[`${q.id}More`];
+    if (typeof more === 'string' && more.trim()) out[`${q.id}More`] = more.trim().slice(0, MAX_TEXT);
   }
   return out;
 }

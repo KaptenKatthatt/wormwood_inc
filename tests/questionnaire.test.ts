@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DUE_DAY, MAX_ASKS, MAX_TEXT, PART1, answered, debrief, forLog, part2, pushDelay, shouldAsk, startQ, testDayOf, type Reached } from '../src/lib/questionnaire';
+import { DUE_DAY, MAX_ASKS, MAX_TEXT, PART1, answered, debrief, forLog, part2, pick, pushDelay, shouldAsk, startQ, testDayOf, type Reached } from '../src/lib/questionnaire';
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).getTime();
 const early: Reached = { steps: [1, 2], weekStep: 5, secondDay: false };
@@ -46,20 +46,32 @@ describe('questionnaire', () => {
     expect(strongest(far)).toHaveLength(11);
   });
 
-  it('requires the choices but not the free text', () => {
-    const [fun, opened, stopped] = PART1;
+  it('requires every question but never the text boxes', () => {
+    const [fun, opened] = PART1;
     expect(answered(fun, {})).toBe(false);
     expect(answered(fun, { fun: 3 })).toBe(true);
     expect(answered(opened, { opened: [] })).toBe(false);
-    expect(answered(opened, { opened: ['push'] })).toBe(true);
-    expect(answered(stopped, {})).toBe(true);
+    expect(answered(opened, { opened: ['push'], openedMore: '' })).toBe(true);
+  });
+
+  it('gives every question ready-made options, so nothing has to be typed', () => {
+    for (const q of [...PART1, ...part2(far)]) expect(q.kind === 'scale' || q.options.length >= 3).toBe(true);
+  });
+
+  it('keeps an option like "nothing" alone', () => {
+    const q = PART1.find((x) => x.id === 'annoying')!;
+    const options = q.kind === 'multi' ? q.options : [];
+    expect(pick(options, ['wait', 'push'], 'none', true)).toEqual(['none']);
+    expect(pick(options, ['none'], 'wait', true)).toEqual(['wait']);
+    expect(pick(options, ['wait'], 'push', true)).toEqual(['wait', 'push']);
+    expect(pick(options, ['wait', 'push'], 'wait', false)).toEqual(['push']);
   });
 
   it('logs one part at a time, with trimmed and cut free text', () => {
-    const answers = { fun: 4, opened: ['spare'], stopped: '  tog slut på liv  ', feel: '   ', realMoney: 'no', realMoneyMore: 'x'.repeat(MAX_TEXT + 50), noticed: 'some' };
+    const answers = { fun: 4, opened: ['spare'], stopped: ['time'], stoppedMore: '  tog slut på liv  ', likedMore: '   ', realMoney: 'no', realMoneyMore: 'x'.repeat(MAX_TEXT + 50), noticed: 'some' };
     const out = forLog(PART1, answers);
-    expect(out).toMatchObject({ fun: 4, opened: ['spare'], stopped: 'tog slut på liv', realMoney: 'no' });
-    expect(out.feel).toBeUndefined();
+    expect(out).toMatchObject({ fun: 4, opened: ['spare'], stopped: ['time'], stoppedMore: 'tog slut på liv', realMoney: 'no' });
+    expect(out.likedMore).toBeUndefined();
     expect(out.noticed).toBeUndefined();
     expect((out.realMoneyMore as string).length).toBe(MAX_TEXT);
   });
