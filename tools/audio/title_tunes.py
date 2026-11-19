@@ -118,6 +118,17 @@ def finish(s: Song, beats: float):
     return normalize(loop_bake(data, secs), 0.8), secs
 
 
+def soften(data, cutoff: float = 4500.0):
+    """Take the edge off a finished loop: a gentle low-pass from `cutoff`, done on the
+    spectrum of the whole loop so the loop point stays seamless. Jonas 2026-11-19: the
+    Christmas music hurt the ears, "too much treble?", "the percussion or the bell"."""
+    import numpy as np
+    spec = np.fft.rfft(data.astype(np.float64), axis=0)
+    freq = np.fft.rfftfreq(len(data), 1 / 44100)
+    spec *= (1 / np.sqrt(1 + (freq / cutoff) ** 4))[:, None]
+    return np.fft.irfft(spec, n=len(data), axis=0).astype(np.float32)
+
+
 def udden_overture():
     """1. The village tune 'Udden' as a slow, festive opening: harp and strings first,
     then the fiddle, then everyone. Ties the title screen to the village."""

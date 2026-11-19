@@ -19,7 +19,7 @@
     type WinPay,
   } from '../lib/state/game';
   import { log } from '../lib/log/logger';
-  import { audioSettings } from '../lib/audio/sound';
+  import VolumeRow from './VolumeRow.svelte';
   import { DEV_MENU } from '../lib/config/flags';
   import { endTutorial, tutEvent, tutorial, TUT_STEPS } from '../lib/tutorial';
 
@@ -391,8 +391,8 @@
 {:else if dialog === 'menu' && game}
   <Modal title="Paus">
     <div class="switches">
-      <label><input type="checkbox" checked={$audioSettings.music} onchange={(e) => audioSettings.update((a) => ({ ...a, music: e.currentTarget.checked }))} /> Musik</label>
-      <label><input type="checkbox" checked={$audioSettings.sfx} onchange={(e) => audioSettings.update((a) => ({ ...a, sfx: e.currentTarget.checked }))} /> Ljudeffekter</label>
+      <VolumeRow kind="music" label="Musik" />
+      <VolumeRow kind="sfx" label="Ljudeffekter" />
     </div>
     <div class="buttons"><button class="primary" onclick={() => (dialog = null)}>Fortsätt spela</button></div>
     <div class="buttons"><button class="ghost" onclick={leave}>Lämna utmaningen</button></div>
@@ -433,9 +433,7 @@
   .view { display: flex; flex-direction: column; height: 100%; background-color: #7fb6dc; background-image: url('/art/bakgrund.jpg'); background-position: center; background-size: cover; background-repeat: no-repeat; }
   .canvas { position: relative; flex: 1; min-height: 0; }
   .bar.top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
-  .switches { display: flex; flex-wrap: wrap; gap: 8px 20px; }
-  .switches label { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; }
-  .switches input { width: 22px; height: 22px; accent-color: var(--falu); }
+  .switches { display: grid; gap: 4px; }
   .goal { flex: 1; min-width: 0; display: grid; gap: 0; background: #fff8ec; border: 3px solid #7a2418; border-radius: 14px; padding: 4px 10px 6px; box-shadow: 0 3px 0 var(--deep); color: var(--deep); }
   .goal .name { font-size: 1.1rem; line-height: 1.1; font-weight: 800; }
   .what { display: flex; align-items: center; gap: 6px; font-weight: 800; line-height: 1.2; }

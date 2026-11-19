@@ -1,11 +1,20 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { puzzleMusicFor, WORLD_EXTRA, WORLD_TUNES } from '../src/lib/audio/sound';
+import { puzzleMusicFor, sliderGain, WORLD_EXTRA, WORLD_TUNES } from '../src/lib/audio/sound';
 
 const AUDIO = new URL('../public/audio/', import.meta.url);
 const SRC = readFileSync(new URL('../src/lib/audio/sound.ts', import.meta.url), 'utf8');
 
 describe('sound', () => {
+  it('the volume sliders go from silence to full, and never past either end', () => {
+    expect(sliderGain(0)).toBe(0);
+    expect(sliderGain(1)).toBe(1);
+    expect(sliderGain(0.5)).toBeCloseTo(0.25);
+    expect(sliderGain(7)).toBe(1);
+    expect(sliderGain(-1)).toBe(0);
+    expect(sliderGain(Number.NaN)).toBe(1);
+  });
+
   it('the puzzle alternates between its two tunes', () => {
     expect(puzzleMusicFor(1)).toBe('puzzle-brickor');
     expect(puzzleMusicFor(2)).toBe('puzzle-gem-waltz');

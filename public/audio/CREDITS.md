@@ -20,7 +20,7 @@ syntetiserade direkt i `compose.py`.
 | `music/world-2` | musik i värld 2, Slätten | "Rapsfält", D-dur, visselflöjt och dragspel med träklapper (vald 2026-11-19, `tools/audio/world_tunes.py`) |
 | `music/world-3` | musik i värld 3, Bergslagen | "Hammarsmeden", vers i e-moll och refräng i G-dur, klarinett och dragspel med städslag |
 | `music/world-4` | musik i värld 4, Höga kusten | "Fiskeläget", jigg i G-dur, dragspel och visselflöjt |
-| `music/world-5` | musik i värld 5, Vintermarknaden (växlar med julmelodierna nedan) | "Julmarknad", C-dur, speldosa och blockflöjt med bjällror |
+| `music/world-5` | musik i värld 5, Vintermarknaden (växlar med julmelodierna nedan) | "Julmarknad", C-dur, celesta och dragspel med dämpade bjällror |
 | `sfx/match-0` … `match-7` | matchning och kombo | marimba, ett tonsteg högre för varje kedja |
 | `sfx/swap` | byta brickor | mjukt marimbaljud |
 | `sfx/invalid` | drag utan rad | tock-tock i trä |

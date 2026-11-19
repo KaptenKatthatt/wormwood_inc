@@ -25,7 +25,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 from compose import ACCORDION, AC_BASS, CELESTA, GLOCK, HARP, HORN, MARIMBA, MUSICBOX, PIZZ, TUBULAR  # noqa: E402
 from midisynth import RATE, Song, encode, n  # noqa: E402
-from title_tunes import TRIADS, bass_root, finish, up  # noqa: E402
+from title_tunes import TRIADS, bass_root, finish, soften, up  # noqa: E402
 
 DRUMS = 9
 SLEIGH, TRIANGLE = 83, 81
@@ -149,7 +149,10 @@ def carol(t: dict):
     s.instrument("drums", 0, DRUMS, volume=70, pan=64, reverb=30)
     s.instrument("glock", GLOCK, 10, volume=58, pan=88, reverb=65)
     s.instrument("pizz", PIZZ, 11, volume=58, pan=30, reverb=50)
-    soft = bool(t.get("soft"))
+    # Soft is the rule since Jonas 2026-11-19 15.01: "the Christmas music needs to be
+    # softer, like the music in the rest of the game". The celesta leads instead of the
+    # music box, no glockenspiel or triangle, quiet sleigh bells, and a low-pass.
+    soft = bool(t.get("soft", True))
     beat = 0.0
     for kind in t["passes"]:
         full = kind == "full"
@@ -219,13 +222,7 @@ def carol(t: dict):
     # The music box has sharp attacks, so the peak-normalised mix comes out quieter than
     # the other worlds' music. Lift it and round the peaks off softly.
     if soft:
-        # Take the edge off: a gentle low-pass from about 4.5 kHz, done on the spectrum
-        # of the whole loop, so the loop point stays seamless.
-        spec = np.fft.rfft(data.astype(np.float64), axis=0)
-        freq = np.fft.rfftfreq(len(data), 1 / RATE)
-        spec *= (1 / np.sqrt(1 + (freq / 4500.0) ** 4))[:, None]
-        data = np.fft.irfft(spec, n=len(data), axis=0)
-        return (np.tanh(data * 1.6) * 0.85).astype(np.float32), secs
+        return (np.tanh(soften(data) * 1.6) * 0.85).astype(np.float32), secs
     return (np.tanh(data * 1.7) * 0.85).astype(np.float32), secs
 
 
