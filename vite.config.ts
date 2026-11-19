@@ -41,7 +41,8 @@ export default defineConfig({
         // Worlds 2-5 (3 MB of maps and boards) are not precached: an update then
         // only downloads the first world, so it finishes before the player
         // leaves the app. Their art is cached the first time it is shown (sw.ts).
-        globIgnores: ['**/art/worlds/**'],
+        // The winter village and the Christmas decorations are cached the same way.
+        globIgnores: ['**/art/worlds/**', '**/art/village/winter/**', '**/art/village/xmas/**'],
       },
       manifest: {
         id: '/',

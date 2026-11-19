@@ -5,8 +5,8 @@
   import { tutEvent } from '../lib/tutorial';
   import { CHRISTMAS } from '../lib/config/flags';
   import { daily, settings } from '../lib/state/game';
-  import { countdownShown, xmas, xmasDate, xmasDay, xmasOpen } from '../lib/state/christmas';
-  import { countdownText } from '../lib/christmas';
+  import { countdownShown, forcedLook, villageLook, xmas, xmasDate, xmasDay, xmasOpen } from '../lib/state/christmas';
+  import { countdownText, decorLayers } from '../lib/christmas';
   import { onMount } from 'svelte';
   import { BASE_BUILDINGS, BUILDINGS as ALL_BUILDINGS, MAX_LEVEL, buildBlock, buildTime, cleared, priceFor, skipGems, topUpGems, type BuildingId } from '../lib/economy/village';
   import { EXPANSION } from '../lib/config/flags';
@@ -39,6 +39,9 @@
   // Christmas in Skargardsbyn: the sign with the countdown opens the calendar and the market.
   const xday = $derived.by(() => { void $now; void $settings; void $daily; void $xmasDate; return CHRISTMAS ? xmasDay() : 0; });
   $effect(() => { if (xday > 0) countdownShown(); });
+  // The village's look (summer, or winter A, B or C in December) and the bought decorations.
+  const look = $derived.by(() => { void $now; void $xmasDate; void $forcedLook; return villageLook(); });
+  const layers = $derived(CHRISTMAS ? decorLayers($xmas) : []);
 
   onMount(() => tutEvent('inVillage'));
   $effect(() => { if (constr) tutEvent('built'); });
@@ -53,7 +56,7 @@
 
 <section class="view">
   <div class="canvas">
-    <GameCanvas scene={VillageScene} data={{ plots }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
+    <GameCanvas scene={VillageScene} data={{ plots, look, layers }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
     {#if figures}
       <div class="mood" role="meter" aria-label="Bybornas trivsel" aria-valuemin="0" aria-valuemax="100" aria-valuenow={$stairs.mood}>
         <span class="face" aria-hidden="true">{face}</span>

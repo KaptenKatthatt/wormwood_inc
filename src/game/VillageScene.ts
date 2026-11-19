@@ -8,6 +8,9 @@ interface ArtBuilding { anchor: [number, number]; bygge: { kind: 'hus' | 'torn';
 const BUILDINGS = ART.buildings as unknown as Record<string, ArtBuilding>;
 const BG = ART.background;
 const DIR = '/art/village/';
+/** The winter pictures have this margin around them: drawn at x-PAD, y-PAD. */
+const WINTER_PAD = 10;
+type Look = 'summer' | 'a' | 'b' | 'c';
 
 /** Which picture a building level uses (Jonas, 2026-11-18): 1-3, 4-7 and 8-10. */
 export function stageOf(level: number): '1' | '2' | '3' {
@@ -19,6 +22,11 @@ export function stageOf(level: number): '1' | '2' | '3' {
  * The background holds the empty plots; each building is its own picture laid
  * on its plot at the manifest's position, in the background's pixels, and it
  * changes look at levels 4 and 8. Svelte puts the plots in the registry as 'plots'.
+ *
+ * In December the village has three winter looks ('look' in the registry: a, b
+ * or c; the same file names under winter/<look>/) and the Christmas decorations
+ * are whole-village layers drawn over the buildings ('layers': file names in xmas/).
+ * Those pictures are loaded the first time they are needed.
  */
 export class VillageScene extends Phaser.Scene {
   constructor() {
@@ -35,11 +43,37 @@ export class VillageScene extends Phaser.Scene {
     this.draw();
     this.scale.on('resize', this.draw, this);
     this.registry.events.on('changedata-plots', this.draw, this);
+    this.registry.events.on('changedata-look', this.draw, this);
+    this.registry.events.on('changedata-layers', this.draw, this);
     this.events.once('shutdown', () => {
       this.scale.off('resize', this.draw, this);
       this.registry.events.off('changedata-plots', this.draw, this);
+      this.registry.events.off('changedata-look', this.draw, this);
+      this.registry.events.off('changedata-layers', this.draw, this);
     });
   }
+
+  /** The texture of a village picture in a look; summer's until the winter one has loaded. */
+  private tex(look: Look, file: string): { key: string; pad: number } {
+    const key = `v-${look}-${file}`;
+    return look !== 'summer' && this.textures.exists(key) ? { key, pad: WINTER_PAD } : { key: `v-${file}`, pad: 0 };
+  }
+
+  /** Loads what the look and the layers need and is not loaded yet; true when something is on its way. */
+  private loadMissing(look: Look, layers: string[]): boolean {
+    const want: [string, string][] = layers.map((f) => [`v-xmas-${f}`, `${DIR}xmas/${f}`]);
+    if (look !== 'summer') {
+      want.push([`v-${look}-${BG.file}`, `${DIR}winter/${look}/${BG.file}`]);
+      for (const b of Object.values(BUILDINGS)) for (const st of Object.values(b.stages)) want.push([`v-${look}-${st.file}`, `${DIR}winter/${look}/${st.file}`]);
+    }
+    const missing = want.filter(([key]) => !this.textures.exists(key) && !this.asked.has(key));
+    if (missing.length === 0) return false;
+    for (const [key, url] of missing) { this.asked.add(key); this.load.image(key, url); }
+    this.load.once('complete', this.draw, this);
+    this.load.start();
+    return true;
+  }
+  private asked = new Set<string>();
 
   private draw(): void {
     const { width, height } = this.scale;
@@ -50,7 +84,11 @@ export class VillageScene extends Phaser.Scene {
     const ox = (width - BG.w * s) / 2;
     const centre = 740;
     const oy = Math.min(0, Math.max(height - BG.h * s, height / 2 - centre * s));
-    this.add.image(ox, oy, 'v-bg').setOrigin(0).setScale(s);
+    const look: Look = this.registry.get('look') ?? 'summer';
+    const layers: string[] = this.registry.get('layers') ?? [];
+    this.loadMissing(look, layers);
+    const bg = look !== 'summer' && this.textures.exists(`v-${look}-${BG.file}`) ? `v-${look}-${BG.file}` : 'v-bg';
+    this.add.image(ox, oy, bg).setOrigin(0).setScale(s);
 
     const plots: PlotView[] = this.registry.get('plots') ?? [];
     const byId = new Map(plots.map((p) => [p.id, p]));
@@ -63,7 +101,8 @@ export class VillageScene extends Phaser.Scene {
       const b = BUILDINGS[id];
       if (p.level > 0) {
         const st = b.stages[stageOf(p.level)];
-        this.add.image(ox + st.x * s, oy + st.y * s, `v-${st.file}`).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1);
+        const t = this.tex(look, st.file);
+        this.add.image(ox + (st.x - t.pad) * s, oy + (st.y - t.pad) * s, t.key).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1);
       }
       if (p.building) {
         const g = b.bygge;
@@ -76,5 +115,7 @@ export class VillageScene extends Phaser.Scene {
         this.add.rectangle(bx, by, bw * p.progress, 6 * k, 0xf2c230).setOrigin(0);
       }
     }
+    // The Christmas decorations, in the background's pixels, over the buildings.
+    for (const f of layers) if (this.textures.exists(`v-xmas-${f}`)) this.add.image(ox, oy, `v-xmas-${f}`).setOrigin(0).setScale(s);
   }
 }

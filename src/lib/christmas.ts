@@ -18,14 +18,28 @@ export const STAR_COOKIES = 1;
 /** Gingerbread per gem when topping up. */
 export const COOKIES_PER_GEM = 10;
 
-export type DecorId = 'lights' | 'sheaves' | 'stars' | 'snow' | 'tree';
-export const DECOR: { id: DecorId; name: string; cookies: number }[] = [
-  { id: 'lights', name: 'Ljusslingor på muren', cookies: 40 },
-  { id: 'sheaves', name: 'Julkärvar vid stugorna', cookies: 80 },
-  { id: 'stars', name: 'Adventsstjärnor i fönstren', cookies: 150 },
-  { id: 'snow', name: 'Snö på taken', cookies: 250 },
-  { id: 'tree', name: 'Julgran på torget', cookies: 400 },
+/**
+ * Torches and the straw goat replaced the first proposal's window stars and
+ * snow on the roofs (2026-11-19): each is one layer over the whole village.
+ */
+export type DecorId = 'lights' | 'sheaves' | 'torches' | 'goat' | 'tree';
+/** In drawing order; `layer` is the picture in /art/village/xmas/. */
+export const DECOR: { id: DecorId; name: string; cookies: number; layer: string }[] = [
+  { id: 'lights', name: 'Ljusslingor på muren', cookies: 40, layer: 'jul-ljusslingor.webp' },
+  { id: 'sheaves', name: 'Julkärvar vid portarna', cookies: 80, layer: 'jul-karvar.webp' },
+  { id: 'torches', name: 'Marschaller längs vägarna', cookies: 150, layer: 'jul-marschaller.webp' },
+  { id: 'goat', name: 'Halmbock på torget', cookies: 250, layer: 'jul-bock.webp' },
+  { id: 'tree', name: 'Julgran på torget', cookies: 400, layer: 'jul-gran.webp' },
 ];
+/** The star from door 24, drawn on the tree. */
+export const STAR_LAYER = 'jul-stjarna.webp';
+
+/** The layers to draw over the village, bottom first. */
+export function decorLayers(s: { decor: DecorId[]; star: boolean }): string[] {
+  const out = DECOR.filter((d) => s.decor.includes(d.id)).map((d) => d.layer);
+  if (s.star && s.decor.includes('tree')) out.push(STAR_LAYER);
+  return out;
+}
 
 export interface DoorGift { gold?: number; life?: boolean; gems?: number; star?: boolean }
 
