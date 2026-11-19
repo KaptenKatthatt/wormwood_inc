@@ -151,6 +151,8 @@ Skylten "Skärgårdsbyn" och Spela-knappen är ritade i kod, och skärmen visar 
 | Halmbock på torget | 250 |
 | Julgran på torget | 400 |
 
+Pyntlistan är inte godkänd av Jonas: marschaller och halmbock ersatte adventsstjärnor i fönstren och snö på taken när grafiken målades, och Jonas har inte sagt ja till bytet (2026-11-19). Siffrorna är inte heller godkända.
+
 Allt pynt kostar 920 pepparkakor. En testare som spelar en vecka får ungefär 140 från luckorna och 250–300 från utmaningarna, så allt går inte att få utan att köpa. Det är avsikten.
 
 **Nedräkningen.** En skylt visar "Julmarknaden stänger om X dagar". Efter den 24 december går pyntet inte att köpa. Det som är köpt står kvar.
