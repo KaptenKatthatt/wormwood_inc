@@ -133,6 +133,8 @@ Skylten "Skärgårdsbyn" och Spela-knappen är ritade i kod, och skärmen visar 
 
 **Titelmusik (Jonas 2026-11-18 kl. 15.00):** titelskärmen har egen musik, låten "Solsken". Den är glad, går i A-dur och spelas på blockflöjt och dragspel. Jonas ville ha gladare och mer catchig musik med mindre fiol. Låten börjar vid första trycket och fortsätter när spelaren går vidare till kartan. Den slutar när spelaren går in i den första banan eller i byn. Den är inbyggd i PR #8.
 
+**Julhändelsen (Jonas 2026-11-19):** säsongshändelsen är en julhändelse och läggs tidigare än V51. Den designas i V48 (23–29/11) och släpps runt 1/12. Det är ett undantag från frysningen av krokar och balans 28/11–14/12. Händelsen ingår i testet som en egen krok och loggas som en sådan, så att analysen kan se vilka testare som hade den. Innehållet är inte beslutat än.
+
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
 Idé i backloggen (Jonas funderar): det som är kvar betalas ut på riktigt efter testet, så att köpen kostar något. Om plånboken betalas ut på riktigt stängs steg 7 i veckotrappan (kistor, lyckohjul, mästardragningar) av för den testpersonen, så att det inte blir spel om pengar (Jonas 2026-11-18).
