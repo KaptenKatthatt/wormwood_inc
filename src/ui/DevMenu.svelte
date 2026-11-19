@@ -18,7 +18,8 @@
     toast(`Hoppade till utmaning ${n} (${worldOf(n).name})`);
   }
   let pick = $state(1);
-  import { CHRISTMAS } from '../lib/config/flags'  import { devAskQuestionnaire, devResetQuestionnaire, devStudyEnd, qState } from '../lib/state/questionnaire';
+  import { CHRISTMAS } from '../lib/config/flags';
+  import { devAskQuestionnaire, devResetQuestionnaire, devStudyEnd, qState } from '../lib/state/questionnaire';
   import { DUE_DAY, STUDY_END } from '../lib/questionnaire';
   import { devXmasDate, forcedLook, villageLook, xmas, xmasDate, xmasDay } from '../lib/state/christmas';
   import { LOOKS } from '../lib/season';
