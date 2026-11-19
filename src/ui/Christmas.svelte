@@ -78,11 +78,12 @@
   h3 { margin: 0; font-size: 1.05rem; }
   .sign { background: var(--falu); color: #fff; border-radius: 8px; padding: 8px 10px; font-weight: 700; text-align: center; }
   .have { text-align: center; }
-  .doors { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-  .door { display: grid; place-items: center; width: 100%; min-height: 48px; border: 2px solid var(--line); border-radius: 8px; background: #fff8ec; color: var(--ink); font: inherit; font-weight: 800; padding: 2px; }
+  .doors { background: url('/art/village/xmas/kalender.webp') center 62% / cover; border-radius: 10px; padding: 8px !important;
+    list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .door { display: grid; place-items: center; width: 100%; min-height: 48px; border: 2px solid var(--line); border-radius: 8px; background: rgb(255 248 236 / .88); color: var(--ink); font: inherit; font-weight: 800; padding: 2px; }
   .door small { font-size: .65rem; font-weight: 600; }
-  .door.opened { opacity: .5; }
-  .door.later { opacity: .6; border-style: dashed; }
+  .door.opened { background: rgb(255 248 236 / .25); border-color: rgb(255 255 255 / .6); color: #fff; }
+  .door.later { background: rgb(255 248 236 / .7); border-style: dashed; }
   .door.today { border-color: var(--falu); box-shadow: 0 0 0 2px var(--falu); }
   .door.missed { border-color: var(--gold); }
   .decor { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }

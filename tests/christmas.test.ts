@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DECOR, DOOR_COOKIES, LATE_DOOR_GEMS, buyDecor, cookiesForWin, countdownText, decorBlock, doorGift, doorPrice, doorStatus, eventDay, forYear, openDoor, refill, startXmas } from '../src/lib/christmas';
+import { DECOR, DOOR_COOKIES, LATE_DOOR_GEMS, buyDecor, decorLayers, cookiesForWin, countdownText, decorBlock, doorGift, doorPrice, doorStatus, eventDay, forYear, openDoor, refill, startXmas } from '../src/lib/christmas';
 
 const at = (m: number, d: number, y = 2026) => new Date(y, m - 1, d, 12).getTime();
 
@@ -58,6 +58,8 @@ describe('Christmas in Skargardsbyn', () => {
     expect(s.cookies).toBe(60);
     expect(decorBlock(s, 'lights', 10)).toBe('owned');
     expect(decorBlock(s, 'sheaves', 0)).toBe('closed');
+    expect(decorLayers({ decor: ['tree', 'lights'], star: true })).toEqual(['jul-ljusslingor.webp', 'jul-gran.webp', 'jul-stjarna.webp']);
+    expect(decorLayers({ decor: ['lights'], star: true })).toEqual(['jul-ljusslingor.webp']);
     expect(buyDecor(s, 'sheaves', 0)).toBeNull();
     expect(s.decor).toEqual(['lights']);
   });
@@ -75,5 +77,27 @@ describe('Christmas in Skargardsbyn', () => {
     expect(n.opened).toEqual([]);
     expect(n.decor).toEqual(['lights']);
     expect(n.star).toBe(true);
+  });
+});
+
+import { lookAt, sunTimes } from '../src/lib/season';
+
+describe('the village look by date and daylight', () => {
+  const utc = (m: number, d: number, h: number, min = 0) => Date.UTC(2026, m - 1, d, h, min);
+  it('finds sunrise and sunset in Eslov in December', () => {
+    const t = sunTimes(utc(12, 15, 11))!;
+    const hm = (ms: number) => new Date(ms).getUTCHours() * 60 + new Date(ms).getUTCMinutes();
+    expect(Math.abs(hm(t.rise) - (7 * 60 + 30))).toBeLessThan(10); // about 08.30 Swedish time
+    expect(Math.abs(hm(t.set) - (14 * 60 + 33))).toBeLessThan(10); // about 15.33
+  });
+  it('is summer to 30 November, A 1-7 December, B from the 8th, and C when the sun is down', () => {
+    expect(lookAt(utc(11, 30, 11))).toBe('summer');
+    expect(lookAt(utc(11, 30, 20))).toBe('summer');
+    expect(lookAt(utc(12, 1, 11))).toBe('a');
+    expect(lookAt(utc(12, 7, 11))).toBe('a');
+    expect(lookAt(utc(12, 8, 11))).toBe('b');
+    expect(lookAt(utc(12, 8, 16))).toBe('c');
+    expect(lookAt(utc(12, 3, 5))).toBe('c');
+    expect(lookAt(utc(6, 20, 23))).toBe('summer');
   });
 });

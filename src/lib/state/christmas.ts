@@ -7,6 +7,7 @@
 import { get, writable } from 'svelte/store';
 import { CHRISTMAS, DEV_MENU } from '../config/flags';
 import { DECOR, buyDecor as buy, cookiesForWin, daysLeft, decorBlock, doorGiftText, doorPrice, eventDay, forYear, openDoor as open, refill, startXmas, type DecorId, type DoorGift, type XmasState } from '../christmas';
+import { lookAt, type Look } from '../season';
 import { load, save } from './storage';
 import { addGold, clock, dayOn, lives, logHook, payGems, purse, resetListeners, toast, winListeners } from './game';
 import { settleLives } from '../time/lives';
@@ -16,11 +17,23 @@ import { log } from '../log/logger';
 export const xmasDate = writable<string | null>(DEV_MENU ? load<string | null>('xmasDate', null) : null);
 xmasDate.subscribe((d) => { if (DEV_MENU) save('xmasDate', d); });
 
-/** The time the event goes by: the dev menu's date at noon, or the game clock. */
+/** The time the event goes by: the dev menu's date with the clock's time of day, or the game clock. */
 export function xmasNow(): number {
   const d = get(xmasDate);
   if (!d) return clock.now();
-  return new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10), 12).getTime();
+  const t = new Date(clock.now());
+  return new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10), t.getHours(), t.getMinutes(), t.getSeconds()).getTime();
+}
+
+/** Dev menu: a forced look for the village, or 'auto' for date and daylight. */
+export const forcedLook = writable<Look | 'auto'>(DEV_MENU ? load<Look | 'auto'>('forcedLook', 'auto') : 'auto');
+forcedLook.subscribe((l) => { if (DEV_MENU) save('forcedLook', l); });
+
+/** The village's look now: summer in a build without the event. */
+export function villageLook(): Look {
+  if (!CHRISTMAS) return 'summer';
+  const f = get(forcedLook);
+  return f === 'auto' ? lookAt(xmasNow()) : f;
 }
 
 export const xmas = writable<XmasState>(load('xmas', null) ?? startXmas(new Date(xmasNow()).getFullYear()));
