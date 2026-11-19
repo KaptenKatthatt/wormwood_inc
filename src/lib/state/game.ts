@@ -21,6 +21,7 @@ import { HOOKS, type HookId, type HookResponse } from '../hooks';
 import { ATTACK, FALLBACK_MINUTES, OFFER, attackStrength, defence, nextStep, resolveAttack, type AttackResult, type StairEvent, type Step } from '../staircase';
 import { BUBBLES, LETTERS, pickLine } from '../voices';
 import { tutorialActive } from '../tutorial';
+import { DAMAGE_MOOD, pickDamaged, repairGold, repairTime, withDamage, type Damage } from '../damage';
 
 /** A new life every 30 minutes, at most five (Jonas, 2026-11-17). */
 export const LIFE_REGEN = 30 * MINUTE;
@@ -182,10 +183,12 @@ function onTimerDone(t: GameTimer): void {
     say(pickLine(BUBBLES.built));
   }
   const st = get(stairs);
-  if (st.damaged?.timerId === t.id) {
-    stairs.set({ ...st, damaged: null });
-    toast(`${BUILDINGS.find((b) => b.id === st.damaged!.id)?.name} är lagad`);
-    changeMood(10);
+  const mended = st.damaged.find((d) => d.timerId === t.id);
+  if (mended) {
+    stairs.set({ ...st, damaged: st.damaged.filter((d) => d !== mended) });
+    toast(`${BUILDINGS.find((b) => b.id === mended.id)?.name} är lagad`);
+    changeMood(DAMAGE_MOOD);
+    log('repair_done', { building: mended.id, minutesIn: minutesIn() });
   }
 }
 
@@ -375,12 +378,12 @@ export function startBuild(id: BuildingId): boolean {
   const v = get(village);
   const p = get(purse);
   const block = buildBlock(v, id, p.gold);
-  if (block) return false;
+  if (block || isDamaged(id)) return false;
   const n = v.builds + 1;
   const cost = priceFor(n, v, id);
   const t = addTimer('build', BUILDINGS.find((b) => b.id === id)!.name, buildTime(n));
   purse.set({ ...p, gold: p.gold - cost });
-  village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id } });
+  village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id }, last: { ...v.last, [id]: { gold: cost, ms: buildTime(n) } } });
   if (buildTime(n) >= 5 * MINUTE) stairEvent('longBuild');
   if (n >= 2) tipOnce('quit', 'När du vill sluta spela: tryck Avsluta längst ner i byn.');
   log('build_start', { building: id, toLevel: v.levels[id] + 1, buildNo: n, gold: cost, timeMs: buildTime(n), minutesIn: minutesIn() });
@@ -479,17 +482,23 @@ export interface StairState {
   attack: { hitsAt: number; strength: number; side?: number; result?: AttackResult } | null;
   soldiers: number;
   shieldUntil: number;
-  damaged: { id: BuildingId; timerId: string } | null;
+  /** Buildings damaged by a lost attack, each until it is repaired. */
+  damaged: Damage[];
   /** The villagers' mood, 0 to 100. */
   mood: number;
   lastSeen: number;
 }
 
 function startStairs(t: number): StairState {
-  return { step: 1, reached: { 1: 0 }, offer: null, attack: null, soldiers: 0, shieldUntil: 0, damaged: null, mood: 60, lastSeen: t };
+  return { step: 1, reached: { 1: 0 }, offer: null, attack: null, soldiers: 0, shieldUntil: 0, damaged: [], mood: 60, lastSeen: t };
 }
 
-export const stairs = writable<StairState>(load('stairs', null) ?? startStairs(clock.now()));
+/** A save from before 2026-11-19 held one damaged building or null. */
+function withDamageList(s: StairState): StairState {
+  const d = s.damaged as unknown;
+  return Array.isArray(d) ? s : { ...s, damaged: d ? [d as Damage] : [] };
+}
+export const stairs = writable<StairState>(withDamageList(load('stairs', null) ?? startStairs(clock.now())));
 stairs.subscribe((s) => save('stairs', s));
 
 /** The advisor's letter on screen, if any. */
@@ -515,11 +524,36 @@ export function changeMood(delta: number): void {
   stairs.update((s) => ({ ...s, mood: Math.max(0, Math.min(100, Math.round(s.mood + delta))) }));
 }
 
-/** Village with a damaged building counted as level 0 (no bonus while it is broken). */
+/** The village as its bonuses count it: a damaged building gives half until it is repaired. */
 export function effectiveVillage(): VillageState {
+  return withDamage(get(village), get(stairs).damaged);
+}
+
+export function isDamaged(id: BuildingId): boolean {
+  return get(stairs).damaged.some((d) => d.id === id);
+}
+
+/** What the repair of a building costs: from its last upgrade, or today's price for an older save. */
+export function repairPrice(id: BuildingId): { gold: number; ms: number } {
   const v = get(village);
-  const d = get(stairs).damaged;
-  return d ? { ...v, levels: { ...v.levels, [d.id]: 0 } } : v;
+  const last = v.last?.[id] ?? { gold: priceFor(Math.max(1, v.builds), v, id), ms: buildTime(Math.max(1, v.builds)) };
+  return { gold: repairGold(last.gold), ms: repairTime(last.ms) };
+}
+
+/** The player starts the repair of a damaged building and pays its gold. */
+export function startRepair(id: BuildingId): boolean {
+  const st = get(stairs);
+  const d = st.damaged.find((x) => x.id === id);
+  if (!d || d.timerId) return false;
+  const price = repairPrice(id);
+  const p = get(purse);
+  if (p.gold < price.gold) { toast('För lite guld'); return false; }
+  purse.set({ ...p, gold: p.gold - price.gold });
+  const name = BUILDINGS.find((b) => b.id === id)?.name ?? id;
+  const t = addTimer('other', `${name} lagas`, price.ms);
+  stairs.set({ ...get(stairs), damaged: st.damaged.map((x) => (x.id === id ? { ...x, timerId: t.id } : x)) });
+  log('repair_started', { building: id, gold: price.gold, timeMs: price.ms, minutesIn: minutesIn() });
+  return true;
 }
 
 /** Moves the staircase on, on an event or by the clock. */
@@ -624,50 +658,49 @@ export function trainSoldier(): boolean {
   return true;
 }
 
-/** A lost attack: some gold goes and one building needs repair. */
-function applyAttackLoss(): { goldLost: number; damaged: string | null } {
+/** A lost attack: some gold goes and one to three buildings are damaged, nearest the attack's side first. */
+function applyAttackLoss(side: number, def: number, strength: number): { goldLost: number; damaged: BuildingId[] } {
   const p = get(purse);
   const goldLost = Math.round(p.gold * ATTACK.goldLoss);
   purse.set({ ...p, gold: p.gold - goldLost });
-  const v = get(village);
-  const built = BUILDINGS.filter((b) => v.levels[b.id] > 0 && b.id !== 'stugan');
-  const target = (built.length ? built : BUILDINGS.filter((b) => v.levels[b.id] > 0))[0];
   const st = get(stairs);
-  if (target && !st.damaged) {
-    const t = addTimer('other', `${target.name} lagas`, ATTACK.repairMs);
-    stairs.set({ ...get(stairs), damaged: { id: target.id, timerId: t.id } });
-  }
-  return { goldLost, damaged: target?.name ?? null };
+  const hit = pickDamaged(get(village), st.damaged, side, def, strength);
+  stairs.set({ ...st, damaged: [...st.damaged, ...hit.map((id) => ({ id }))] });
+  changeMood(-DAMAGE_MOOD * hit.length);
+  for (const id of hit) log('building_damaged', { building: id, side: SIDES[side], defence: def, strength, minutesIn: minutesIn() });
+  return { goldLost, damaged: hit };
 }
+
+const names = (ids: BuildingId[]): string => ids.map((id) => BUILDINGS.find((b) => b.id === id)?.name ?? id).join(', ');
 
 function hitAttack(): void {
   const st = get(stairs);
   if (!st.attack) return;
   const def = currentDefence();
   const result = resolveAttack(st.attack.strength, def, st.shieldUntil > clock.now());
-  let damaged = st.damaged;
   if (result === 'lost') {
-    const loss = applyAttackLoss();
+    const loss = applyAttackLoss(st.attack.side ?? 0, def, st.attack.strength);
     const lost = loss.goldLost;
-    damaged = get(stairs).damaged;
+    const damaged = loss.damaged;
     changeMood(-25);
     writeLetter('attackLost');
     say(pickLine(BUBBLES.lost));
-    log('attack_result', { result, strength: st.attack.strength, defence: def, goldLost: lost, damaged: damaged?.id, minutesIn: minutesIn() });
+    log('attack_result', { result, strength: st.attack.strength, defence: def, goldLost: lost, damaged, minutesIn: minutesIn() });
   } else {
     changeMood(10);
     if (result === 'defended') writeLetter('defended');
     log('attack_result', { result, strength: st.attack.strength, defence: def, minutesIn: minutesIn() });
   }
-  stairs.set({ ...get(stairs), attack: { ...st.attack, result }, damaged });
+  stairs.set({ ...get(stairs), attack: { ...st.attack, result } });
 }
 
-export function skipRepair(): boolean {
-  const d = get(stairs).damaged;
+export function skipRepair(id: BuildingId): boolean {
+  const d = get(stairs).damaged.find((x) => x.id === id);
   const t = d && get(timers).find((x) => x.id === d.timerId);
   if (!d || !t) return false;
   const left = remaining(t, clock.now());
   if (!payGems(skipGems(left), 'skipWait', { repair: d.id, leftMs: left })) return false;
+  log('repair_skipped_with_gems', { building: d.id, gems: skipGems(left), leftMs: left, minutesIn: minutesIn() });
   timers.update((list) => finishNow(list, t.id, clock.now()));
   tick();
   return true;
@@ -769,14 +802,16 @@ function awayAttack(away: number): void {
   const v = get(village);
   if (!BUILDINGS.some((b) => v.levels[b.id] > 0)) return;
   const st = get(stairs);
-  const def = currentDefence(Math.floor(Math.random() * 4));
-  const result = resolveAttack(attackStrength(def), def, st.shieldUntil > clock.now());
+  const side = Math.floor(Math.random() * 4);
+  const def = currentDefence(side);
+  const strength = attackStrength(def);
+  const result = resolveAttack(strength, def, st.shieldUntil > clock.now());
   let goldLost = 0;
   let damaged: string | null = null;
   if (result === 'lost') {
-    const loss = applyAttackLoss();
+    const loss = applyAttackLoss(side, def, strength);
     goldLost = loss.goldLost;
-    damaged = loss.damaged;
+    damaged = loss.damaged.length ? names(loss.damaged) : null;
     changeMood(-20);
   }
   awayReport.set({ result, goldLost, damaged, hours: Math.round(away / HOUR) });

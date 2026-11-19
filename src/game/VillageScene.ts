@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import ART from './villageArt.json';
 
-export interface PlotView { id: string; name: string; level: number; building: boolean; progress: number; locked?: boolean }
+export interface PlotView { id: string; name: string; level: number; building: boolean; progress: number; locked?: boolean; damaged?: boolean }
 
 interface Stage { file: string; x: number; y: number; w: number; h: number }
 interface ArtBuilding { anchor: [number, number]; bygge: { kind: 'hus' | 'torn'; scale: number; x: number; y: number }; stages: Record<'1' | '2' | '3', Stage> }
@@ -102,7 +102,16 @@ export class VillageScene extends Phaser.Scene {
       if (p.level > 0) {
         const st = b.stages[stageOf(p.level)];
         const t = this.tex(look, st.file);
-        this.add.image(ox + (st.x - t.pad) * s, oy + (st.y - t.pad) * s, t.key).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1);
+        const pic = this.add.image(ox + (st.x - t.pad) * s, oy + (st.y - t.pad) * s, t.key).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1);
+        if (p.damaged) {
+          // A plain mark until the damaged pictures are painted: the building darkened, a red sign over it.
+          pic.setTint(0x8a7f78);
+          const r = 13 * k;
+          const cx = pic.x + pic.displayWidth / 2;
+          const cy = pic.y + r;
+          this.add.circle(cx, cy, r, 0x9c2a1e).setStrokeStyle(2 * k, 0xffffff);
+          this.add.text(cx, cy, '!', { fontFamily: 'sans-serif', fontStyle: 'bold', fontSize: `${18 * k}px`, color: '#ffffff' }).setOrigin(0.5);
+        }
       }
       if (p.building) {
         const g = b.bygge;
