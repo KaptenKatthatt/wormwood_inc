@@ -11,7 +11,7 @@ export const LETTERS: Record<Step | 'quit' | 'attackLost' | 'defended', string> 
   1: 'Välkommen till udden! Här finns lite guld och några ädelstenar, så att du kommer igång.',
   2: 'Så nära du var! Ibland behövs bara några drag till, och det är inget att skämmas för.',
   3: 'Fina saker tar tid, och det är helt i sin ordning att vänta. Men vill du se byn växa redan nu finns det alltid en genväg.',
-  4: 'Ett startpaket väntar på dig, men det finns bara kvar en liten stund. Du får veta det först av alla.',
+  4: 'Ett startpaket väntar på dig! Det finns bara kvar en liten stund, så passa på.',
   5: 'Det kommer främlingar över vattnet och byborna är lite oroliga. De litar på dig.',
   quit: 'Går du redan? Byborna har precis börjat känna sig trygga med dig här.',
   attackLost: 'Det gick inte riktigt den här gången, men byborna är oskadda. Med lite hjälp blir allt som vanligt igen.',
