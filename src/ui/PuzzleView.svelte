@@ -39,6 +39,7 @@
   /** The obstacle shown with an arrow and a sentence, the first time it appears. */
   let intro = $state<Obstacle | null>(null);
   const hint = $derived($tutorial.index !== null && TUT_STEPS[$tutorial.index]?.hint === true);
+  const toVillageOnly = $derived($tutorial.index !== null && TUT_STEPS[$tutorial.index]?.id === 'village');
 
   // The main menu hides while a challenge is on screen.
   $effect(() => { inLevel.set(game !== null); return () => inLevel.set(false); });
@@ -351,7 +352,8 @@
       <button class="ghost" onclick={() => { doubled = true; offerAd('double', reward!.total); }}>▶ Titta på en kort film: dubbelt guld</button>
     {/if}
     <div class="buttons">
-      <button class="primary" onclick={() => toMap(true)}>Vidare</button>
+      <!-- off during the introduction's step "Till byn", so the only way on is the button it points at (Jonas, 2026-11-19) -->
+      <button class="primary" disabled={toVillageOnly} onclick={() => toMap(true)}>Vidare</button>
       <button class="ghost" data-tut="to-village" onclick={onVillage}>Till byn</button>
     </div>
   </Modal>
