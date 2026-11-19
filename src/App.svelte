@@ -28,6 +28,9 @@
   import Christmas from './ui/Christmas.svelte';
   import { xmasOpen } from './lib/state/christmas';
   import { CHRISTMAS } from './lib/config/flags';
+  import Questionnaire from './ui/Questionnaire.svelte';
+  import { offerQuestionnaire, qOpen } from './lib/state/questionnaire';
+  import { letter } from './lib/state/game';
   // The start screen shows each time the app opens (Jonas, 2026-11-18).
   let intro = $state(true);
 
@@ -56,6 +59,19 @@
   $effect(() => {
     const s = tutStep;
     if (s && s.tab !== 'any' && !s.selfNav && s.tab !== tab) go(s.tab);
+  });
+
+  // The questionnaire that stands in for the interview: the game asks when it
+  // opens or comes back after the free week, but never on top of something else.
+  const quiet = $derived(!intro && !tutStep && $settings.logging !== null && !$quitFlow && !$awayReport && !$streakRepair && !$calendarOpen && !$offerOpen && !$shopOpen && !$letter && !$adOpen && !$hubOpen && !$offerShown && !$friendNote && !$xmasOpen);
+  let wantAsk = $state(true);
+  $effect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') wantAsk = true; };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  });
+  $effect(() => {
+    if (wantAsk && quiet) { wantAsk = false; offerQuestionnaire(); }
   });
 
   function go(t: Tab) {
@@ -95,6 +111,8 @@
     {#if $friendNote && !$hubOpen}<FriendNote />{/if}
     {#if $adOpen}<AdOverlay />{/if}
   {/if}
+  <!-- Last, so it lies on top of anything that opens at the same moment. -->
+  {#if $qOpen && !tutStep && !$quitFlow}<Questionnaire />{/if}
 </div>
 {/if}
 

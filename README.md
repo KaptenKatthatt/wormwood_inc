@@ -59,6 +59,10 @@ Servern sparar en NDJSON-fil per dag.
 
 Varje avslutad bana loggas (`level_won` eller `level_lost`) med tid i sekunder, använda och givna drag, köpta extra drag, hur nära målet spelaren kom (0 till 1), vad som var kvar, poäng och om banan var riggad. Introduktionen loggas med `tutorial_start`, `tutorial_step` och `tutorial_end`.
 
+## Frågeformuläret
+
+Testare som inte kan intervjuas svarar i spelet i stället (`src/lib/questionnaire.ts`, `src/ui/Questionnaire.svelte`). Spelet frågar själv från testdag 8, högst tre gånger, och formuläret finns alltid under Inställningar. Del 1 ställs innan något avslöjas, sedan kommer debriefingen som text, och sist del 2 med frågan om uppgifterna får användas. Svaren loggas som `questionnaire_part1` och `questionnaire_part2`; ett nej loggas som `data_withdrawn` och stänger av loggningen.
+
 ## Kommandon
 
 ```bash

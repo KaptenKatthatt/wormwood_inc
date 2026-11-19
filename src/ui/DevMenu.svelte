@@ -19,6 +19,8 @@
   }
   let pick = $state(1);
   import { CHRISTMAS } from '../lib/config/flags';
+  import { devAskQuestionnaire, devResetQuestionnaire, qState } from '../lib/state/questionnaire';
+  import { DUE_DAY } from '../lib/questionnaire';
   import { devXmasDate, xmas, xmasDate, xmasDay } from '../lib/state/christmas';
   const xday = $derived.by(() => { void $now; void $daily; void $settings; void $xmasDate; return xmasDay(); });
 
@@ -69,6 +71,15 @@
       {#each [2, 3, 4, 5] as k}
         <button class="ghost" disabled={$stairs.step >= k} onclick={() => devStep(k as Step)}>Till steg {k}</button>
       {/each}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Frågeformuläret (ersätter intervjun)</legend>
+    <p>Spelet frågar själv från dag {DUE_DAY}. Nu: {({ part1: 'del 1', debrief: 'berättelsen', part2: 'del 2', done: 'klart' })[$qState.stage]}, frågat {$qState.asks} gånger. Kräver att testdata skickas.</p>
+    <div class="row">
+      <button class="ghost" onclick={devAskQuestionnaire}>Fråga nu</button>
+      <button class="ghost" onclick={devResetQuestionnaire}>Nollställ formuläret</button>
     </div>
   </fieldset>
 

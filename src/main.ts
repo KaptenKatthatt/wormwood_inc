@@ -13,6 +13,7 @@ import { listenForInstall, isStandalone } from './lib/pwa/install';
 import { get } from 'svelte/store';
 import { permissionNow, subscribe } from './lib/push/push';
 import { rescheduleAll, toast } from './lib/state/game';
+import { scheduleQuestionnairePush } from './lib/state/questionnaire';
 
 // Registered before the logger's own pagehide flush, so this event goes out with it.
 window.addEventListener('pagehide', () => log('pagehide', { minutesIn: minutesIn() }));
@@ -51,10 +52,12 @@ document.addEventListener('visibilitychange', () => {
     clock.persist();
     markSeen();
     scheduleAwayPushes();
+    scheduleQuestionnairePush();
     log('visit_end', { ...visitInfo(), seconds: Math.round((Date.now() - visitStart) / 1000) });
   }
 });
 
+scheduleQuestionnairePush();
 log('open', { standalone: isStandalone(), version: __APP_VERSION__, code: testCode(playerId) });
 
 // Look for a new version on start, every 15 minutes, and whenever the game
