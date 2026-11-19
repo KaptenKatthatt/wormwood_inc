@@ -165,13 +165,18 @@ Allt pynt kostar 920 pepparkakor. En testare som spelar en vecka får ungefär 1
 
 Från tråden "Rätta felen från Jonas testrunda", efter Jonas lista:
 
-- **Pris per byggnad.** Byggnumrets kostnad (kurvan är oförändrad) gånger byggnadens faktor, avrundat till 10. Marknadens rabatt gäller som förut. De två första byggena är gratis, och byggtiden följer byggnumret. Föreslagna faktorer, som Jonas inte har godkänt än: Stugan 1,5; Marknaden 1,4; Kvarnen 1,3; Hamnen 1,3; Sjöboden 1,2; Gästgiveriet 1,2; Smedjan 1,1; Skolan 1,1; Kasernen 1,0; Ladan 0,9; vakttornen 0,8; Kapellet 0,7.
+- **Pris per byggnad.** Byggnumrets kostnad (kurvan är oförändrad) gånger byggnadens faktor, avrundat till 10. Marknadens rabatt gäller som förut. De två första byggena är gratis, och byggtiden följer byggnumret. Faktorerna, godkända av Jonas 2026-11-19: Stugan 1,5; Marknaden 1,4; Kvarnen 1,3; Hamnen 1,3; Sjöboden 1,2; Gästgiveriet 1,2; Smedjan 1,1; Skolan 1,1; Kasernen 1,0; Ladan 0,9; vakttornen 0,8; Kapellet 0,7.
 - **Byn.** Byn tar hela skärmen. En flytande knapp "Bygg" öppnar bygglistan som ett ark nerifrån, med priset på varje knapp.
 - **Inne i en utmaning.** Flikmenyn syns inte. En menyknapp uppe till vänster öppnar "Paus" med musik och ljud av och på, Fortsätt spela och Lämna utmaningen. Att lämna kostar ett liv om minst ett drag är gjort, annars inget.
 - **Hinder utan siffror.** Malm och klappersten visar inga siffror utan spricker mer för varje träff.
 - **Reklamfilmer.** Fyra egna påhittade filmer (Bärplock, Brygghuset Nordanvind, Mäklarhuset Vassen, Fiskelyckan), 10 sekunder med tre scener och en stapel som går från vänster till höger kant. Efter filmen visas en belöningsanimation där guldet räknas upp till det dubbla. Varje visning loggas med filmens id.
 - **Ladans text.** "Förråden i byar du tagit över rymmer en timmes guld till för varje nivå". Mekaniken är oförändrad.
 - **Musik per värld.** Värld 2–5 får egna låtar. Värld 1 behåller sina två.
+- **Godkänt av Jonas 2026-11-19:** byn i helskärm med flytande Bygg-knapp, pris per byggnad, och animationen där guldet dubblas efter filmen.
+- **Liv.** Liv visas som fem hjärtikoner, röda eller tomma, utan siffra och utan ordet "fullt".
+- **Menyknappen** inne i en utmaning ligger i topplisten.
+- **Skrikig reklam.** Jonas vill att reklamen skär sig med spelet och är lite irriterande, som riktig reklam. Utöver de fyra lugna filmerna finns fyra skrikiga påhittade: Guldregn (nätcasino), Fullträff (betting), Fyndo (shoppingapp) och Kungars Krig (krigsspel). Existerande reklamfilmer används inte, eftersom det kräver tillstånd. De fyra nya filmerna väntar på Jonas ja.
+- **Väntar på Jonas:** var guld och ädelstenar ska ligga inne i en utmaning, och en tydligare sprucken malm.
 
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
