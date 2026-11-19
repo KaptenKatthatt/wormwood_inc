@@ -50,7 +50,7 @@ describe('Christmas in Skargardsbyn', () => {
   });
 
   it('sells decorations for gingerbread until the market closes, and keeps them', () => {
-    expect(DECOR.map((d) => d.cookies)).toEqual([40, 80, 150, 250, 400]);
+    expect(DECOR.map((d) => d.cookies)).toEqual([40, 80, 100, 150, 250, 400]);
     let s = { ...startXmas(2026), cookies: 100 };
     expect(decorBlock(s, 'tree', 10)).toBe('cookies');
     expect(buyDecor(s, 'tree', 10)).toBeNull();
@@ -60,6 +60,10 @@ describe('Christmas in Skargardsbyn', () => {
     expect(decorBlock(s, 'sheaves', 0)).toBe('closed');
     expect(decorLayers({ decor: ['tree', 'lights'], star: true })).toEqual(['jul-ljusslingor.webp', 'jul-gran.webp', 'jul-stjarna.webp']);
     expect(decorLayers({ decor: ['lights'], star: true })).toEqual(['jul-ljusslingor.webp']);
+    // winter: snow on the goat and the tree, window stars only where they are painted
+    expect(decorLayers({ decor: ['goat', 'tree', 'stars'], star: false }, 'b', true)).toEqual(['jul-adventsstjarnor-b.webp', 'jul-bock-sno.webp', 'jul-gran-sno.webp']);
+    expect(decorLayers({ decor: ['stars'], star: false }, 'b', false)).toEqual([]);
+    expect(decorLayers({ decor: ['stars'], star: false }, 'summer', true)).toEqual([]);
     expect(buyDecor(s, 'sheaves', 0)).toBeNull();
     expect(s.decor).toEqual(['lights']);
   });

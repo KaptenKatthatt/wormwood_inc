@@ -20,7 +20,7 @@ export type Sfx =
   | 'buildStart' | 'buildDone' | 'attack' | 'defended' | 'notify' | 'click'
   // the special tiles and the hard blocks (Jonas, 2026-11-19)
   | 'rocket' | 'fireworks' | 'shine' | 'crack' | 'break' | 'hammer';
-export type Music = 'title' | 'village' | 'puzzle-brickor' | 'puzzle-gem-waltz' | `world-${number}`;
+export type Music = 'title' | 'village' | 'puzzle-brickor' | 'puzzle-gem-waltz' | `world-${number}` | `world-${number}-${string}`;
 
 const SFX_FILES: Record<Sfx, string> = {
   swap: 'swap', invalid: 'invalid', win: 'win', lose: 'lose', near: 'near', purchase: 'purchase',
@@ -39,6 +39,16 @@ const MUSIC_FILES: Record<string, string> = {
  */
 export const WORLD_TUNES: readonly number[] = [2, 3, 4, 5];
 for (const w of WORLD_TUNES) MUSIC_FILES[`world-${w}`] = `world-${w}`;
+/**
+ * More tunes for a world, taking turns with its own from challenge to
+ * challenge: public/audio/music/world-<n>-<name>.{ogg,mp3}. The winter market
+ * plays "Julmarknad" and five classic Christmas melodies (Jonas, 2026-11-19:
+ * "include them all and alternate between them").
+ */
+export const WORLD_EXTRA: Readonly<Record<number, readonly string[]>> = {
+  5: ['jingle', 'deck', 'wish', 'staffan', 'gran'],
+};
+for (const [w, names] of Object.entries(WORLD_EXTRA)) for (const name of names) MUSIC_FILES[`world-${w}-${name}`] = `world-${w}-${name}`;
 /** Cascade steps: match-0 .. match-7 rise through a pentatonic scale. */
 const MATCH_STEPS = 8;
 
@@ -50,6 +60,13 @@ export const audioSettings = writable<AudioSettings>({ music: true, ambience: tr
 audioSettings.subscribe((s) => save('audio', s));
 
 const LEVEL = { music: 0.45, ambience: 0.35, sfx: 0.8 };
+/**
+ * Tracks that play louder than the common music level. The title tune plays
+ * alone, with no game sounds around it, and Jonas found it very quiet in the
+ * test app (2026-11-19), so it gets twice the level. "Julmarknad" is lifted to
+ * sit level with the Christmas melodies it takes turns with.
+ */
+const TRACK_GAIN: Partial<Record<string, number>> = { title: 2, 'world-5': 1.3 };
 
 let ctx: AudioContext | null = null;
 let musicGain: GainNode, ambienceGain: GainNode, sfxGain: GainNode;
@@ -162,7 +179,7 @@ async function syncMusic(): Promise<void> {
   const gain = ctx.createGain();
   gain.gain.value = 0;
   gain.connect(musicGain);
-  gain.gain.setTargetAtTime(1, ctx.currentTime, 0.5);
+  gain.gain.setTargetAtTime(TRACK_GAIN[name] ?? 1, ctx.currentTime, 0.5);
   current = { name, src: loop(buf, gain), gain };
 }
 
@@ -190,11 +207,22 @@ export function setMusic(name: Music | null, ambience = false): void {
 
 /**
  * The first world alternates between its two tunes from level to level
- * (Jonas, 2026-11-17); the later worlds each have their own (2026-11-19).
+ * (Jonas, 2026-11-17); the later worlds each have their own (2026-11-19),
+ * and a world with more than one takes them in turn.
  */
-export function puzzleMusicFor(levelId: number, tunes: readonly number[] = WORLD_TUNES): Music {
-  const world = Math.floor((((levelId - 1) % 200) + 200) % 200 / 40) + 1;
-  if (tunes.includes(world)) return `world-${world}`;
+export function puzzleMusicFor(
+  levelId: number,
+  tunes: readonly number[] = WORLD_TUNES,
+  extra: Readonly<Record<number, readonly string[]>> = WORLD_EXTRA,
+): Music {
+  const onRoad = (((levelId - 1) % 200) + 200) % 200;
+  const world = Math.floor(onRoad / 40) + 1;
+  if (tunes.includes(world)) {
+    // The world's own tune on its first challenge, then its other tunes in turn.
+    const more = extra[world] ?? [];
+    const turn = (onRoad % 40) % (more.length + 1);
+    return turn === 0 ? `world-${world}` : `world-${world}-${more[turn - 1]}`;
+  }
   return levelId % 2 === 1 ? 'puzzle-brickor' : 'puzzle-gem-waltz';
 }
 
