@@ -190,7 +190,7 @@ def world(tune: dict, bpm: float, lead: int, lead2: int, groove: str = "pop", oc
                     s.note("anvil", t, "F#7", 0.2, 50 if full else 40)
                 elif extra == "sleigh":
                     s.note("drums", t, SLEIGH, 0.2, 62)
-                    s.note("drums", t + 0.5, SLEIGH, 0.2, 44)
+                    s.note("drums", t + off, SLEIGH, 0.2, 44)
                     if k == 0:
                         s.note("drums", t, TRIANGLE, 0.3, 50)
                 elif extra == "mill":
@@ -219,6 +219,93 @@ TUNES = {
                                                 sparkle=CELESTA, extra="sleigh"),
     "world5_julmarknad_whistle": lambda: world(JUL, 120, WHISTLE, ACCORDION, "pop", octave=-1, sparkle=GLOCK, extra="sleigh"),
 }
+
+
+# ------------------------------------------------ more Christmas tunes for world 5
+# Jonas 2026-11-19 13.08: the four picks are approved, "but make more Christmas tunes".
+
+# "Pepparkakor" (Gingerbread): G major, a doubled note and a hop.
+PEPP = dict(
+    A=[[("B5", .5), ("B5", .5), ("D6", 1), ("B5", .5), ("G5", .5), ("B5", 1)],
+       [("C6", .5), ("C6", .5), ("E6", 1), ("C6", .5), ("G5", .5), ("C6", 1)],
+       [("B5", .5), ("B5", .5), ("D6", 1), ("B5", .5), ("G5", .5), ("D5", 1)],
+       [("F#5", .5), ("G5", .5), ("A5", .5), ("B5", .5), ("A5", 2)],
+       [("B5", .5), ("B5", .5), ("D6", 1), ("B5", .5), ("G5", .5), ("B5", 1)],
+       [("C6", .5), ("C6", .5), ("E6", 1), ("C6", .5), ("G5", .5), ("C6", 1)],
+       [("D6", .5), ("C6", .5), ("B5", .5), ("A5", .5), ("G5", .5), ("F#5", .5), ("A5", 1)],
+       [("G5", 1), ("B5", .5), ("G5", .5), (None, 2)]],
+    Ac=["G", "C", "G", "D", "G", "C", "D7", "G"],
+    B=[[("G5", 1), ("B5", 1), ("E6", 1.5), ("D6", .5)],
+       [("C6", .5), ("B5", .5), ("A5", .5), ("G5", .5), ("E5", 2)],
+       [("A5", 1), ("C6", 1), ("E6", 1.5), ("D6", .5)],
+       [("C6", .5), ("B5", .5), ("A5", .5), ("F#5", .5), ("D5", 2)],
+       [("G5", 1), ("B5", 1), ("E6", 1.5), ("D6", .5)],
+       [("C6", .5), ("B5", .5), ("A5", .5), ("G5", .5), ("E5", 2)],
+       [("A5", .5), ("B5", .5), ("C6", .5), ("E6", .5), ("D6", 1), ("F#5", 1)],
+       [("G5", 2), (None, 2)]],
+    Bc=["Em", "C", "Am", "D", "Em", "C", ("Am", "D7"), "G"],
+)
+
+# "Tomtenissar" (Little gnomes): A major, tiptoeing with rests between the notes.
+NISSE = dict(
+    A=[[("A5", .5), (None, .5), ("C#6", .5), (None, .5), ("E6", .5), ("C#6", .5), ("A5", 1)],
+       [("G#5", .5), (None, .5), ("B5", .5), (None, .5), ("E6", .5), ("B5", .5), ("G#5", 1)],
+       [("A5", .5), (None, .5), ("C#6", .5), (None, .5), ("E6", .5), ("F#6", .5), ("E6", 1)],
+       [("D6", .5), ("C#6", .5), ("B5", .5), ("A5", .5), ("B5", 2)],
+       [("A5", .5), (None, .5), ("C#6", .5), (None, .5), ("E6", .5), ("C#6", .5), ("A5", 1)],
+       [("F#5", .5), (None, .5), ("A5", .5), (None, .5), ("D6", .5), ("A5", .5), ("F#5", 1)],
+       [("F#5", .5), ("A5", .5), ("D6", .5), ("C#6", .5), ("B5", .5), ("G#5", .5), ("E5", 1)],
+       [("A5", 1), ("E5", .5), ("A5", .5), (None, 2)]],
+    Ac=["A", "E", "A", "E", "A", "D", ("D", "E"), "A"],
+    B=[[("C#6", 1.5), ("B5", .5), ("A5", 1), ("F#5", 1)],
+       [("D6", 1.5), ("C#6", .5), ("B5", 1), ("A5", 1)],
+       [("C#6", .5), ("E6", .5), ("C#6", .5), ("A5", .5), ("E5", 1), ("A5", 1)],
+       [("B5", 1.5), ("C#6", .5), ("B5", 2)],
+       [("C#6", 1.5), ("B5", .5), ("A5", 1), ("F#5", 1)],
+       [("D6", 1.5), ("C#6", .5), ("B5", 1), ("A5", 1)],
+       [("D6", .5), ("C#6", .5), ("B5", .5), ("D6", .5), ("C#6", 1), ("G#5", 1)],
+       [("A5", 2), (None, 2)]],
+    Bc=["F#m", "D", "A", "E", "F#m", "D", ("D", "E"), "A"],
+)
+
+# "Slädfärd" (Sleigh ride): a lilting 6/8 in D major, like a horse trotting.
+SLADE = dict(
+    A=[[("F#5", 2 * T), ("A5", T), ("D6", 2 * T), ("A5", T), ("F#5", T), ("G5", T), ("A5", T), ("F#5", 1)],
+       [("G5", 2 * T), ("B5", T), ("D6", 2 * T), ("B5", T), ("G5", T), ("A5", T), ("B5", T), ("G5", 1)],
+       [("F#5", 2 * T), ("A5", T), ("D6", 2 * T), ("F#6", T), ("E6", T), ("D6", T), ("B5", T), ("A5", 1)],
+       [("E5", 2 * T), ("A5", T), ("C#6", 2 * T), ("B5", T), ("A5", 1), (None, 1)],
+       [("F#5", 2 * T), ("A5", T), ("D6", 2 * T), ("A5", T), ("F#5", T), ("G5", T), ("A5", T), ("F#5", 1)],
+       [("G5", 2 * T), ("B5", T), ("D6", 2 * T), ("B5", T), ("G5", T), ("A5", T), ("B5", T), ("G5", 1)],
+       [("E6", T), ("D6", T), ("C#6", T), ("B5", 2 * T), ("A5", T), ("G5", T), ("F#5", T), ("E5", T), ("C#6", 1)],
+       [("D6", 1), ("A5", 2 * T), ("A5", T), ("D6", 1), (None, 1)]],
+    Ac=["D", "G", "D", "A", "D", "G", "A7", "D"],
+    B=[[("B5", 2 * T), ("D6", T), ("F#6", 1), ("E6", 2 * T), ("D6", T), ("B5", 1)],
+       [("G5", 2 * T), ("B5", T), ("D6", 1), ("B5", 2 * T), ("A5", T), ("G5", 1)],
+       [("A5", T), ("B5", T), ("A5", T), ("F#5", 2 * T), ("A5", T), ("D6", 2 * T), ("F#6", T), ("D6", 1)],
+       [("C#6", 2 * T), ("B5", T), ("A5", 2 * T), ("E5", T), ("A5", 1), (None, 1)],
+       [("B5", 2 * T), ("D6", T), ("F#6", 1), ("E6", 2 * T), ("D6", T), ("B5", 1)],
+       [("G5", 2 * T), ("B5", T), ("D6", 1), ("B5", 2 * T), ("A5", T), ("G5", 1)],
+       [("G5", T), ("A5", T), ("B5", T), ("E6", 2 * T), ("B5", T), ("C#6", T), ("D6", T), ("E6", T), ("C#6", 1)],
+       [("D6", 2), (None, 2)]],
+    Bc=["Bm", "G", "D", "A", "Bm", "G", ("Em", "A7"), "D"],
+)
+
+for _t in (PEPP, NISSE, SLADE):
+    for _part in ("A", "B"):
+        assert len(_t[_part]) == len(_t[_part + "c"]) == 8
+        for _i, _bar in enumerate(_t[_part]):
+            assert abs(sum(d for _, d in _bar) - 4) < 1e-6, (_part, _i)
+
+_XMAS = dict(octave=-1, sparkle=CELESTA, extra="sleigh")
+TUNES.update({
+    # the music box leads, as in the version of Julmarknad that Jonas picked
+    "world5_pepparkakor_musicbox": lambda: world(PEPP, 112, MUSICBOX, RECORDER, "polka", chords=ACCORDION, **_XMAS),
+    "world5_pepparkakor_recorder": lambda: world(PEPP, 118, RECORDER, ACCORDION, "pop", **_XMAS),
+    "world5_tomtenissar_musicbox": lambda: world(NISSE, 108, MUSICBOX, RECORDER, "polka", chords=ACCORDION, **_XMAS),
+    "world5_tomtenissar_recorder": lambda: world(NISSE, 114, RECORDER, ACCORDION, "pop", **_XMAS),
+    "world5_sladfard_musicbox": lambda: world(SLADE, 104, MUSICBOX, RECORDER, "jig", chords=ACCORDION, **_XMAS),
+    "world5_sladfard_recorder": lambda: world(SLADE, 108, RECORDER, ACCORDION, "jig", **_XMAS),
+})
 
 
 def main() -> None:
