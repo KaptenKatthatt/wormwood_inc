@@ -79,8 +79,8 @@
     {/if}
     <p class="fine">Du kan spela vidare så länge du vill, vad du än svarar. Frågorna finns också under Inställningar.</p>
     <div class="buttons">
+      <button class="ghost" onclick={() => answerAsk('later')}>Svara senare</button>
       <button class="primary" onclick={() => answerAsk('now')}>Svara nu</button>
-      <button class="ghost" onclick={() => answerAsk('later')}>Senare</button>
     </div>
     <button class="link" onclick={() => answerAsk('never')}>Nej tack, fråga inte igen</button>
   </Modal>
