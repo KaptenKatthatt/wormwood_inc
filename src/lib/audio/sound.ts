@@ -60,6 +60,13 @@ export const audioSettings = writable<AudioSettings>({ music: true, ambience: tr
 audioSettings.subscribe((s) => save('audio', s));
 
 const LEVEL = { music: 0.45, ambience: 0.35, sfx: 0.8 };
+/**
+ * Tracks that play louder than the common music level. The title tune plays
+ * alone, with no game sounds around it, and Jonas found it very quiet in the
+ * test app (2026-11-19), so it gets twice the level. "Julmarknad" is lifted to
+ * sit level with the Christmas melodies it takes turns with.
+ */
+const TRACK_GAIN: Partial<Record<string, number>> = { title: 2, 'world-5': 1.3 };
 
 let ctx: AudioContext | null = null;
 let musicGain: GainNode, ambienceGain: GainNode, sfxGain: GainNode;
@@ -172,7 +179,7 @@ async function syncMusic(): Promise<void> {
   const gain = ctx.createGain();
   gain.gain.value = 0;
   gain.connect(musicGain);
-  gain.gain.setTargetAtTime(1, ctx.currentTime, 0.5);
+  gain.gain.setTargetAtTime(TRACK_GAIN[name] ?? 1, ctx.currentTime, 0.5);
   current = { name, src: loop(buf, gain), gain };
 }
 
