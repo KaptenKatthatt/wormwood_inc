@@ -68,7 +68,7 @@
     <p>Nu: steg {$stairs.step} ({STEP_NAMES[$stairs.step]}), {mins} minuter in. Trivsel {$stairs.mood}.</p>
     <label class="row">
       <input type="checkbox" checked={$settings.letters} onchange={(e) => settings.update((s) => ({ ...s, letters: e.currentTarget.checked }))} />
-      <span><strong>Farbroderns brev</strong>: pausade under testningen. Versionen till testpersonerna har dem alltid på.</span>
+      <span><strong>Breven</strong>: pausade under testningen. Versionen till testpersonerna har dem alltid på.</span>
     </label>
     <div class="buttons">
       {#each [2, 3, 4, 5] as k}

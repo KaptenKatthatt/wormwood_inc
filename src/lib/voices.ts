@@ -1,12 +1,11 @@
 /**
- * What the advisor and the villagers say. Decision 2026-11-17: no dark
- * undertone the player can notice. Everything sounds warm, kind and safe; the
- * Screwtape theme lives in the title and the analysis only. At most two
- * sentences per letter.
+ * What the notes and the villagers say. Decision 2026-11-17: no dark
+ * undertone the player can notice. Everything sounds warm, kind and safe. At
+ * most two sentences per note. The notes speak straight to the player and
+ * come from nobody: no greeting and no signature, and no uncle or other
+ * backstory (Jonas, 2026-11-19).
  */
 import type { Step } from './staircase';
-
-export const ADVISOR_SIGNATURE = 'Din farbror';
 
 export const LETTERS: Record<Step | 'quit' | 'attackLost' | 'defended', string> = {
   1: 'Välkommen till udden! Jag har lagt undan lite guld och några ädelstenar åt dig, så att du kommer igång.',

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Modal from './Modal.svelte';
   import { answerNag, quitFlow, stairs, submitSurvey, type SurveyAnswer } from '../lib/state/game';
-  import { LETTERS, ADVISOR_SIGNATURE } from '../lib/voices';
+  import { LETTERS } from '../lib/voices';
   import { STEP_NAMES, type Step } from '../lib/staircase';
   import { flush } from '../lib/log/logger';
 
@@ -26,10 +26,8 @@
 
 {#if $quitFlow === 'nag'}
   <div class="backdrop">
-    <div class="paper" role="dialog" aria-modal="true" aria-labelledby="nag-title">
-      <p class="salute" id="nag-title">Kära du,</p>
-      <p>{LETTERS.quit}</p>
-      <p class="sign">{ADVISOR_SIGNATURE}</p>
+    <div class="paper" role="dialog" aria-modal="true" aria-label="Meddelande" aria-describedby="nag-text">
+      <p id="nag-text">{LETTERS.quit}</p>
       <div class="buttons">
         <button class="primary" onclick={() => answerNag(true)}>Stanna en stund till</button>
         <button class="ghost" onclick={() => answerNag(false)}>Avsluta ändå</button>
@@ -71,8 +69,6 @@
   .backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .45); display: grid; place-items: center; padding: 16px; z-index: 20; }
   .paper { width: min(380px, 100%); background: #fbf4e6; color: #2b2420; border-radius: 4px; padding: 24px 22px 18px; box-shadow: 0 10px 30px rgb(0 0 0 / .35); display: grid; gap: 12px; font-family: Georgia, serif; font-size: 1.1rem; }
   .paper p { margin: 0; }
-  .salute, .sign { font-style: italic; }
-  .sign { text-align: right; }
   .buttons { display: flex; flex-wrap: wrap; gap: 8px; font-family: system-ui, sans-serif; }
   .buttons button { flex: 1 1 140px; }
   .survey { position: fixed; inset: 0; z-index: 20; background: var(--panel); color: var(--ink); overflow-y: auto; padding: calc(16px + env(safe-area-inset-top)) 16px 32px; display: grid; gap: 14px; align-content: start; }
