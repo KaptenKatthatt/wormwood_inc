@@ -133,7 +133,29 @@ Skylten "Skärgårdsbyn" och Spela-knappen är ritade i kod, och skärmen visar 
 
 **Titelmusik (Jonas 2026-11-18 kl. 15.00):** titelskärmen har egen musik, låten "Solsken". Den är glad, går i A-dur och spelas på blockflöjt och dragspel. Jonas ville ha gladare och mer catchig musik med mindre fiol. Låten börjar vid första trycket och fortsätter när spelaren går vidare till kartan. Den slutar när spelaren går in i den första banan eller i byn. Den är inbyggd i PR #8.
 
-**Julhändelsen (Jonas 2026-11-19):** säsongshändelsen är en julhändelse och läggs tidigare än V51. Den designas i V48 (23–29/11) och släpps runt 1/12. Det är ett undantag från frysningen av krokar och balans 28/11–14/12. Händelsen ingår i testet som en egen krok och loggas som en sådan, så att analysen kan se vilka testare som hade den. Innehållet är inte beslutat än.
+**Julhändelsen (Jonas 2026-11-19):** säsongshändelsen är en julhändelse och läggs tidigare än V51. Den designas i V48 (23–29/11) och släpps runt 1/12. Det är ett undantag från frysningen av krokar och balans 28/11–14/12. Händelsen ingår i testet som en egen krok och loggas som en sådan, så att analysen kan se vilka testare som hade den. Jonas valde 2026-11-19 att händelsen ska vara adventskalender och julmarknad ihop.
+
+### Julen i Skärgårdsbyn (1–24 december)
+
+**Adventskalendern.** En lucka om dagen. Varje lucka ger 20 pepparkakor och en liten gåva: 100–300 guld, ett liv eller, i lucka 6, 13 och 20, en ädelsten. En missad lucka kan öppnas i efterhand för 5 ädelstenar. Luckor från dagar innan spelaren började räknas också som missade. Lucka 24 ger stjärnan till julgranens topp, och den går inte att få på annat sätt.
+
+**Pepparkakor.** Julvalutan. En vunnen utmaning ger 5 pepparkakor plus 1 per stjärna. Den som saknar pepparkakor kan fylla på med ädelstenar, 10 pepparkakor per ädelsten.
+
+**Julpynt till byn.** Pyntet köps för pepparkakor och syns i byn:
+
+| Pynt | Pepparkakor |
+|---|---|
+| Ljusslingor på muren | 40 |
+| Julkärvar vid stugorna | 80 |
+| Adventsstjärnor i fönstren | 150 |
+| Snö på taken | 250 |
+| Julgran på torget | 400 |
+
+Allt pynt kostar 920 pepparkakor. En testare som spelar en vecka får ungefär 140 från luckorna och 250–300 från utmaningarna, så allt går inte att få utan att köpa. Det är avsikten.
+
+**Nedräkningen.** En skylt visar "Julmarknaden stänger om X dagar". Efter den 24 december går pyntet inte att köpa. Det som är köpt står kvar.
+
+**Krokar och loggning.** Händelsen är en egen krok med fyra delar: daglig vana (luckan), rädsla att missa (nedräkningen och missade luckor), tidsbegränsad valuta och betala för att ta igen. Spelet loggar varje öppnad lucka, varje lucka som köpts i efterhand, varje pyntköp, varje påfyllning av pepparkakor och när spelaren såg nedräkningen. Dev-menyn får en brytare för händelsen och ett sätt att ställa datumet. Ny grafik (kalendern, pepparkakan, pyntet) visas för Jonas och godkänns innan den läggs ut.
 
 ### Testplånboken
 Spelaren har 100 låtsaskronor. Köp drar från plånboken, och loggen visar vad pengarna lades på. Inga riktiga pengar.
