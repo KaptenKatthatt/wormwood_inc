@@ -9,6 +9,8 @@
 
   const step = $derived($tutorial.index === null ? null : TUT_STEPS[$tutorial.index]);
   let rect = $state<DOMRect | null>(null);
+  /** The dialog the target sits in, if any (the button "Till byn" in "Utmaningen klarad!"). */
+  let host = $state<DOMRect | null>(null);
   let nextBtn = $state<HTMLButtonElement>();
   let frame = 0;
 
@@ -21,6 +23,8 @@
     const el = targetEl();
     const r = el?.getBoundingClientRect() ?? null;
     rect = r && r.width > 0 ? r : null;
+    const h = rect ? el?.closest('[role="dialog"]')?.getBoundingClientRect() ?? null : null;
+    host = h && h.width > 0 ? h : null;
     frame = requestAnimationFrame(track);
   }
 
@@ -48,20 +52,26 @@
   });
 
   // Put the bubble below the target when it is in the top half, otherwise above it.
-  const below = $derived(!rect || rect.top + rect.height / 2 < window.innerHeight / 2);
+  // A target inside a dialog gets the bubble above the whole dialog (below it when there is no
+  // room above), so the two never overlap (Jonas, 2026-11-19); the dialog's own backdrop dims the rest.
+  const below = $derived(host ? host.top < 170 : !rect || rect.top + rect.height / 2 < window.innerHeight / 2);
   const bubbleStyle = $derived(
-    !rect
-      ? 'top: 50%; transform: translateY(-50%);'
-      : below
-        ? `top: ${Math.min(window.innerHeight - 220, rect.bottom + 14)}px;`
-        : `bottom: ${Math.min(window.innerHeight - 220, window.innerHeight - rect.top + 14)}px;`,
+    host
+      ? below
+        ? `top: ${Math.min(window.innerHeight - 170, host.bottom + 14)}px;`
+        : `bottom: ${window.innerHeight - host.top + 14}px;`
+      : !rect
+        ? 'top: 50%; transform: translateY(-50%);'
+        : below
+          ? `top: ${Math.min(window.innerHeight - 220, rect.bottom + 14)}px;`
+          : `bottom: ${Math.min(window.innerHeight - 220, window.innerHeight - rect.top + 14)}px;`,
   );
   const big = $derived(rect !== null && rect.height > window.innerHeight * 0.4);
 </script>
 
 {#if step && !step.silent}
   {#if rect}
-    <div class="ring" class:big style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
+    <div class="ring" class:big class:lit={host !== null} style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
   {/if}
   <div class="bubble" class:below class:floating={big} style={big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
     <h2 id="coach-title">{step.title}</h2>
@@ -78,7 +88,7 @@
 <style>
   .ring { position: fixed; z-index: 15; border: 4px solid var(--gold); border-radius: 12px; pointer-events: none;
     box-shadow: 0 0 0 9999px rgb(0 0 0 / .35); animation: pulse 1.4s ease-in-out infinite; }
-  .ring.big { box-shadow: none; }
+  .ring.big, .ring.lit { box-shadow: none; }
   @keyframes pulse { 50% { border-color: #fff6ee; } }
   .bubble { position: fixed; left: 12px; right: 12px; z-index: 16; margin: 0 auto; max-width: 440px; background: #fffaf0; color: #1f1a17;
     border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 24px rgb(0 0 0 / .35); display: grid; gap: 6px; }
