@@ -6,7 +6,7 @@
   import MapView from './MapView.svelte';
   import { Match3Scene } from '../game/Match3Scene';
   import { Match3, isRocket, type SwapResult } from '../lib/match3/engine';
-  import { OBSTACLE_TIPS, goalText, levelAt, regionOf, tileUrl, type Level, type Obstacle } from '../lib/match3/levels';
+  import { OBSTACLE_TIPS, goalText, introLevel, levelAt, regionOf, tileUrl, type Level, type Obstacle } from '../lib/match3/levels';
   import { EXPANSION } from '../lib/config/flags';
   import { adReward, adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
   import { GATE_SKIP_GEMS, HELPERS_NEEDED } from '../lib/expansion/conquest';
@@ -77,7 +77,9 @@
     }
     dialog = null;
     // Kvarnen (the mill) gives an extra move for every second level.
-    game = new Match3({ ...l, moves: l.moves + millMoves(effectiveVillage()) }, makeRng(Math.floor(Math.random() * 2 ** 31)), hookOn('nearWin'));
+    // In the introduction the first challenge is the shown move and three practice moves.
+    const lv = l.id === 1 && $tutorial.index !== null && TUT_STEPS[$tutorial.index]?.id === 'swap' ? introLevel(l) : { ...l, moves: l.moves + millMoves(effectiveVillage()) };
+    game = new Match3(lv, makeRng(Math.floor(Math.random() * 2 ** 31)), hookOn('nearWin'));
     startedReal = Date.now();
     intro = l.intro && firstTime(`obstacle-${l.intro}`) ? l.intro : null;
     rev++;
@@ -111,7 +113,7 @@
   function noteSpecials(r: SwapResult) {
     const made = r.steps.flatMap((s) => s.made.map((m) => m.special ?? 'bomb'));
     if (made.length) log('specials_made', { level: game?.level.id, made });
-    for (const m of new Set(made.map((m) => (isRocket(m) ? 'rocket' : m)))) if (SPECIAL_TIPS[m]) tipOnce(`special-${m}`, SPECIAL_TIPS[m]);
+    for (const m of new Set(made.map((m) => (isRocket(m) ? 'rocket' : m)))) if (SPECIAL_TIPS[m] && $tutorial.index === null) tipOnce(`special-${m}`, SPECIAL_TIPS[m]);
   }
 
   function onMoved(r: SwapResult) {
@@ -261,6 +263,7 @@
         return `${n} ${n === 1 ? one : many}`;
       }
       case 'stock': return `${n} ${n === 1 ? 'stock' : 'stockar'}`;
+      case 'moves': return `${n} drag`;
       case 'collect': return `${n} ${regionOf(l.id).names[g.kind]}`;
     }
   }
@@ -353,7 +356,7 @@
     {/if}
     <div class="buttons">
       <!-- off during the introduction's step "Till byn", so the only way on is the button it points at (Jonas, 2026-11-19) -->
-      <button class="primary" disabled={toVillageOnly} onclick={() => toMap(true)}>Vidare</button>
+      <button class="primary" disabled={toVillageOnly} onclick={() => toMap(true)}>Spela vidare</button>
       <button class="ghost" data-tut="to-village" onclick={onVillage}>Till byn</button>
     </div>
   </Modal>

@@ -728,6 +728,7 @@ export class Match3Scene extends Phaser.Scene {
     this.busy = true;
     for (const h of this.hintTweens) h.destroy();
     this.hintTweens = [];
+    this.tellHintSpot(null);
     const ta = this.tiles[a.r][a.c]!;
     const tb = this.tiles[b.r][b.c]!;
     const pa = this.pos(a);
@@ -780,6 +781,7 @@ export class Match3Scene extends Phaser.Scene {
     this.busy = true;
     for (const h of this.hintTweens) h.destroy();
     this.hintTweens = [];
+    this.tellHintSpot(null);
     const t = this.tiles[cell.r][cell.c];
     if (t) await this.tween(t, { scale: 1.25 }, 110);
     const result = e.fire(cell);

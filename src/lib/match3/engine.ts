@@ -113,6 +113,8 @@ export class Match3 {
   rigged: boolean;
   /** Moves left when the goal was reached, kept for the stars after the finale spends them. */
   leftAtWin = -1;
+  /** Moves made so far, for the moves goal. */
+  movesMade = 0;
   private rng: Rng;
 
   constructor(level: Level, rng: Rng, rigged: boolean, board?: number[][]) {
@@ -157,6 +159,7 @@ export class Match3 {
     if (g.type === 'moss') return this.mossTotal === 0 ? 1 : 1 - this.mossLeft() / this.mossTotal;
     if (g.type === 'block') return this.countOf(BLOCK_OF[g.block]) === 0 ? 1 : Math.min(1, this.blocksCleared / g.count);
     if (g.type === 'stock') return Math.min(1, this.stocksOut / g.count);
+    if (g.type === 'moves') return Math.min(1, this.movesMade / g.count);
     return Math.min(1, this.score / g.score);
   }
 
@@ -168,6 +171,7 @@ export class Match3 {
     if (g.type === 'moss') return this.mossLeft();
     if (g.type === 'block') return this.countOf(BLOCK_OF[g.block]) === 0 ? 0 : Math.max(0, g.count - this.blocksCleared);
     if (g.type === 'stock') return Math.max(0, g.count - this.stocksOut);
+    if (g.type === 'moves') return Math.max(0, g.count - this.movesMade);
     return Math.max(0, g.score - this.score);
   }
 
@@ -213,6 +217,7 @@ export class Match3 {
       return { valid: false, steps: [], shuffled: false };
     }
     this.movesLeft--;
+    this.movesMade++;
     this.movesUsed++;
     this.tangThisMove = 0;
     const steps: Step[] = [];
@@ -348,6 +353,7 @@ export class Match3 {
    * at least 15 % of the moves left, three with at least 30 %.
    */
   stars(): number {
+    if (this.level.goal.type === 'moves') return 3; // practice: nothing to be short of
     const left = this.leftAtWin >= 0 ? this.leftAtWin : this.movesLeft;
     const f = left / this.level.moves;
     return f >= 0.3 ? 3 : f >= 0.15 ? 2 : 1;
@@ -376,6 +382,7 @@ export class Match3 {
   fire(cell: Cell): SwapResult {
     if (this.status() !== 'playing' || !this.inside(cell) || this.ice[cell.r][cell.c] || !this.fires(cell)) return { valid: false, steps: [], shuffled: false };
     this.movesLeft--;
+    this.movesMade++;
     this.movesUsed++;
     this.tangThisMove = 0;
     const result = this.settle([cell]);

@@ -5,7 +5,7 @@
    * does each step for real. Screen readers hear each step as it comes.
    */
   import { tick } from 'svelte';
-  import { TUT_STEPS, endTutorial, nextTutStep, tutorial } from '../lib/tutorial';
+  import { TUT_STEPS, endTutorial, nextTutStep, tutText, tutorial } from '../lib/tutorial';
 
   const step = $derived($tutorial.index === null ? null : TUT_STEPS[$tutorial.index]);
   let rect = $state<DOMRect | null>(null);
@@ -38,11 +38,26 @@
 
   $effect(() => {
     if (!step?.hint) { spot = null; return; }
-    const on = (e: Event) => { spot = (e as CustomEvent).detail ?? null; };
+    // Between moves the board has no hint; the sign stays where it was until the next one comes.
+    const on = (e: Event) => { const d = (e as CustomEvent).detail; if (d) spot = d; };
     window.addEventListener('tut-hint', on);
     return () => window.removeEventListener('tut-hint', on);
   });
+  // The first sign goes away at a touch anywhere (Jonas, 2026-11-19): the board lights up again
+  // and the frame and the hand stay on the two tiles until the move is made.
+  let dismissed = $state(false);
+  $effect(() => {
+    if (step?.id !== 'swap') { dismissed = false; return; }
+    const on = (e: Event) => { if (!(e.target as Element | null)?.closest?.('.bubble')) dismissed = true; };
+    window.addEventListener('pointerdown', on, true);
+    return () => window.removeEventListener('pointerdown', on, true);
+  });
   const lit = $derived(step?.hint && spot ? spot : null);
+  const dim = $derived(step?.id === 'swap');
+  // The practice sign is small and keeps one place, just under the board, so it never covers
+  // the goal or the tiles and does not jump about between moves.
+  const practice = $derived(step?.repeat !== undefined);
+  const practiceStyle = $derived(rect ? `top: ${Math.min(window.innerHeight - 84, rect.bottom + 8)}px;` : 'bottom: 96px;');
   // The first sign sits in the middle of the screen with everything but the two tiles dimmed
   // (Jonas, 2026-11-19); it moves just above or below the tiles if it would cover them.
   const BUBBLE_H = 150;
@@ -90,20 +105,22 @@
   const big = $derived(rect !== null && rect.height > window.innerHeight * 0.4);
 </script>
 
-{#if step && !step.silent}
-  {#if lit}
+{#if step && !step.silent && !dismissed}
+  {#if practice}
+    <!-- the practice moves: the board draws its own frame, and nothing is dimmed -->
+  {:else if lit}
     <div class="ring dim" style:top={`${lit.top - 4}px`} style:left={`${lit.left - 4}px`} style:width={`${lit.width + 8}px`} style:height={`${lit.height + 8}px`} aria-hidden="true"></div>
   {:else if rect}
     <div class="ring" class:big class:lit={host !== null} style:top={`${rect.top - 6}px`} style:left={`${rect.left - 6}px`} style:width={`${rect.width + 12}px`} style:height={`${rect.height + 12}px`} aria-hidden="true"></div>
   {/if}
-  <div class="bubble" class:below class:floating={big && !lit} style={lit ? midStyle : big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
+  <div class="bubble" class:small={practice} class:below class:floating={big && !lit && !practice} style={practice ? practiceStyle : lit ? midStyle : big ? '' : bubbleStyle} role="dialog" aria-modal="false" aria-labelledby="coach-title" aria-describedby="coach-text">
     <h2 id="coach-title">{step.title}</h2>
-    <p id="coach-text" aria-live="polite">{step.text}</p>
+    <p id="coach-text" aria-live="polite">{tutText(step, $tutorial.left)}</p>
     <div class="row">
       {#if !step.waitFor}
         <button class="primary" bind:this={nextBtn} onclick={nextTutStep}>{($tutorial.index ?? 0) === TUT_STEPS.length - 1 ? 'Börja spela' : 'Nästa'}</button>
       {/if}
-      <button class="skip" onclick={() => endTutorial(true)}>Hoppa över introduktionen</button>
+      {#if !practice}<button class="skip" onclick={() => endTutorial(true)}>Hoppa över introduktionen</button>{/if}
     </div>
   </div>
 {/if}
@@ -121,6 +138,9 @@
   /* Over the board the bubble sits at the top, above the tiles, and stays small. */
   .bubble.floating { padding: 10px 14px; gap: 4px; }
   .bubble.floating .row { margin-top: 0; }
+  /* the practice moves: a small sign that lets the board through around it */
+  .bubble.small { padding: 10px 16px; gap: 0; max-width: 260px; text-align: center; }
+  .bubble.small .row { margin-top: 0; }
   h2 { margin: 0; font-size: 1.15rem; }
   p { margin: 0; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }

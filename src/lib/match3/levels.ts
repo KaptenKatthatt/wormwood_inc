@@ -14,7 +14,15 @@ export type Goal =
   /** Clear `count` seaweed or stones. */
   | { type: 'block'; block: 'tang' | 'sten' | 'malm' | 'klapper' | 'hobal'; count: number }
   /** Bring every log down to the bottom of the board. */
-  | { type: 'stock'; count: number };
+  | { type: 'stock'; count: number }
+  /** Just make `count` moves: the introduction's first challenge (Jonas, 2026-11-19). */
+  | { type: 'moves'; count: number };
+
+/**
+ * The first challenge as the introduction plays it: the move the hand shows and three practice
+ * moves, and then it is cleared (Jonas, 2026-11-19). Without the introduction it is an ordinary challenge.
+ */
+export const introLevel = (l: Level): Level => ({ ...l, moves: 4, goal: { type: 'moves', count: 4 } });
 
 /** An obstacle the player meets for the first time with an arrow and one sentence. */
 export type Obstacle = 'is' | 'tang' | 'mossa' | 'stock' | 'sno' | 'sten'
@@ -306,5 +314,6 @@ export function goalText(goal: Goal, levelId = 1): string {
       return { tang: `Rensa ${goal.count} tång`, sten: `Spräck ${goal.count} stenar`, malm: `Bryt ${goal.count} malmblock`, klapper: `Rensa ${goal.count} klapperstenar`, hobal: `Rulla bort ${goal.count} höbalar` }[goal.block];
     }
     case 'stock': return `Få ner ${goal.count} stockar`;
+    case 'moves': return 'Lär dig byta plats på brickor';
   }
 }

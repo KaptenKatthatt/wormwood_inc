@@ -26,22 +26,26 @@ export interface TutStep {
   silent?: boolean;
   /** Show the move hint on the board. */
   hint?: boolean;
+  /** The event in waitFor has to come this many times before the step is done. */
+  repeat?: number;
 }
 
 /**
- * Four steps, played rather than read (Jonas, 2026-11-17: at most 3 to 5
+ * A few steps, played rather than read (Jonas, 2026-11-17: at most 3 to 5
  * steps, straight into the game). As in the big puzzle games, the first
  * challenge starts at once with a hand showing the first move; everything
  * else (lives, gems, quitting) gets a single tip the first time it matters.
  */
 export const TUT_STEPS: TutStep[] = [
   { id: 'swap', tab: 'pussel', target: 'board', title: 'Byt plats på två brickor', text: 'Få tre likadana i rad. Följ handen.', waitFor: 'moved', hint: true },
+  // Jonas, 2026-11-19: after the first move the game says "Bra!" and asks for three more with a frame around a move.
+  { id: 'practice', tab: 'pussel', target: 'board', title: 'Bra!', text: 'Prova tre drag till.', waitFor: 'moved', hint: true, repeat: 3 },
   { id: 'play', tab: 'pussel', silent: true, title: 'Spela', text: '', waitFor: 'levelEnded' },
   { id: 'village', tab: 'byn', target: 'to-village|tab-byn', selfNav: true, title: 'Till byn', text: 'Använd guldet i byn.', waitFor: 'inVillage' },
   { id: 'build', tab: 'byn', target: 'build-stugan|build-open', title: 'Bygg ditt första hus', text: 'Tryck på Bygg och välj Stugan.', waitFor: 'built' },
 ];
 
-interface TutState { index: number | null; startedAt: number }
+interface TutState { index: number | null; startedAt: number; /** Times left of a repeated step. */ left?: number }
 
 export const tutorial = writable<TutState>(load('tutorial', { index: null, startedAt: 0 }));
 tutorial.subscribe((t) => save('tutorial', t));
@@ -70,12 +74,27 @@ export function nextTutStep(): void {
   const next = t.index + 1;
   if (next >= TUT_STEPS.length) return endTutorial(false);
   log('tutorial_step', { step: TUT_STEPS[next].id, seconds: Math.round((Date.now() - t.startedAt) / 1000) });
-  tutorial.set({ ...t, index: next });
+  tutorial.set({ index: next, startedAt: t.startedAt });
 }
 
 export function tutEvent(ev: TutEvent): void {
   const step = currentTutStep();
-  if (step?.waitFor === ev) nextTutStep();
+  if (!step) return;
+  // The challenge can end before the practice moves are done: then the practice and the free play are both over.
+  if (step.id === 'practice' && ev === 'levelEnded') { nextTutStep(); nextTutStep(); return; }
+  if (step.waitFor !== ev) return;
+  if (step.repeat) {
+    const t = get(tutorial);
+    const left = (t.left ?? step.repeat) - 1;
+    if (left > 0) { tutorial.set({ ...t, left }); return; }
+  }
+  nextTutStep();
+}
+
+/** The text of a step, counting down when it repeats ("Två drag till."). */
+export function tutText(step: TutStep, left: number | undefined): string {
+  if (!step.repeat || left === undefined || left >= step.repeat) return step.text;
+  return left === 1 ? 'Ett drag till.' : `${['', '', 'Två', 'Tre', 'Fyra'][left] ?? left} drag till.`;
 }
 
 export function endTutorial(skipped: boolean): void {
