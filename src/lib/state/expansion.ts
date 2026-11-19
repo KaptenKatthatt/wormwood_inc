@@ -114,7 +114,7 @@ export function weekOn(id: HookId): boolean {
 
 export const STEP_LETTERS: Record<WeekStep, string> = {
   6: 'Grannbyarna har hört talas om dig! De vill gärna tävla lite, och de hjälper dig gärna om du hjälper dem.',
-  7: 'Jag hittade några gamla kistor på vinden. Man vet aldrig vad som finns i dem, och det är det som är det roliga.',
+  7: 'Några gamla kistor har dykt upp på vinden. Man vet aldrig vad som finns i dem, och det är det som är det roliga.',
   8: 'Byarna runt omkring saknar någon som du som tar hand om dem. Tänk så mycket mer byn kunde bli.',
   9: 'Grannarna har blivit som en familj för dig. Glöm inte bort dem nu, de räknar med dig.',
 };
