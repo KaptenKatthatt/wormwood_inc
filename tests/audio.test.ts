@@ -36,7 +36,7 @@ describe('sound', () => {
 
   it('every audio file is named in the credits', () => {
     const credits = readFileSync(new URL('CREDITS.md', AUDIO), 'utf8');
-    for (const dir of ['music', 'sfx']) {
+    for (const dir of ['music', 'sfx', 'ads']) {
       for (const f of readdirSync(new URL(`${dir}/`, AUDIO))) {
         const base = f.replace(/\.(ogg|mp3)$/, '').replace(/^match-\d$/, 'match-0');
         expect(credits.includes(`${dir}/${base}`), `${dir}/${f}`).toBe(true);

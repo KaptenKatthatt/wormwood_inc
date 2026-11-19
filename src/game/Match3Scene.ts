@@ -7,7 +7,7 @@ import { DEEP as DEEP0, FRAME as FRAME0 } from './palette';
 /** The obstacle pictures (Jonas approved them 2026-11-18). */
 // The skerries' cover is a fishing net (Jonas, 2026-11-18); its obstacle id stays 'is'.
 const PICTURE: Record<string, string> = { is: 'fisknat', 'is-sprucken': 'fisknat-trasigt' };
-const OBSTACLES = ['is', 'is-sprucken', 'sno', 'sno-tunn', 'mossa', 'tang', 'sten', 'stock', 'lera', 'hobal', 'kol', 'malm', 'nat', 'klapper', 'frost', 'snogubbe', 'sand'] as const;
+const OBSTACLES = ['is', 'is-sprucken', 'sno', 'sno-tunn', 'mossa', 'tang', 'sten', 'stock', 'lera', 'hobal', 'kol', 'malm', 'malm-sprucken', 'nat', 'klapper', 'frost', 'snogubbe', 'sand'] as const;
 /**
  * Cracks across a hard block, as lines of points in a -1..1 square: first a
  * crack from top to bottom, then its branches. Ore (two hits) shows them all
@@ -351,12 +351,19 @@ export class Match3Scene extends Phaser.Scene {
     const max = BLOCK_HITS[t.getData('kind') as number] ?? 1;
     const hits = max - left;
     if (hits <= 0) return;
+    // A block with a painted cracked picture of its own swaps to it (the ore: a corner knocked off and cracks
+    // from the blow, Jonas 2026-11-19); the others get cracks drawn over them.
+    const name = BLOCK_PICTURE[t.getData('kind') as number];
+    if (this.textures.exists(`ob-${name}-sprucken`)) {
+      (t.list[0] as Phaser.GameObjects.Image).setTexture(`ob-${name}-sprucken`);
+      return;
+    }
     // How much of the crack pattern shows: all of it just before the block breaks.
     const lines = CRACKS.slice(0, Math.ceil((CRACKS.length * hits) / (max - 1)));
     const u = this.cell * 0.44;
     // One graphics object per pass, so the dark line is certain to lie over its pale edge.
-    // Wide lines with a pale edge, so the damage reads on a small phone screen (Jonas, 2026-11-19).
-    for (const [color, alpha, width] of [[0xfff6e0, 0.85, 8], [0x0d0a08, 1, 4.4]] as const) {
+    // Dark lines with a pale edge, so the damage reads on a small phone screen without looking coarse (Jonas, 2026-11-19).
+    for (const [color, alpha, width] of [[0xfff6e0, 0.8, 5], [0x0d0a08, 1, 2.6]] as const) {
       const g = this.add.graphics().setName('hits');
       g.lineStyle(width * this.k, color, alpha);
       for (const line of lines) {

@@ -218,6 +218,41 @@ async function playFile(path: string, rate = 1): Promise<void> {
   src.start();
 }
 
+/**
+ * The sound track of an ad film: its music, announcer and effects in one file.
+ * The game's own music steps aside while it plays, as when a real ad takes
+ * over the phone. Silent only when the player has turned off both music and
+ * sound effects. Returns the function that stops it.
+ */
+export function playAd(id: string): () => void {
+  const s = get(audioSettings);
+  if (!ctx || (!s.sfx && !s.music)) return () => {};
+  const audio = ctx;
+  let src: AudioBufferSourceNode | null = null;
+  let stopped = false;
+  const g = musicGain.gain;
+  g.cancelScheduledValues(audio.currentTime);
+  g.setTargetAtTime(0, audio.currentTime, 0.08);
+  void buffer(`ads/${id}`).then((buf) => {
+    if (!buf || stopped) return;
+    src = audio.createBufferSource();
+    src.buffer = buf;
+    // Its own gain: the track plays even when only one of music and effects is on.
+    const out = audio.createGain();
+    out.gain.value = LEVEL.sfx;
+    out.connect(audio.destination);
+    src.connect(out);
+    src.start();
+  });
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    try { src?.stop(); } catch { /* already ended */ }
+    g.cancelScheduledValues(audio.currentTime);
+    g.setTargetAtTime(get(audioSettings).music ? LEVEL.music : 0, audio.currentTime, 0.4);
+  };
+}
+
 const lastPlayed = new Map<Sfx, number>();
 export function play(name: Sfx): void {
   if (!ctx || !get(audioSettings).sfx) return;

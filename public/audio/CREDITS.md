@@ -64,3 +64,14 @@ to Ogg Vorbis and MP3; not otherwise changed. Samma text visas i spelet under
 Inställningar.
 
 Licenserna kontrollerades på respektive OpenGameArt-sida 2026-11-17.
+
+## Reklamfilmernas ljudspår (`ads/`)
+
+De åtta påhittade reklamfilmerna har var sitt tio sekunder långa ljudspår:
+`ads/barplock`, `ads/nordanvind`, `ads/vassen`, `ads/fiskelyckan`,
+`ads/guldregn`, `ads/fulltraff`, `ads/fyndo`, `ads/kungarskrig`.
+Varje spår är mixat ur tre AI-genererade delar (2026-11-19, via Pollinations):
+speakerröst på svenska (ElevenLabs Eleven v4, syntetisk röst), musik
+(ElevenLabs Music v2.5) och en ljudeffekt (ElevenLabs Text to Sound v3).
+Ingen människa har läst in rösterna och ingen befintlig musik har använts.
+Manus, promptar och mixning finns i `tools/audio/ads.py`.
