@@ -21,7 +21,7 @@
   import { log } from '../lib/log/logger';
   import { audioSettings } from '../lib/audio/sound';
   import { DEV_MENU } from '../lib/config/flags';
-  import { tutEvent, tutorial, TUT_STEPS } from '../lib/tutorial';
+  import { endTutorial, tutEvent, tutorial, TUT_STEPS } from '../lib/tutorial';
 
   let { onVillage }: { onVillage: () => void } = $props();
 
@@ -67,6 +67,14 @@
   // The first challenge starts by itself for a new player: no map, no menu first.
   $effect(() => {
     if (!game && dialog === null && $tutorial.index !== null && TUT_STEPS[$tutorial.index]?.id === 'swap') start(current);
+  });
+
+  // An introduction left on one of its board steps with no board (the challenge was left, or an
+  // older version stopped there) would hold the player on this tab for good: every press in the
+  // bottom menu was sent straight back here (Jonas, 2026-11-19). It ends instead.
+  $effect(() => {
+    const id = $tutorial.index === null ? null : TUT_STEPS[$tutorial.index]?.id;
+    if (!game && dialog === null && (id === 'practice' || id === 'play')) endTutorial(true);
   });
 
   /** dev: true when the dev build's map picks a challenge; it skips the neighbours' gate. */
