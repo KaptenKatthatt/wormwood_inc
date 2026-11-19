@@ -9,7 +9,7 @@
   import { flush } from '../lib/log/logger';
   import InstallGuide from './InstallGuide.svelte';
   import { audioSettings } from '../lib/audio/sound';
-  import { openQuestionnaire, qState } from '../lib/state/questionnaire';
+  import { doneTesting, openQuestionnaire, qState } from '../lib/state/questionnaire';
 
   let pushStatus = $state('');
 
@@ -78,9 +78,12 @@
 
   {#if $settings.logging === true}
     {#if $qState.stage === 'done'}
-      <p>Du har svarat på frågorna om spelet. Tack!</p>
+      <p>Du har svarat på alla frågor om spelet. Tack!</p>
+    {:else if $qState.stage === 'waiting'}
+      <p>Tack för dina svar! När du inte vill testa mer: tryck här, så får du några sista frågor.</p>
+      <button class="ghost" onclick={doneTesting}>Jag har testat klart</button>
     {:else}
-      <p>När du har spelat klart, eller inte vill spela mer: svara gärna på några frågor om spelet. Det tar ungefär fem minuter.</p>
+      <p>När du har spelat en vecka, eller inte vill spela mer: svara gärna på några frågor om spelet. Det tar några minuter.</p>
       <button class="primary" onclick={openQuestionnaire}>{$qState.stage === 'part1' && Object.keys($qState.answers).length === 0 ? 'Svara på frågorna' : 'Fortsätt med frågorna'}</button>
     {/if}
   {/if}

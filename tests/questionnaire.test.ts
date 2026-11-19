@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DUE_DAY, MAX_ASKS, MAX_TEXT, PART1, answered, debrief, forLog, part2, pick, pushDelay, shouldAsk, startQ, testDayOf, type Reached } from '../src/lib/questionnaire';
+import { DUE_DAY, MAX_ASKS, MAX_TEXT, PART1, STUDY_END, afterPart1, endPushDelay, answered, debrief, forLog, part2, pick, pushDelay, shouldAsk, startQ, testDayOf, type Reached } from '../src/lib/questionnaire';
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).getTime();
 const early: Reached = { steps: [1, 2], weekStep: 5, secondDay: false };
@@ -7,15 +7,32 @@ const far: Reached = { steps: [1, 2, 3, 4, 5], weekStep: 9, secondDay: true };
 
 describe('questionnaire', () => {
   it('asks by itself once a day from the due day, a few times, and only with consent', () => {
+    const day = '2026-11-28';
     let s = startQ();
-    expect(shouldAsk(s, DUE_DAY - 1, true)).toBe(false);
-    expect(shouldAsk(s, DUE_DAY, false)).toBe(false);
-    expect(shouldAsk(s, DUE_DAY, true)).toBe(true);
+    expect(shouldAsk(s, DUE_DAY - 1, day, true)).toBe(false);
+    expect(shouldAsk(s, DUE_DAY, day, false)).toBe(false);
+    expect(shouldAsk(s, DUE_DAY, day, true)).toBe(true);
     s = { ...s, askedDay: DUE_DAY, asks: 1 };
-    expect(shouldAsk(s, DUE_DAY, true)).toBe(false);
-    expect(shouldAsk(s, DUE_DAY + 1, true)).toBe(true);
-    expect(shouldAsk({ ...s, asks: MAX_ASKS }, DUE_DAY + 5, true)).toBe(false);
-    expect(shouldAsk({ ...s, stage: 'done' }, DUE_DAY + 1, true)).toBe(false);
+    expect(shouldAsk(s, DUE_DAY, day, true)).toBe(false);
+    expect(shouldAsk(s, DUE_DAY + 1, day, true)).toBe(true);
+    expect(shouldAsk({ ...s, asks: MAX_ASKS }, DUE_DAY + 5, day, true)).toBe(false);
+    expect(shouldAsk({ ...s, stage: 'done' }, DUE_DAY + 1, day, true)).toBe(false);
+  });
+
+  it('keeps the debriefing from a tester who plays on until the study is over', () => {
+    expect(afterPart1('2026-11-28')).toBe('choice');
+    expect(afterPart1(STUDY_END)).toBe('debrief');
+    const waiting = { ...startQ(), stage: 'waiting' as const };
+    expect(shouldAsk(waiting, 20, '2026-12-10', true)).toBe(false);
+    expect(shouldAsk(waiting, 29, STUDY_END, true)).toBe(true);
+    // A late tester is asked for part 1 when the study ends, even before day 8.
+    expect(shouldAsk(startQ(), 3, STUDY_END, true)).toBe(true);
+  });
+
+  it('times the last notification to noon the day the study ends, at most 14 days ahead', () => {
+    expect(endPushDelay(at(2026, 12, 18, 12))).toBe(24 * 60 * 60 * 1000);
+    expect(endPushDelay(at(2026, 11, 21, 12))).toBeNull();
+    expect(endPushDelay(at(2026, 12, 19, 13))).toBeNull();
   });
 
   it('counts test days from the first day', () => {

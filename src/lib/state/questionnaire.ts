@@ -9,12 +9,13 @@ import { dayKey } from '../daily';
 import { EXPANSION } from '../config/flags';
 import { flush, log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
-import { PART1, forLog, part2, pushDelay, shouldAsk, startQ, testDayOf, type Answer, type QState, type Reached } from '../questionnaire';
+import { PART1, afterPart1, endPushDelay, forLog, part2, pushDelay, shouldAsk, startQ, testDayOf, type Answer, type QState, type Reached } from '../questionnaire';
 import { exp } from './expansion';
 import { clock, daily, playerId, resetListeners, settings, stairs } from './game';
 import { load, save } from './storage';
 
 const PUSH_ID = 'questionnaire';
+const END_PUSH_ID = 'questionnaire-end';
 
 export const qState = writable<QState>({ ...startQ(), ...load<Partial<QState>>('questionnaire', {}) });
 qState.subscribe((s) => save('questionnaire', s));
@@ -22,6 +23,7 @@ qState.subscribe((s) => save('questionnaire', s));
 /** null = closed, 'ask' = the game's own invitation, 'form' = the form itself. */
 export const qOpen = writable<null | 'ask' | 'form'>(null);
 
+const today = (): string => dayKey(Date.now());
 const testDay = (): number => testDayOf(get(daily).firstDay, dayKey(clock.now()));
 
 export function reached(): Reached {
@@ -37,14 +39,15 @@ export function offerQuestionnaire(): void {
   if (get(qOpen)) return;
   const s = get(qState);
   const day = testDay();
-  if (!shouldAsk(s, day, get(settings).logging === true)) return;
+  if (!shouldAsk(s, day, today(), get(settings).logging === true)) return;
   qState.set({ ...s, askedDay: day, asks: s.asks + 1 });
   qOpen.set('ask');
-  log('questionnaire_asked', { testDay: day, ask: s.asks + 1 });
+  log('questionnaire_asked', { testDay: day, ask: s.asks + 1, stage: s.stage });
 }
 
 export function answerAsk(now: boolean): void {
   log('questionnaire_ask_answer', { now });
+  if (now) resume();
   qOpen.set(now ? 'form' : null);
   if (now) log('questionnaire_open', { from: 'ask', stage: get(qState).stage, testDay: testDay() });
 }
@@ -67,9 +70,37 @@ export function setAnswer(id: string, value: Answer): void {
 export function finishPart1(): void {
   const s = get(qState);
   log('questionnaire_part1', { testDay: testDay(), answers: forLog(PART1, s.answers) });
-  log('debrief_shown', { from: 'questionnaire' });
   flush(false);
-  qState.set({ ...s, stage: 'debrief' });
+  enter({ ...s, stage: afterPart1(today()) }, 'study_end');
+}
+
+/** The tester's own answer after part 1: play on, or done testing. */
+export function chooseContinue(on: boolean): void {
+  log('questionnaire_continue', { on, testDay: testDay() });
+  // The count starts over, so the game can ask again when the study ends.
+  if (on) qState.update((s) => ({ ...s, stage: 'waiting', asks: 0 }));
+  else enter({ ...get(qState), stage: 'debrief' }, 'tester_done');
+}
+
+/** The button under Settings for a tester who played on and now is done. */
+export function doneTesting(): void {
+  enter({ ...get(qState), stage: 'debrief' }, 'tester_done');
+  qOpen.set('form');
+}
+
+/** Sets the stage; the debriefing is logged with why it was shown. */
+function enter(s: QState, why: 'study_end' | 'tester_done'): void {
+  if (s.stage === 'debrief') {
+    log('debrief_shown', { from: 'questionnaire', why, testDay: testDay() });
+    flush(false);
+  }
+  qState.set(s);
+}
+
+/** Opens what is left when the game's own question is answered with yes. */
+export function resume(): void {
+  const s = get(qState);
+  if (s.stage === 'waiting') enter({ ...s, stage: 'debrief' }, 'study_end');
 }
 
 export function finishDebrief(): void {
@@ -85,23 +116,35 @@ export function finishPart2(mayUse: boolean): void {
   qState.set({ ...s, stage: 'done', mayUse });
   if (!mayUse) settings.update((x) => ({ ...x, logging: false }));
   void cancelPush(playerId, PUSH_ID);
+  void cancelPush(playerId, END_PUSH_ID);
 }
 
 /**
- * One notification at noon on the due day, for the tester who has stopped
- * opening the game. Scheduled again on every visit; the server keeps one per id.
+ * Notifications for the tester who has stopped opening the game: one at noon
+ * on the due day for part 1, and one at noon the day the study ends for the
+ * rest. Scheduled again on every visit; the server keeps one per id.
  */
 export function scheduleQuestionnairePush(): void {
   const s = get(settings);
-  if (!s.notifications || s.logging !== true || get(qState).stage === 'done') return;
+  const stage = get(qState).stage;
+  if (!s.notifications || s.logging !== true || stage === 'done') return;
+  const body = 'Vill du svara på några korta frågor i spelet? Det tar några minuter.';
   const inMs = pushDelay(get(daily).firstDay, Date.now());
-  if (inMs === null) return;
-  void schedulePush(playerId, PUSH_ID, inMs, 'Tack för att du testar Skärgårdsbyn!', 'Vill du svara på några korta frågor i spelet? Det tar fem minuter.');
+  if (stage === 'part1' && inMs !== null) void schedulePush(playerId, PUSH_ID, inMs, 'Tack för att du testar Skärgårdsbyn!', body);
+  if (stage !== 'part1') void cancelPush(playerId, PUSH_ID);
+  const endMs = endPushDelay(Date.now());
+  if (endMs !== null) void schedulePush(playerId, END_PUSH_ID, endMs, 'Tack för att du testade Skärgårdsbyn!', 'Det finns några sista frågor i spelet. Det tar några minuter.');
 }
 
 /** Dev menu: ask now, as if the free week were over. */
 export function devAskQuestionnaire(): void {
   if (get(qState).stage === 'done') qState.set(startQ());
+  qOpen.set('ask');
+}
+
+/** Dev menu: as if the study had ended for a tester who played on. */
+export function devStudyEnd(): void {
+  qState.update((s) => ({ ...s, stage: 'waiting', asks: 0 }));
   qOpen.set('ask');
 }
 

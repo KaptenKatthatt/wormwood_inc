@@ -7,7 +7,7 @@
   import { tick } from 'svelte';
   import Modal from './Modal.svelte';
   import { MORE, PART1, answered, debrief, part2, pick, type Question } from '../lib/questionnaire';
-  import { answerAsk, closeQuestionnaire, finishDebrief, finishPart1, finishPart2, qOpen, qState, reached, setAnswer } from '../lib/state/questionnaire';
+  import { answerAsk, chooseContinue, closeQuestionnaire, finishDebrief, finishPart1, finishPart2, qOpen, qState, reached, setAnswer } from '../lib/state/questionnaire';
   import { playerId } from '../lib/state/game';
   import { testCode } from '../lib/testCode';
 
@@ -72,7 +72,11 @@
 
 {#if $qOpen === 'ask'}
   <Modal title="Tack för att du testar!">
-    <p>Vill du svara på några frågor om hur det har varit att spela? Det tar ungefär fem minuter och hjälper examensarbetet mycket.</p>
+    {#if stage === 'part1' || stage === 'choice'}
+      <p>Vill du svara på några frågor om hur det har varit att spela? Det tar några minuter och hjälper examensarbetet mycket.</p>
+    {:else}
+      <p>Testet är snart slut. Jag har en sak att berätta och några sista frågor. Det tar några minuter.</p>
+    {/if}
     <p class="fine">Frågorna finns också under Inställningar.</p>
     <div class="buttons">
       <button class="primary" onclick={() => answerAsk(true)}>Svara nu</button>
@@ -84,18 +88,26 @@
     {#if stage === 'part1'}
       <h2 id="q-title" tabindex="-1">Några frågor om spelet</h2>
       <p>Det finns inga rätta eller fel svar. Tryck på det som stämmer för dig.</p>
-      <p class="fine">Del 1 av 2</p>
       {#each PART1 as q, i (q.id)}{@render question(q, i + 1)}{/each}
       {#if !part1Done}<p class="fine" id="q-why">Svara på alla frågor för att gå vidare.</p>{/if}
       <button class="primary" disabled={!part1Done} aria-describedby={part1Done ? undefined : 'q-why'} onclick={() => next(finishPart1)}>Vidare</button>
       <button class="ghost" onclick={closeQuestionnaire}>Fortsätt senare</button>
+    {:else if stage === 'choice'}
+      <h2 id="q-title" tabindex="-1">Tack för svaren!</h2>
+      <p>De är sparade. Vill du fortsätta testa spelet?</p>
+      <button class="primary" onclick={() => { chooseContinue(true); closeQuestionnaire(); }}>Ja, jag spelar vidare</button>
+      <button class="ghost" onclick={() => next(() => chooseContinue(false))}>Nej, jag har testat klart</button>
+      <p class="fine">Väljer du att sluta får du några sista frågor nu. Spelar du vidare kommer de senare, och du kan när som helst säga att du är klar under Inställningar.</p>
+    {:else if stage === 'waiting'}
+      <h2 id="q-title" tabindex="-1">Tack för svaren!</h2>
+      <p>Spela vidare så länge du vill. När du inte vill testa mer: tryck på "Jag har testat klart" under Inställningar.</p>
+      <button class="primary" onclick={closeQuestionnaire}>Stäng</button>
     {:else if stage === 'debrief'}
       <h2 id="q-title" tabindex="-1">Vad studien handlar om</h2>
       {#each paragraphs as p}<p class="story">{p}</p>{/each}
       <button class="primary" onclick={() => next(finishDebrief)}>Vidare till de sista frågorna</button>
     {:else if stage === 'part2'}
       <h2 id="q-title" tabindex="-1">De sista frågorna</h2>
-      <p class="fine">Del 2 av 2</p>
       {#each second as q, i (q.id)}{@render question(q, PART1.length + i + 1)}{/each}
       <fieldset>
         <legend>{PART1.length + second.length + 1}. Får jag använda dina svar och det spelet har sparat i examensarbetet?</legend>

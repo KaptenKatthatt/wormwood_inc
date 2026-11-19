@@ -2,8 +2,8 @@
  * The questionnaire that stands in for the interview (Jonas, 2026-11-19):
  * testers who cannot be interviewed answer in the game instead. It follows the
  * interview guide in the test plan, cut short: part 1 before anything is
- * revealed, then the debriefing as text, then part 2 and the question whether
- * the data may be used. Nothing before the debriefing may say what the study
+ * revealed; then, only when the tester is done testing or the study is over,
+ * the debriefing as text, part 2 and the question whether the data may be used. Nothing before the debriefing may say what the study
  * measures. Pure logic and texts; state/questionnaire.ts applies it.
  */
 import { daysBetween } from './daily';
@@ -17,7 +17,19 @@ export const MAX_TEXT = 1000;
 /** The hour (local time) of the reminder notification on the due day. */
 export const PUSH_HOUR = 12;
 
-export type Stage = 'part1' | 'debrief' | 'part2' | 'done';
+/**
+ * The day (local) from which the debriefing is shown to everyone: the study is
+ * as good as over. Before it, only a tester who says they are done testing
+ * gets it (Jonas, 2026-11-19): reading it would spoil the rest of their test.
+ */
+export const STUDY_END = '2026-12-19';
+
+/**
+ * part1: the neutral questions. choice: keep testing or done? waiting: part 1
+ * is in and the tester plays on. debrief and part2 come when the tester is
+ * done or the study has ended.
+ */
+export type Stage = 'part1' | 'choice' | 'waiting' | 'debrief' | 'part2' | 'done';
 
 export interface QState {
   stage: Stage;
@@ -33,15 +45,32 @@ export type Answer = number | string | string[];
 
 export const startQ = (): QState => ({ stage: 'part1', askedDay: 0, asks: 0, answers: {}, mayUse: null });
 
-/** Should the game ask by itself now? Once a day from the due day, a few times at most. */
-export function shouldAsk(s: QState, testDay: number, logging: boolean): boolean {
-  return logging && s.stage !== 'done' && testDay >= DUE_DAY && s.askedDay < testDay && s.asks < MAX_ASKS;
+export const studyOver = (today: string): boolean => today >= STUDY_END;
+
+/**
+ * Should the game ask by itself now? Once a day, a few times at most: for
+ * part 1 from the due day, for the rest (a tester who plays on) from the day
+ * the study ends.
+ */
+export function shouldAsk(s: QState, testDay: number, today: string, logging: boolean): boolean {
+  if (!logging || s.stage === 'done' || s.askedDay >= testDay || s.asks >= MAX_ASKS) return false;
+  return s.stage === 'waiting' ? studyOver(today) : testDay >= DUE_DAY || studyOver(today);
 }
+
+/** After part 1: straight to the debriefing when the study is over, else the tester chooses. */
+export const afterPart1 = (today: string): Stage => (studyOver(today) ? 'debrief' : 'choice');
 
 /** Real milliseconds from now until the reminder notification, or null when its time has passed. */
 export function pushDelay(firstDay: string, nowMs: number): number | null {
   const at = new Date(+firstDay.slice(0, 4), +firstDay.slice(5, 7) - 1, +firstDay.slice(8, 10) + DUE_DAY - 1, PUSH_HOUR).getTime();
   return at > nowMs ? at - nowMs : null;
+}
+
+/** The same for the day the study ends. The server keeps a notification 14 days at most, so not earlier than that. */
+export function endPushDelay(nowMs: number): number | null {
+  const at = new Date(+STUDY_END.slice(0, 4), +STUDY_END.slice(5, 7) - 1, +STUDY_END.slice(8, 10), PUSH_HOUR).getTime();
+  const inMs = at - nowMs;
+  return inMs > 0 && inMs <= 14 * 24 * 60 * 60 * 1000 ? inMs : null;
 }
 
 /** The test day of a day key, counted from the first day. */
