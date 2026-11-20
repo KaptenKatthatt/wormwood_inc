@@ -13,6 +13,17 @@ const DIR = '/art/village/';
 const WINTER_PAD = 10;
 /** The damaged pictures (in damaged/, same file names) have this margin for the rubble at the foot. */
 const DAMAGED_PAD = 8;
+/**
+ * Where the damage sign sits on pictures that carry their own ground, so the top of the
+ * picture is not the top of the building (the tip of the flagpole), or where a sign over the
+ * picture would lie on the building behind (the big house under the mill). In the whole picture's pixels.
+ */
+const SIGN_AT: Record<string, [number, number]> = {
+  'stugan-3.webp': [108, 34],
+  'tornet_o-3.webp': [92, 42],
+  'tornet_s-3.webp': [93, 38],
+  'tornet_v-3.webp': [90, 32],
+};
 type Look = 'summer' | 'a' | 'b' | 'c';
 
 /** The figures' pictures: four steps seen from the front, four from behind, at four times their size in the village. */
@@ -191,10 +202,19 @@ export class VillageScene extends Phaser.Scene {
     return look !== 'summer' && this.textures.exists(key) ? { key, pad: WINTER_PAD } : { key: `v-${file}`, pad: 0 };
   }
 
+  /** The damaged picture of a building in a look (damaged/ for summer, damaged/winter/<look>/ for winter) */
+  private damagedTex(look: Look, file: string): { key: string; url: string; pad: number } {
+    if (look === 'summer') return { key: `v-damaged-${file}`, url: `${DIR}damaged/${file}`, pad: DAMAGED_PAD };
+    return { key: `v-damaged-${look}-${file}`, url: `${DIR}damaged/winter/${look}/${file}`, pad: WINTER_PAD };
+  }
+
   /** Loads what the look and the layers need and is not loaded yet; true when something is on its way. */
   private loadMissing(look: Look, layers: string[], damaged: string[]): boolean {
     const want: [string, string][] = layers.map((f) => [`v-xmas-${f}`, `${DIR}xmas/${f}`]);
-    if (look === 'summer') for (const f of damaged) want.push([`v-damaged-${f}`, `${DIR}damaged/${f}`]);
+    for (const f of damaged) {
+      const d = this.damagedTex(look, f);
+      if (d) want.push([d.key, d.url]);
+    }
     if (look !== 'summer') {
       want.push([`v-${look}-${BG.file}`, `${DIR}winter/${look}/${BG.file}`]);
       for (const b of Object.values(BUILDINGS)) for (const st of Object.values(b.stages)) want.push([`v-${look}-${st.file}`, `${DIR}winter/${look}/${st.file}`]);
@@ -246,16 +266,19 @@ export class VillageScene extends Phaser.Scene {
           this.aprons.push({ x0: st.x, x1: st.x + st.w, y0: st.y, body0: body.x, body1: body.x + body.w, front: front - DEPTH.ground });
         }
         const whole = this.tex(look, st.file);
-        const hurt = p.damaged && look === 'summer' && this.textures.exists(`v-damaged-${st.file}`);
-        const t = hurt ? { key: `v-damaged-${st.file}`, pad: DAMAGED_PAD } : whole;
+        const d = p.damaged ? this.damagedTex(look, st.file) : null;
+        const hurt = !!d && this.textures.exists(d.key);
+        const t = d && hurt ? { key: d.key, pad: d.pad } : whole;
         const pic = this.add.image(ox + (st.x - t.pad) * s, oy + (st.y - t.pad) * s, t.key).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1).setDepth(front);
         if (p.damaged) {
           // The damaged picture where there is one; otherwise the building darkened. A red sign over it.
           if (!hurt) pic.setTint(0x8a7f78);
           // Over the damaged picture the sign is smaller and sits above the roof, so it does not hide the damage.
           const r = (hurt ? 10 : 13) * k;
-          const cx = pic.x + pic.displayWidth / 2;
-          const cy = hurt ? pic.y : pic.y + r;
+          const at = SIGN_AT[st.file];
+          // Kept inside the screen, so a tower at the edge does not get half a sign.
+          const cx = Math.min(width - r - 3 * k, Math.max(r + 3 * k, at ? ox + (st.x + at[0]) * s : pic.x + pic.displayWidth / 2));
+          const cy = at ? oy + (st.y + at[1]) * s - r : hurt ? pic.y : pic.y + r;
           this.add.circle(cx, cy, r, 0x9c2a1e).setStrokeStyle(2 * k, 0xffffff).setDepth(DEPTH.signs);
           this.add.text(cx, cy, '!', { fontFamily: 'sans-serif', fontStyle: 'bold', fontSize: `${(hurt ? 14 : 18) * k}px`, color: '#ffffff' }).setOrigin(0.5).setDepth(DEPTH.signs);
         }
