@@ -21,9 +21,9 @@ export const EXPANSION: boolean = import.meta.env.VITE_EXPANSION !== 'false';
 export const CHRISTMAS: boolean = DEV_MENU || import.meta.env.VITE_CHRISTMAS === 'true';
 
 /**
- * The voluntary question about an e-mail address after the consent (Jonas,
- * 2026-11-20). In the dev build so Jonas can look at it first; the tester
- * build gets it with VITE_CONTACT_ASK=true once he has said yes. Without it
- * the consent keeps its old promise of "no e-mail".
+ * The voluntary question about an e-mail address after the consent. Jonas
+ * approved it in the dev build on 2026-11-20, so it is on everywhere;
+ * VITE_CONTACT_ASK=false builds a game without it, and then the consent
+ * keeps its old promise of "no e-mail".
  */
-export const CONTACT_ASK: boolean = DEV_MENU || import.meta.env.VITE_CONTACT_ASK === 'true';
+export const CONTACT_ASK: boolean = import.meta.env.VITE_CONTACT_ASK !== 'false';
