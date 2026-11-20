@@ -177,3 +177,30 @@ export function recast(walkers: Walker[], want: FigureKind[], levels: Levels, rn
     return n >= 0 ? pool.splice(n, 1)[0] : spawn(kind, levels, rnd);
   });
 }
+
+/**
+ * The smith (Jonas approved him on 2026-11-20): he stands at the anvil inside
+ * Smedjan and hammers a glowing iron, four blows and then a rest. His feet by
+ * Smedjan's stage, so that the iron lies on the face of that stage's anvil.
+ */
+export const SMITH_AT: Record<'1' | '2' | '3', [number, number]> = { '1': [233, 984], '2': [233, 972], '3': [226, 976] };
+/** Where the sparks fly from, from his feet. */
+export const SMITH_SPARK: [number, number] = [-7, -12];
+/** One blow: the picture and how long it shows. The hammer lands in picture 2. */
+const BLOW: [number, number][] = [[0, 0.3], [1, 0.07], [2, 0.11], [3, 0.14]];
+export const SMITH_BLOWS = 4;
+export const SMITH_REST = 2.2;
+export interface Smith { frame: number; t: number; i: number; blows: number; resting: boolean }
+export function newSmith(): Smith {
+  return { frame: 3, t: 0, i: -1, blows: 0, resting: false };
+}
+/** Moves the smith on by dt seconds; true at the moment the hammer lands. */
+export function stepSmith(s: Smith, dt: number): boolean {
+  s.t -= dt;
+  if (s.t > 0) return false;
+  if (s.resting) { s.resting = false; s.i = -1; s.blows = 0; }
+  s.i = (s.i + 1) % BLOW.length;
+  [s.frame, s.t] = BLOW[s.i];
+  if (s.frame === 3 && ++s.blows >= SMITH_BLOWS) { s.resting = true; s.t = SMITH_REST; }
+  return s.frame === 2;
+}
