@@ -375,6 +375,36 @@ async function playFile(path: string, rate = 1): Promise<void> {
 }
 
 /**
+ * One stroke of the chapel bell (a recorded church bell, see CREDITS.md). The
+ * rate sets which bell it is; at night it is duller and quieter. It follows
+ * the effects setting like every other effect.
+ */
+export function playBell(rate: number, level: number, night: boolean): void {
+  if (!ctx || !get(audioSettings).sfx) return;
+  const audio = ctx;
+  void buffer('sfx/chapel-bell').then((buf) => {
+    if (!buf) return;
+    const src = audio.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
+    const dull = audio.createBiquadFilter();
+    dull.type = 'lowpass';
+    dull.frequency.value = night ? 700 : 12000;
+    dull.Q.value = 0.3;
+    const out = audio.createGain();
+    out.gain.value = level * (night ? 0.55 : 1);
+    src.connect(dull);
+    dull.connect(out);
+    out.connect(sfxGain);
+    src.start();
+  });
+}
+/** Fetches the bell ahead of the first stroke. */
+export function warmBell(): void {
+  void buffer('sfx/chapel-bell');
+}
+
+/**
  * The sound track of an ad film: its music, announcer and effects in one file.
  * The game's own music steps aside while it plays, as when a real ad takes
  * over the phone. Silent only when the player has turned off both music and

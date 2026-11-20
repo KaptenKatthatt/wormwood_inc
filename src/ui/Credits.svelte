@@ -19,6 +19,7 @@
 
     <h3>Ljud</h3>
     <p>De flesta ljuden är gjorda för spelet. Övriga kommer från Kenney, rubberduck, bart, RandomMind, jasinski och Rango Mango (CC0), via OpenGameArt.</p>
+    <p>Kapellets klocka: "Church Bell", inspelad av Ulrich Metzner 2008–2010 och klippt av qubodup, CC BY-SA 3.0, från OpenGameArt. I spelet är slaget klippt och spelas i två tonhöjder.</p>
     <p>Instrumenten kommer från ljudbanken FluidR3_GM av Frank Wen (MIT).</p>
     <p>Reklamfilmernas röster, musik och ljud är AI-genererade med ElevenLabs. Ingen människa har läst in rösterna.</p>
 

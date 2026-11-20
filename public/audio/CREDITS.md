@@ -110,3 +110,18 @@ melodi har använts.
 Klangen när smeden slår på städet är gjord för spelet 2026-11-20 av fem
 sinustoner och ett kort brus, räknade i kod (`tools/audio/anvil.py`). Ingen
 inspelning har använts.
+
+## Kapellets klocka (`sfx/chapel-bell`)
+
+Ett slag i en riktig kyrkklocka: "Church Bell", inspelad av Ulrich Metzner
+(Copyright 2008–2010), klippt och tonad av qubodup, licens CC BY-SA 3.0
+(https://creativecommons.org/licenses/by-sa/3.0/), hämtad från
+https://opengameart.org/content/church-bell . Klockan är tysk; ingen fri
+inspelning av timslag från en svensk kyrka hittades 2026-11-20.
+
+Ändringar för spelet: gjord till mono, uttonad i slutet och förstärkt
+(`ffmpeg -af "afade=t=out:st=4.0:d=0.55,volume=1.5"`). I spelet spelas slaget
+1,68 gånger snabbare för kvartsslagen och 1,26 gånger snabbare för timslagen,
+och dovare på natten (`src/lib/audio/sound.ts`, `src/lib/churchBell.ts`).
+Filen `sfx/chapel-bell` är därmed ett bearbetat verk under samma licens,
+CC BY-SA 3.0. Jonas valde klangen och takten 2026-11-20.

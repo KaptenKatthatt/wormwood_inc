@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import ART from './villageArt.json';
 import { cast, frameOf, newSmith, recast, SMITH_AT, SMITH_SPARK, step, stepSmith, type FigureKind, type Walker } from '../lib/villageLife';
-import { play as playSound } from '../lib/audio/sound';
+import { play as playSound, playBell, warmBell } from '../lib/audio/sound';
+import { BELL, quarterOf, sinceQuarter, strikesAt, strokes } from '../lib/churchBell';
+import { sunIsDown } from '../lib/season';
 
 export interface PlotView { id: string; name: string; level: number; building: boolean; progress: number; locked?: boolean; damaged?: boolean }
 
@@ -159,8 +161,27 @@ export class VillageScene extends Phaser.Scene {
     this.game.events.emit('village-speaker', at);
   }
 
+  // The chapel bell (Jonas approved it 2026-11-20): every quarter by the real clock, while Kapellet stands.
+  private bellQuarter = quarterOf(Date.now());
+  private bellTimers: ReturnType<typeof setTimeout>[] = [];
+  private ringBell(): void {
+    const now = Date.now();
+    const q = quarterOf(now);
+    if (q === this.bellQuarter) return;
+    this.bellQuarter = q;
+    // Only at the quarter itself: coming back to the game later does not ring late.
+    if (sinceQuarter(now) > 5000 || !(this.levels().kapellet > 0)) return;
+    const { quarters, hours } = strikesAt(now);
+    const night = sunIsDown(now);
+    for (const st of strokes(quarters, hours)) {
+      const bell = st.hour ? BELL.hour : BELL.quarter;
+      this.bellTimers.push(setTimeout(() => playBell(bell.rate, bell.level, night), st.at * 1000));
+    }
+  }
+
   update(_time: number, delta: number): void {
     this.tellSpeaker();
+    this.ringBell();
     if (this.still) return; // reduced motion: the figures stand where they are
     const dt = Math.min(0.1, delta / 1000);
     const levels = this.levels();
@@ -240,6 +261,11 @@ export class VillageScene extends Phaser.Scene {
   }
 
   create(): void {
+    warmBell();
+    // Leaving the village silences the strokes that have not come yet.
+    const hush = () => { for (const t of this.bellTimers) clearTimeout(t); this.bellTimers = []; };
+    this.events.once('shutdown', hush);
+    this.events.once('destroy', hush);
     this.wireZoom();
     this.draw();
     this.scale.on('resize', this.draw, this);
