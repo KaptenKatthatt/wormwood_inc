@@ -5,6 +5,11 @@
    * The wheel winds up, ticks against a leather flap and slows down; the flap
    * bends over each peg, slowly at the end, so nobody knows whether it will
    * slip to the next field. Beside the jackpot the stop is staged (near miss).
+   *
+   * The wheel is started with the button or by dragging it with a finger and
+   * letting go with speed; a plain tap on it does nothing, so nobody pays for
+   * a spin by mistake. What was won stays on the sign until the player taps
+   * it; then it flies up to its counter (the standard reward animation).
    */
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
@@ -12,6 +17,7 @@
   import { lives, purse } from '../lib/state/game';
   import { FIELD_DEG, FLAP_GRIP, SPIN_GEMS, WHEEL, discField, landingAngle, nearJackpot } from '../lib/expansion/luck';
   import { musicNow, play, playTick, setMusic } from '../lib/audio/sound';
+  import { countAt, flyReward, pieces, type RewardKind } from '../lib/ui/flyReward';
 
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   /** How far before the pointer a peg starts to push the flap, and how far the flap bends (degrees). */
@@ -32,7 +38,9 @@
   let spinning = $state(false);
   let result = $state<number | null>(null);
   let lit = $state(0);
-  let bumped = $state<'gold' | 'gems' | 'lives' | null>(null);
+  let bumped = $state<RewardKind | null>(null);
+  /** The prize is on the sign and has not been collected to the counters yet. */
+  let waiting = $state(false);
   let glow = $state(false);
   let flash = $state(false);
   const cost = $derived(free.starter > 0 || free.daily ? 0 : SPIN_GEMS);
@@ -43,6 +51,8 @@
   let boxEl: HTMLDivElement;
   let viewEl: HTMLDivElement;
   let canvas: HTMLCanvasElement;
+  let prizeEl = $state<HTMLElement | null>(null);
+  const pills: Partial<Record<RewardKind, HTMLElement>> = $state({});
   let R = 0;
   let relT = -1e9;
   let alive = true;
@@ -120,8 +130,11 @@
   }
 
   // ---------------------------------------------------------------- the spin
-  function doSpin() {
-    if (spinning || !canPay) return;
+  /** flick: the speed (degrees per millisecond) the finger gave the wheel; without it the wheel winds up by itself. */
+  function doSpin(flick?: number) {
+    if (spinning) return;
+    collect(false);
+    if (!canPay) return;
     const i = spin();
     if (i === null) return;
     spinning = true; result = null; glow = false;
@@ -132,10 +145,17 @@
     const R0 = R;
     let R1 = Math.ceil((R0 + 360 * 5 + theta) / 360) * 360 - theta;
     if (R1 - R0 < 360 * 5) R1 += 360;
-    const wind = calm ? 0 : 380;
+    const thrown = typeof flick === 'number';
+    const wind = calm || thrown ? 0 : 380;
     const dur = calm ? 1200 : near ? 8600 : 7200;
-    const back = calm ? 0 : 16;
+    const back = calm || thrown ? 0 : 16;
     const pow = near ? 4.2 : 3.8;
+    if (thrown) {
+      // A harder throw gives more turns, so the wheel leaves the finger at about the finger's speed.
+      const turns = Math.max(3, Math.min(9, Math.round((flick * dur) / pow / 360)));
+      R1 = Math.ceil((R0 + 360 * turns + theta) / 360) * 360 - theta;
+      if (R1 - R0 < 360 * turns) R1 += 360;
+    }
     const t0 = performance.now();
     let last = Math.floor((R0 - FLAP_GRIP) / FIELD_DEG);
     const step = (t: number) => {
@@ -171,17 +191,29 @@
     bumped = which;
     setTimeout(() => { if (bumped === which) bumped = null; }, 180);
   }
-  function countUp(which: 'gold' | 'gems' | 'lives', to: number) {
-    const from = which === 'gold' ? gold : which === 'gems' ? gems : hearts;
-    const t0 = performance.now();
-    const step = (t: number) => {
-      if (!alive) return;
-      const x = Math.min(1, (t - t0) / 900);
-      const v = Math.round(from + (to - from) * x);
-      if (which === 'gold') gold = v; else if (which === 'gems') gems = v; else hearts = v;
-      if (x < 1) requestAnimationFrame(step); else bump(which);
-    };
-    requestAnimationFrame(step);
+  /** Sets a counter's shown value. */
+  function show(which: RewardKind, v: number) {
+    if (which === 'gold') gold = v; else if (which === 'gems') gems = v; else hearts = v;
+  }
+  const owned = (which: RewardKind) => (which === 'lives' ? get(lives).count : get(purse)[which]);
+  const shown = (which: RewardKind) => (which === 'gold' ? gold : which === 'gems' ? gems : hearts);
+  /**
+   * Collects the prize on the sign. The purse already holds it (spin() pays at once); this moves it to
+   * the counters, with the flight when the player tapped the sign and without it when they spin again.
+   */
+  function collect(fly: boolean) {
+    if (!waiting || result === null) return;
+    const s = WHEEL[result];
+    const which: RewardKind = s.gold ? 'gold' : s.gems ? 'gems' : 'lives';
+    const from = shown(which);
+    const to = owned(which);
+    const src = art(s);
+    const origin = prizeEl;
+    const target = pills[which];
+    waiting = false; result = null; glow = false;
+    if (!fly || !origin || !target) { show(which, to); bump(which); return; }
+    play(s.gold ? 'coins' : s.gems ? 'gems' : 'shine');
+    flyReward({ src, n: pieces(which, to - from), from: origin, to: target, onLand: (k, n) => { if (alive) { show(which, countAt(from, to, k, n)); bump(which); } } });
   }
   function done(i: number) {
     if (!alive) return;
@@ -203,9 +235,54 @@
       play(s.gems ? 'gems' : 'coins');
       if (!calm) burst(s.gold ? 'coin' : s.gems ? 'gem' : 'heart', s.gold ? Math.min(34, 8 + s.gold / 20) : 12, (s.gold ?? 0) >= 500);
     }
-    if (s.gold) countUp('gold', get(purse).gold);
-    else if (s.gems) countUp('gems', get(purse).gems);
-    else countUp('lives', get(lives).count);
+    waiting = true;
+  }
+
+  // ---------------------------------------------------------------- dragging the wheel
+  // The wheel follows the finger and ticks against the flap; let go with speed and it spins.
+  // The flap stops the wheel from being pulled backwards past a peg.
+  let grabbing = $state(false);
+  let held: null | { id: number; a: number; moved: number; last: number; track: [number, number][] } = null;
+  /** Slower than this (degrees per millisecond) and the wheel just stays where the finger left it. */
+  const THROW = 0.12;
+  function angle(e: PointerEvent): number {
+    const r = boxEl.getBoundingClientRect();
+    return (Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180) / Math.PI;
+  }
+  function grab(e: PointerEvent) {
+    if (spinning || held) return;
+    e.preventDefault();
+    held = { id: e.pointerId, a: angle(e), moved: 0, last: Math.floor((R - FLAP_GRIP) / FIELD_DEG), track: [[performance.now(), R]] };
+    wheelEl.setPointerCapture(e.pointerId);
+    grabbing = true;
+  }
+  function drag(e: PointerEvent) {
+    if (!held || e.pointerId !== held.id) return;
+    const a = angle(e);
+    let d = a - held.a;
+    if (d > 180) d -= 360;
+    if (d < -180) d += 360;
+    held.a = a; held.moved += Math.abs(d);
+    const t = performance.now();
+    R = Math.max(R + d, held.last * FIELD_DEG + FLAP_GRIP + 0.5);
+    const rel = Math.floor((R - FLAP_GRIP) / FIELD_DEG);
+    if (rel > held.last) { held.last = rel; relT = t; lit++; playTick(1); }
+    draw(t);
+    held.track.push([t, R]);
+    while (held.track.length > 2 && t - held.track[0][0] > 90) held.track.shift();
+  }
+  function release(e: PointerEvent) {
+    if (!held || e.pointerId !== held.id) return;
+    const h = held;
+    const t = performance.now();
+    held = null; grabbing = false;
+    const [t0, R0] = h.track[0];
+    const v = (R - R0) / Math.max(16, t - t0);
+    if (h.moved >= 8 && v > THROW) { doSpin(v); if (spinning) return; }
+    // Not thrown: the flap swings back to rest.
+    relT = t;
+    const relax = (now: number) => { if (!alive || spinning || held) return; setFlap(now); if (now - t < 600) requestAnimationFrame(relax); };
+    requestAnimationFrame(relax);
   }
 
   function close() {
@@ -235,9 +312,9 @@
 
 <div class="view" bind:this={viewEl} role="dialog" aria-modal="true" aria-label="Lyckohjulet" data-no-click-sound>
   <div class="hud">
-    <span class="pill" class:bump={bumped === 'gold'} aria-label={`${gold} guld`}><img src="/art/wheel/coin.webp" alt="" />{fmt(gold)}</span>
-    <span class="pill" class:bump={bumped === 'gems'} aria-label={`${gems} ädelstenar`}><img src="/art/wheel/gem.webp" alt="" />{fmt(gems)}</span>
-    <span class="pill" class:bump={bumped === 'lives'} aria-label={`${hearts} liv`}><img src="/art/wheel/heart.webp" alt="" />{hearts}</span>
+    <span class="pill" bind:this={pills.gold} class:bump={bumped === 'gold'} aria-label={`${gold} guld`}><img src="/art/wheel/coin.webp" alt="" />{fmt(gold)}</span>
+    <span class="pill" bind:this={pills.gems} class:bump={bumped === 'gems'} aria-label={`${gems} ädelstenar`}><img src="/art/wheel/gem.webp" alt="" />{fmt(gems)}</span>
+    <span class="pill" bind:this={pills.lives} class:bump={bumped === 'lives'} aria-label={`${hearts} liv`}><img src="/art/wheel/heart.webp" alt="" />{hearts}</span>
     <button class="close-x x" onclick={close} disabled={spinning} aria-label="Stäng lyckohjulet">✕</button>
   </div>
 
@@ -250,8 +327,9 @@
         <span class="bulb" class:lit={(k + lit) % 4 === 0} style:left={`${50 + 54.5 * Math.sin(a)}%`} style:top={`${50 - 54.5 * Math.cos(a)}%`}></span>
       {/each}
       <!-- A tap on the wheel does not start it (Jonas, 2026-11-20): nobody should pay for a spin by mistake. -->
-      <div class="wheel" bind:this={wheelEl}>
-        <img src="/art/wheel/disc.webp" alt="" />
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="wheel" class:held={grabbing} bind:this={wheelEl} onpointerdown={grab} onpointermove={drag} onpointerup={release} onpointercancel={release} ondragstart={(e) => e.preventDefault()}>
+        <img src="/art/wheel/disc.webp" alt="" draggable="false" />
         {#each WHEEL as s, i}
           <div class="prize" class:red={discField(i) % 2 === 1 && !s.jackpot} class:jack={s.jackpot} style:transform={`rotate(${discField(i) * FIELD_DEG + FIELD_DEG / 2}deg)`}>
             <div><img src={art(s)} alt="" /><span>{amount(s)}</span></div>
@@ -269,15 +347,16 @@
     </div>
     {#if result !== null}
       {@const s = WHEEL[result]}
-      <div class="ribbon" class:jack={s.jackpot}>
-        <div class="big">{s.jackpot ? 'STORVINST!' : nearJackpot(result) ? 'Så nära storvinsten!' : 'Du vann!'}</div>
-        <div class="small">{#if nearJackpot(result)}Du fick{/if} <img src={art(s)} alt="" /> {amount(s)} {word(s)}</div>
-      </div>
+      <button class="ribbon" class:jack={s.jackpot} onclick={() => collect(true)}>
+        <span class="big">{s.jackpot ? 'STORVINST!' : nearJackpot(result) ? 'Så nära storvinsten!' : 'Du vann!'}</span>
+        <span class="small" bind:this={prizeEl}>{#if nearJackpot(result)}Du fick{/if} <img src={art(s)} alt="" /> {amount(s)} {word(s)}</span>
+        <span class="tap">Tryck för att hämta</span>
+      </button>
     {/if}
   </div>
 
   <div class="panel">
-    <button class="spin" class:pulse={result !== null && nearJackpot(result) && !spinning} onclick={doSpin} disabled={spinning || !canPay}>
+    <button class="spin" class:pulse={result !== null && nearJackpot(result) && !spinning} onclick={() => doSpin()} disabled={spinning || !canPay}>
       {#if cost === 0}Snurra gratis{:else if canPay}Snurra för <img src="/art/wheel/gem.webp" alt="ädelstenar" /> {cost}{:else}För få ädelstenar{/if}
     </button>
     <p class="sub">{free.starter > 0 ? `${free.starter} gratis snurr kvar` : free.daily ? 'Dagens gratissnurr' : 'Nästa gratissnurr i morgon'}</p>
@@ -302,7 +381,8 @@
   .sign { position: absolute; left: 16%; right: 16%; top: 18.6%; height: 4%; display: grid; place-items: center; color: #fbf1d8; font-weight: 800; letter-spacing: .14em; font-size: clamp(14px, 5.2cqw, 26px); text-shadow: 0 2px 0 #0e1d3d; }
   .box { position: absolute; left: 15%; width: 70%; top: 28.1%; aspect-ratio: 1; container-type: inline-size; }
   .shadow { position: absolute; inset: 1.5% -2% -3% 2%; border-radius: 50%; background: rgb(60 40 10 / .32); filter: blur(6px); }
-  .wheel { position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
+  .wheel { position: absolute; inset: 0; border-radius: 50%; will-change: transform; cursor: grab; touch-action: none; }
+  .wheel.held { cursor: grabbing; }
   .wheel > img { width: 100%; height: 100%; display: block; clip-path: circle(49.7%); pointer-events: none; }
   .prize { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
   .prize > div { position: absolute; left: 0; bottom: 0; transform: translate(-50%, 0); padding-bottom: 20cqw; display: grid; justify-items: center; }
@@ -318,7 +398,9 @@
   .flap { position: absolute; left: 50%; top: -13.5%; width: 9%; height: 22%; margin-left: -4.5%; transform-origin: 50% 14%; z-index: 3; pointer-events: none; }
   .flap svg { width: 100%; height: 100%; overflow: visible; }
 
-  .ribbon { position: absolute; left: 4%; right: 4%; top: 49%; z-index: 4; text-align: center; padding: 6px 10px 8px; border-radius: 14px; background: #fffaf2; border: 3px solid var(--deep); box-shadow: 0 6px 0 rgb(90 29 20 / .35); animation: pop .45s cubic-bezier(.2, 1.6, .4, 1) both; pointer-events: none; }
+  .ribbon { position: absolute; left: 4%; right: 4%; top: 49%; z-index: 4; text-align: center; padding: 6px 10px 8px; border-radius: 14px; background: #fffaf2; border: 3px solid var(--deep); box-shadow: 0 6px 0 rgb(90 29 20 / .35); animation: pop .45s cubic-bezier(.2, 1.6, .4, 1) both; display: grid; justify-items: center; gap: 0; width: auto; min-height: 0; font: inherit; color: #1f1a17; cursor: pointer; }
+  .ribbon .tap { font-weight: 700; font-size: clamp(12px, 3.6cqw, 16px); color: var(--deep); animation: tapme 1s ease-in-out infinite; }
+  @keyframes tapme { 50% { opacity: .45; } }
   .ribbon.jack { background: linear-gradient(#ffe89a, #f2c230); }
   @keyframes pop { from { transform: scale(0); opacity: 0; } }
   .ribbon .big { font-weight: 800; font-size: clamp(20px, 7cqw, 34px); line-height: 1.05; }
@@ -337,5 +419,5 @@
   @keyframes flash { from { opacity: .85; } to { opacity: 0; } }
   .fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 8; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  @media (prefers-reduced-motion: reduce) { .spin.pulse, .glow.on { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .spin.pulse, .glow.on, .ribbon .tap { animation: none; } }
 </style>

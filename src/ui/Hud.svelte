@@ -2,6 +2,11 @@
   import { inLevel, levelMenuAsked, lives, now, purse, settings, shopOpen } from '../lib/state/game';
   import { formatDuration } from '../lib/time/clock';
   import { nextLifeIn } from '../lib/time/lives';
+  import { inFlight } from '../lib/ui/flyReward';
+
+  // Gold and gems that are flying in from a dialog are not shown until they land.
+  const gold = $derived($purse.gold - $inFlight.gold);
+  const gems = $derived($purse.gems - $inFlight.gems);
 
   const next = $derived(nextLifeIn($lives, $now));
   /** One heart per life, filled or empty; bought lives beyond the usual five get hearts of their own. */
@@ -29,9 +34,9 @@
     </span>
     {#if next !== null}<span class="next" aria-hidden="true">{short(next)}</span>{/if}
   </div>
-  <span class="gold" aria-label={`${$purse.gold} guld`}><span aria-hidden="true">🪙</span> {$purse.gold}</span>
-  <button class="gems" data-tut="gems" onclick={() => shopOpen.set({ reason: 'hud' })} aria-label={`${$purse.gems} ädelstenar. Öppna butiken`}>
-    <span aria-hidden="true">💎</span> {$purse.gems} <span class="plus" aria-hidden="true">+</span>
+  <span class="gold" data-counter="gold" aria-label={`${gold} guld`}><span aria-hidden="true">🪙</span> {gold}</span>
+  <button class="gems" data-tut="gems" onclick={() => shopOpen.set({ reason: 'hud' })} data-counter="gems" aria-label={`${gems} ädelstenar. Öppna butiken`}>
+    <span aria-hidden="true">💎</span> {gems} <span class="plus" aria-hidden="true">+</span>
   </button>
   {#if $settings.speed !== 1}<span class="badge" title="Snabbad klocka">×{$settings.speed}</span>{/if}
 </header>
@@ -48,5 +53,11 @@
   .gold { font-weight: 700; white-space: nowrap; }
   .gems { min-height: 40px; padding: 4px 10px; background: transparent; border: 2px solid var(--line); color: var(--ink); white-space: nowrap; }
   .plus { color: var(--falu); font-weight: 900; }
+  /* While a reward flies in, the bar is lifted above the dialog's backdrop so the counters are seen counting up. */
+  :global(body.reward-flying) .hud { position: relative; z-index: 11; }
+  :global(.landed) { animation: landed .16s ease-out; }
+  @keyframes landed { 50% { transform: scale(1.18); } }
+  .gold, .gems { transform-origin: center; }
+  .gold { display: inline-block; }
   .badge { background: var(--gold); color: #1f1a17; font-weight: 800; border-radius: 999px; padding: 2px 8px; font-size: .8rem; }
 </style>
