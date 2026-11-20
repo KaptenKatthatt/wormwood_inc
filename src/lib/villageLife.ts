@@ -16,7 +16,7 @@ type Levels = Partial<Record<string, number>>;
 /** Points on the painted roads. Names starting with x lie outside the picture. */
 export const NODES: Record<string, [number, number]> = {
   // round the well
-  rN: [452, 752], rNE: [500, 760], rE: [528, 792], rSE: [510, 822], rS: [478, 832], rSW: [440, 826], rW: [418, 802], rNW: [425, 772],
+  rN: [452, 752], rNE: [507, 754], rE: [528, 792], rSE: [510, 822], rS: [478, 832], rSW: [440, 826], rW: [418, 802], rNW: [425, 772],
   // the north road into the forest, with the north tower and the mill path
   b: [400, 670], c: [360, 600], d: [342, 550], tn: [325, 522], e: [300, 480], f: [268, 420], g: [215, 330], h: [160, 200], i: [135, 90], xN: [120, -20],
   m1: [410, 537], mill: [492, 532],

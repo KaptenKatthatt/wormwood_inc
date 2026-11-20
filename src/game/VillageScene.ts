@@ -40,6 +40,17 @@ const FENCER = { w: 240, at: 140 };
  */
 const YARD_WALL: [number, number, number][] = [[414, 428, 991], [428, 446, 977.5], [446, 495, 974.5]];
 /** Drawing order: the background, then buildings and figures back to front, then signs and decorations. */
+/**
+ * The well in the crossroads (Jonas approved it on 2026-11-20): posts, a shingle roof, a windlass
+ * and a bucket. It is smaller than the stone ring painted in the backgrounds, so a piece of
+ * ground ('ground', one per look, with the well's shadow) is drawn over the old ring first.
+ * In background pixels; the well's picture is four times as large. Figures north of 'front' go behind it.
+ */
+const WELL = { ground: [416, 758] as [number, number], at: [438.5, 739] as [number, number], scale: 4, front: 812 };
+const wellFiles = (look: Look): { ground: string; well: string } => ({
+  ground: `well/ground-${look}.webp`,
+  well: look === 'summer' ? 'well/well-summer.webp' : look === 'c' ? 'well/well-snow-c.webp' : 'well/well-snow.webp',
+});
 const DEPTH = { ground: 1000, signs: 9000, decor: 9500 };
 const TOWER_IDS = ['vakttornet', 'tornet_o', 'tornet_s', 'tornet_v'];
 
@@ -79,6 +90,7 @@ export class VillageScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image('v-bg', DIR + BG.file);
+    for (const f of Object.values(wellFiles('summer'))) this.load.image(`v-${f}`, DIR + f);
     for (const b of Object.values(BUILDINGS)) for (const s of Object.values(b.stages)) this.load.image(`v-${s.file}`, DIR + s.file);
     for (const k of ['hus', 'torn'] as const) this.load.image(`v-bygge-${k}`, DIR + ART.bygge[k].file);
     this.load.spritesheet('v-people-fencer', `${DIR}people/fencer.webp`, { frameWidth: FENCER.w, frameHeight: CELL.h });
@@ -327,6 +339,7 @@ export class VillageScene extends Phaser.Scene {
     }
     if (look !== 'summer') {
       want.push([`v-${look}-${BG.file}`, `${DIR}winter/${look}/${BG.file}`]);
+      for (const f of Object.values(wellFiles(look))) want.push([`v-${f}`, DIR + f]);
       for (const b of Object.values(BUILDINGS)) for (const st of Object.values(b.stages)) want.push([`v-${look}-${st.file}`, `${DIR}winter/${look}/${st.file}`]);
     }
     const missing = want.filter(([key]) => !this.textures.exists(key) && !this.asked.has(key));
@@ -353,6 +366,11 @@ export class VillageScene extends Phaser.Scene {
     const layers: string[] = this.registry.get('layers') ?? [];
     const bg = look !== 'summer' && this.textures.exists(`v-${look}-${BG.file}`) ? `v-${look}-${BG.file}` : 'v-bg';
     this.add.image(ox, oy, bg).setOrigin(0).setScale(s);
+    // The well, in the look the background is drawn in (summer's until the winter pictures have loaded).
+    const wf = wellFiles(bg === 'v-bg' ? 'summer' : look);
+    const well = [wf.ground, wf.well].every((f) => this.textures.exists(`v-${f}`)) ? wf : wellFiles('summer');
+    this.add.image(ox + WELL.ground[0] * s, oy + WELL.ground[1] * s, `v-${well.ground}`).setOrigin(0).setScale(s).setDepth(1);
+    this.add.image(ox + WELL.at[0] * s, oy + WELL.at[1] * s, `v-${well.well}`).setOrigin(0).setScale(s / WELL.scale).setDepth(DEPTH.ground + WELL.front);
     this.place = { s, ox, oy };
     this.aprons = [];
     this.smithPic = null;
