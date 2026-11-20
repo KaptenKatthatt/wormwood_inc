@@ -9,7 +9,7 @@ export type HookId =
   | 'timedOffer' | 'gemPacks' | 'attack' | 'guilt' | 'figures'
   // The expansion (Jonas, 2026-11-17): stars, and the week staircase, steps 6-9.
   | 'stars'
-  | 'league' | 'askHelp' | 'album' | 'ads' | 'pass'
+  | 'league' | 'askHelp' | 'album' | 'ads' | 'interstitial' | 'pass'
   | 'chests' | 'wheel' | 'heroes'
   | 'conquest' | 'troops' | 'powerCreep' | 'personalOffer' | 'vip'
   | 'neighboursNeeded' | 'fakeGifts'
@@ -59,6 +59,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'askHelp', step: 6, name: 'Be grannarna om liv', what: 'Utan liv kan spelaren be grannarna om liv och skicka gåvor tillbaka. Lexikonet: Be om hjälp.' },
   { id: 'album', step: 6, name: 'Samlaralbum', what: 'Sex set med sex bilder; en bild per vinst, de sista är sällsynta. Lexikonet: Samla alla.' },
   { id: 'ads', step: 6, name: 'Belönad reklam', what: 'En påhittad reklamfilm på 10 sekunder ger ett liv eller dubbelt guld. Lexikonet: Belönad reklam.' },
+  { id: 'interstitial', step: 6, name: 'Mellanreklam', what: 'Reklamfilmer som kommer av sig själva mellan utmaningarna, utan belöning. Steg 6: efter var tredje utmaning, krysset efter 5 s. Steg 7: efter varannan och efter varje förlust. Steg 8: också vid återkomst efter 10 min och från byn till kartan, och Ta bort reklam för 39 kr. Steg 9: tätare, krysset efter 8 s och ibland litet. Lexikonet: Tvingande reklam.' },
   { id: 'pass', step: 6, name: 'Veckopasset', what: '20 nivåer under 7 dagar; Guldpasset för 120 ädelstenar ger mer. Det som inte hämtats försvinner. Lexikonet: Säsongspass.' },
   { id: 'chests', step: 7, name: 'Kistor', what: 'Kistor med slumpat innehåll efter vinst; öppnas efter väntan eller direkt för ädelstenar. Lexikonet: Lootboxar.' },
   { id: 'wheel', step: 7, name: 'Lyckohjulet', what: 'En gratis snurr om dagen, fler för ädelstenar; stannar ofta precis bredvid storvinsten. Lexikonet: Snurr.' },
@@ -74,6 +75,6 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
 ];
 
 /** The hooks that belong to the expansion (off in builds without it). */
-export const EXPANSION_HOOKS: HookId[] = ['stars', 'league', 'askHelp', 'album', 'ads', 'pass', 'chests', 'wheel', 'heroes', 'conquest', 'troops', 'powerCreep', 'personalOffer', 'vip', 'neighboursNeeded', 'fakeGifts'];
+export const EXPANSION_HOOKS: HookId[] = ['stars', 'league', 'askHelp', 'album', 'ads', 'interstitial', 'pass', 'chests', 'wheel', 'heroes', 'conquest', 'troops', 'powerCreep', 'personalOffer', 'vip', 'neighboursNeeded', 'fakeGifts'];
 
 export type HookResponse = 'yes' | 'no' | 'shown' | 'cannot-afford' | 'waited' | 'expired';

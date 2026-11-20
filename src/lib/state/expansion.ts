@@ -35,6 +35,8 @@ import {
   addGold, challengeNo, clock, daily, expansionHooks, hookOn, letter, lives, logHook, payGems, playerId, purse, say, settings, stairs, toast, village,
 } from './game';
 import { settleLives } from '../time/lives';
+import { REMOVE_ADS_KRONOR, RESUME_AWAY, freshInter, interDue, interLook, interShown, offerRemoveAds, type InterState, type InterTrigger } from '../expansion/interstitial';
+import { formatKr } from '../economy/wallet';
 import { skipGems } from '../economy/village';
 
 const rng = (): number => Math.random();
@@ -71,6 +73,8 @@ export interface ExpState {
   helpers: Helper[];
   gateOpen: boolean;
   fakeDay: { day: string; count: number };
+  /** Ads between challenges (step 6 on). */
+  inter: InterState;
 }
 
 function start(): ExpState {
@@ -78,6 +82,7 @@ function start(): ExpState {
     step: 5, reached: {}, maxWorld: 1, stars: {}, league: null, album: [], dupes: 0, setsRewarded: [], albumRewarded: false, pass: null,
     help: null, lastHelp: 0, ads: { day: '', count: 0 }, chests: [], wheelFreeDay: null, wheelFreeLeft: WHEEL_FREE_START, champions: {}, pity: 0, freeDraws: 0,
     knekt: 0, ryttare: 0, mercs: 0, eras: {}, owned: [], offerDay: null, helpers: [], gateOpen: false, fakeDay: { day: '', count: 0 },
+    inter: freshInter(),
   };
 }
 
@@ -87,6 +92,12 @@ exp.subscribe((s) => save('expansion', s));
 /** Overlays the expansion opens. */
 export const hubOpen = writable<null | 'liga' | 'pass' | 'album' | 'kistor' | 'hjul' | 'kampar'>(null);
 export const adOpen = writable<null | { reward: 'life' | 'double'; gold?: number; ad: AdFilm }>(null);
+/** An ad between challenges, on screen (no reward; the cross comes after xAfter seconds). */
+export const interOpen = writable<null | { ad: AdFilm; trigger: InterTrigger; step: number; xAfter: number; smallX: boolean }>(null);
+/** An ad between challenges waiting for a calm moment (App.svelte shows it outside a challenge). */
+export const interPending = writable<InterTrigger | null>(null);
+/** "Ta bort reklam" on screen. */
+export const removeAdsOpen = writable(false);
 /** Which films this player gets. The dev menu can override the group the player id gives. */
 export const adGroupChoice = writable<AdGroup | 'all' | null>(load('adGroup', null));
 adGroupChoice.subscribe((g) => save('adGroup', g));
@@ -426,6 +437,8 @@ export function adWatched(): void {
   if (a.reward === 'life') lives.update((l) => { const s = settleLives(l, now()); return { ...s, count: Math.min(s.max, s.count + 1) }; });
   else addGold(a.gold ?? 0);
   log('ad_watched', { reward: a.reward, gold: a.gold, ad: a.ad.id, adGroup: adGroup() });
+  // A voluntary film also starts the wait before the next ad between challenges again.
+  exp.update((x) => ({ ...x, inter: { ...inter(x), lastAt: now() } }));
   adOpen.set(null);
   adReward.set({ reward: a.reward, gold: a.gold ?? 0 });
 }
@@ -435,6 +448,84 @@ export function adClosed(secondsWatched = 0): void {
   const a = get(adOpen);
   logHook('ads', { closedEarly: true, reward: a?.reward, ad: a?.ad.id, adGroup: adGroup(), secondsWatched: Math.round(secondsWatched * 10) / 10 }, 'no');
   adOpen.set(null);
+}
+
+// ------------------------------------------------------------------ ads between challenges (step 6 on)
+
+const inter = (x: ExpState): InterState => ({ ...freshInter(), ...(x.inter ?? {}) });
+
+/**
+ * Something happened that may bring an ad: a challenge ended, the game was
+ * opened again, or the player went from the village to the map. A due ad
+ * waits in interPending until App.svelte finds a calm moment outside a challenge.
+ */
+export function interEvent(trigger: InterTrigger): void {
+  if (!weekOn('interstitial')) return;
+  const finished = trigger === 'win' || trigger === 'lose';
+  if (finished) exp.update((x) => ({ ...x, inter: { ...inter(x), since: inter(x).since + 1 } }));
+  if (get(interPending) || get(interOpen)) return;
+  if (interDue(get(exp).step, inter(get(exp)), trigger, now())) interPending.set(trigger);
+}
+
+/** App.svelte calls this when the moment is calm: the waiting ad comes up. */
+export function showPendingInter(): void {
+  const trigger = get(interPending);
+  interPending.set(null);
+  if (!trigger || get(interOpen) || get(adOpen)) return;
+  if (trigger !== 'dev' && (!weekOn('interstitial') || inter(get(exp)).removed)) return;
+  const s = get(exp);
+  const step = Math.max(6, s.step);
+  const look = interLook(step, inter(s));
+  const ad = nextAd(adGroup());
+  exp.update((x) => ({ ...x, inter: interShown(inter(x), now(), dayKey(now())) }));
+  interOpen.set({ ad, trigger, step, ...look });
+  log('interstitial_shown', { ad: ad.id, adGroup: adGroup(), step, trigger, xAfter: look.xAfter, smallX: look.smallX, today: inter(get(exp)).today });
+  logHook('interstitial', { ad: ad.id, adGroup: adGroup(), step, trigger, smallX: look.smallX }, 'shown');
+}
+
+/** The ad is closed (with the cross, or after the end): nothing is lost. */
+export function interClosed(secondsWatched: number): void {
+  const o = get(interOpen);
+  if (!o) return;
+  interOpen.set(null);
+  const secs = Math.round(secondsWatched * 10) / 10;
+  log('interstitial_closed', { ad: o.ad.id, step: o.step, trigger: o.trigger, secondsWatched: secs, smallX: o.smallX });
+  if (offerRemoveAds(o.step, inter(get(exp)), dayKey(now()))) {
+    removeAdsOpen.set(true);
+    log('remove_ads_offer', { result: 'shown', kronor: REMOVE_ADS_KRONOR, today: inter(get(exp)).today });
+    logHook('interstitial', { removeAds: true, kronor: REMOVE_ADS_KRONOR }, 'shown');
+  }
+}
+
+/** "Ta bort reklam" for 39 kr from the test wallet: the ads between challenges stop, the voluntary films stay. */
+export function buyRemoveAds(): void {
+  const p = get(purse);
+  if (p.kronor < REMOVE_ADS_KRONOR) {
+    log('remove_ads_offer', { result: 'cannot-afford', kronor: REMOVE_ADS_KRONOR, have: p.kronor });
+    logHook('interstitial', { removeAds: true, kronor: REMOVE_ADS_KRONOR }, 'cannot-afford');
+    toast(`Det kostar ${formatKr(REMOVE_ADS_KRONOR)}, du har ${formatKr(p.kronor)}`);
+    return;
+  }
+  purse.set({ ...p, kronor: p.kronor - REMOVE_ADS_KRONOR, kronorSpent: p.kronorSpent + REMOVE_ADS_KRONOR });
+  exp.update((x) => ({ ...x, inter: { ...inter(x), removed: true } }));
+  removeAdsOpen.set(false);
+  log('remove_ads_offer', { result: 'bought', kronor: REMOVE_ADS_KRONOR });
+  log('purchase', { item: 'removeAds', kronor: REMOVE_ADS_KRONOR });
+  logHook('interstitial', { removeAds: true, kronor: REMOVE_ADS_KRONOR }, 'yes');
+  toast('Reklamen mellan utmaningarna är borta.');
+}
+
+/** "Inte nu": the offer comes back tomorrow. */
+export function declineRemoveAds(): void {
+  exp.update((x) => ({ ...x, inter: { ...inter(x), declinedDay: dayKey(now()) } }));
+  removeAdsOpen.set(false);
+  log('remove_ads_offer', { result: 'declined', kronor: REMOVE_ADS_KRONOR });
+  logHook('interstitial', { removeAds: true, kronor: REMOVE_ADS_KRONOR }, 'no');
+}
+
+/** Dev menu: an ad between challenges right now, by the rules of the current step (step 6 before that). */
+export function devInterstitial(): void {
+  interPending.set('dev');
 }
 
 // ------------------------------------------------------------------ step 7: chests, wheel, champions
@@ -739,10 +830,16 @@ function onWin(info: { level: number; stars: number }): void {
   }
   recordWorld(get(challengeNo));
   fakeFriend(0.15);
+  interEvent('win');
+}
+
+function onLoss(): void {
+  interEvent('lose');
 }
 
 function onReturn(awayMs: number): void {
   if (!EXPANSION) return;
+  if (awayMs >= RESUME_AWAY) interEvent('resume');
   retake(awayMs);
   if (awayMs > HOUR) fakeFriend(0.6);
   maybePersonalOffer();
@@ -767,6 +864,7 @@ function onReset(): void {
 
 if (EXPANSION) {
   expansionHooks.onWin = onWin;
+  expansionHooks.onLoss = onLoss;
   expansionHooks.onReturn = onReturn;
   expansionHooks.onAwayPush = onAwayPush;
   expansionHooks.onReset = onReset;

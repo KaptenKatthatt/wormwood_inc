@@ -3,15 +3,24 @@
    * A pretend rewarded ad film (step 6): ten seconds of a made-up product in
    * three scenes, with a bar that runs from one side of the screen to the
    * other while it plays (Jonas, 2026-11-19), then the reward.
+   *
+   * With `between` it is an ad between challenges instead (Jonas, 2026-11-20):
+   * the same films, but no reward, and the cross comes only after a few
+   * seconds; on step 9 it is sometimes small and pale in the corner.
    */
-  import { adClosed, adGroup, adOpen, adWatched } from '../lib/state/expansion';
+  import { adClosed, adGroup, adOpen, adWatched, interClosed, interOpen } from '../lib/state/expansion';
   import { AD_SECONDS, nextAd } from '../lib/expansion/social';
   import { get } from 'svelte/store';
+  import { untrack } from 'svelte';
   import { log } from '../lib/log/logger';
   import { playAd } from '../lib/audio/sound';
 
+  let props: { between?: boolean } = $props();
+  // The overlay is made anew for each ad (App.svelte keys it), so reading the mode once is enough.
+  const between = untrack(() => props.between ?? false);
   // The film was picked when the ad was offered, from the player's group.
-  const ad = get(adOpen)?.ad ?? nextAd(adGroup());
+  const inter = between ? get(interOpen) : null;
+  const ad = inter?.ad ?? get(adOpen)?.ad ?? nextAd(adGroup());
   /** Seconds played. Driven by the clock, so the bar also runs in calm mode. */
   let t = $state(0);
   $effect(() => {
@@ -22,13 +31,15 @@
       if (t < AD_SECONDS) frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
-    log('ad_shown', { ad: ad.id, adGroup: adGroup() });
+    if (!between) log('ad_shown', { ad: ad.id, adGroup: adGroup() });
     const stopSound = playAd(ad.id);
     return () => { cancelAnimationFrame(frame); stopSound(); };
   });
   const left = $derived(Math.ceil(AD_SECONDS - t));
   const done = $derived(t >= AD_SECONDS);
   const scene = $derived(Math.min(2, Math.floor(t / (AD_SECONDS / 3))));
+  const xAfter = inter?.xAfter ?? 0;
+  const xLeft = $derived(Math.max(0, Math.ceil(xAfter - t)));
 </script>
 
 <div class="ad" class:serif={ad.serif} class:loud={ad.loud} role="dialog" aria-modal="true" aria-label={`Reklam för ${ad.brand}`} style:--accent={ad.accent} style:--ink={ad.ink}>
@@ -39,7 +50,13 @@
   </div>
   <div class="chrome">
     <span class="tag">Reklam</span>
-    {#if !done}
+    {#if between}
+      {#if xLeft > 0}
+        <span class="count" aria-live="off" aria-label={`Kan stängas om ${xLeft} sekunder`}>{xLeft}</span>
+      {:else}
+        <button class="close-x close" class:small={inter?.smallX} data-no-click-sound onclick={() => interClosed(t)} aria-label="Stäng reklamen">✕</button>
+      {/if}
+    {:else if !done}
       <span class="count" aria-live="off">{left}</span>
       <button class="close-x close" data-no-click-sound onclick={() => adClosed(t)} aria-label="Stäng reklamen utan belöning">✕</button>
     {/if}
@@ -53,8 +70,8 @@
   <div class="foot">
     {#if scene === 2}<span class="cta" aria-hidden="true">{ad.cta}</span>{/if}
     {#if ad.legal}<p class="legal">{ad.legal}</p>{/if}
-    <p class="fine" aria-live="polite">{done ? 'Klart!' : `Belöningen kommer om ${left} s`}</p>
-    {#if done}
+    {#if !between}<p class="fine" aria-live="polite">{done ? 'Klart!' : `Belöningen kommer om ${left} s`}</p>{/if}
+    {#if done && !between}
       <button class="primary get" onclick={adWatched}>Hämta {$adOpen?.reward === 'life' ? 'livet' : 'guldet'}</button>
     {/if}
   </div>
@@ -72,6 +89,9 @@
   .tag { background: #fff; color: #1f3a5a; border-radius: 4px; padding: 0 6px; font-weight: 800; font-size: .8rem; margin-right: auto; }
   .count { min-width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgb(0 0 0 / .45); font-weight: 800; font-variant-numeric: tabular-nums; }
   .close { background: rgb(0 0 0 / .45); color: #fff; border: 2px solid rgb(255 255 255 / .6); }
+  /* Step 9: every third ad has a small, pale cross pushed into the corner. */
+  .close.small { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; min-width: 0; min-height: 0; padding: 0; font-size: .6rem; opacity: .35; border-width: 1px; background: transparent; }
+  .close.small::before, .close.small::after { width: 10px; height: 2px; margin: -1px 0 0 -5px; }
   .mark { align-self: start; justify-self: center; display: grid; justify-items: center; gap: 8px; margin-top: 3vh; padding: 0 16px; text-align: center; animation: drop .5s ease-out both; }
   @keyframes drop { from { transform: translateY(-18px) scale(.9); opacity: 0; } }
   .kicker { background: var(--accent); color: var(--ink); border-radius: 999px; padding: 0 12px; font-weight: 800; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; }

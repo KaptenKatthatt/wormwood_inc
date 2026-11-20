@@ -8,7 +8,7 @@
   import { Match3, isRocket, type SwapResult } from '../lib/match3/engine';
   import { OBSTACLE_TIPS, goalText, introLevel, levelAt, regionOf, tileUrl, type Level, type Obstacle } from '../lib/match3/levels';
   import { EXPANSION } from '../lib/config/flags';
-  import { adReward, adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, winterOpen, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
+  import { adReward, adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, interOpen, interPending, removeAdsOpen, winterOpen, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
   import { GATE_SKIP_GEMS, HELPERS_NEEDED } from '../lib/expansion/conquest';
   import { makeRng } from '../lib/match3/rng';
   import { PRICE } from '../lib/economy/shop';
@@ -19,6 +19,7 @@
     type WinPay,
   } from '../lib/state/game';
   import { log } from '../lib/log/logger';
+  import { get } from 'svelte/store';
   import VolumeRow from './VolumeRow.svelte';
   import { DEV_MENU } from '../lib/config/flags';
   import { endTutorial, tutEvent, tutorial, TUT_STEPS } from '../lib/tutorial';
@@ -225,6 +226,8 @@
     logHook('autoNext', { level: game?.level.id }, 'shown');
     clearInterval(cdTimer);
     cdTimer = setInterval(() => {
+      // The countdown waits while an ad between challenges is up or about to come.
+      if (get(interOpen) || get(interPending) || get(removeAdsOpen)) return;
       countdown--;
       if (countdown <= 0) { clearInterval(cdTimer); logHook('autoNext', {}, 'waited'); nextLevel(); }
     }, 1000);

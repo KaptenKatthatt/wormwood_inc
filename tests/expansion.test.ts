@@ -40,9 +40,9 @@ describe('the week staircase', () => {
     expect(weekStepFor(1, 5)).toBe(9);
   });
 
-  it('places all fifteen new hooks in steps 6-9, and stars in step 1', () => {
+  it('places all sixteen new hooks in steps 6-9 (the ads between challenges came on 2026-11-20), and stars in step 1', () => {
     const inSteps = WEEK_STEPS.flatMap((d) => d.hooks);
-    expect(inSteps).toHaveLength(15);
+    expect(inSteps).toHaveLength(16);
     expect(new Set([...inSteps, 'stars'])).toEqual(new Set(EXPANSION_HOOKS));
     for (const id of EXPANSION_HOOKS) expect(HOOKS.some((h) => h.id === id)).toBe(true);
     expect(stepOfHook('wheel')).toBe(7);

@@ -16,7 +16,8 @@
   import { log } from './lib/log/logger';
   import { TUT_STEPS, tutEvent, tutorial } from './lib/tutorial';
   import { EXPANSION } from './lib/config/flags';
-  import { adOpen, adReward, exp, friendNote, hubOpen, offerShown } from './lib/state/expansion';
+  import { adOpen, adReward, exp, friendNote, hubOpen, interEvent, interOpen, interPending, offerShown, removeAdsOpen, showPendingInter } from './lib/state/expansion';
+  import RemoveAds from './ui/RemoveAds.svelte';
   import RewardBurst from './ui/RewardBurst.svelte';
   import { hookOn } from './lib/state/game';
   import { ON_HOLD } from './lib/hooks';
@@ -74,7 +75,7 @@
 
   // The questionnaire that stands in for the interview: the game asks when it
   // opens or comes back after the free week, but never on top of something else.
-  const calm = $derived(!intro && !tutStep && $settings.logging !== null && !$quitFlow && !$awayReport && !$streakRepair && !$calendarOpen && !$offerOpen && !$shopOpen && !$letter && !$adOpen && !$hubOpen && !$offerShown && !$friendNote && !$xmasOpen);
+  const calm = $derived(!intro && !tutStep && $settings.logging !== null && !$quitFlow && !$awayReport && !$streakRepair && !$calendarOpen && !$offerOpen && !$shopOpen && !$letter && !$adOpen && !$interOpen && !$removeAdsOpen && !$hubOpen && !$offerShown && !$friendNote && !$xmasOpen);
   // The question about an e-mail address follows the consent, or is opened from Settings.
   const askContact = $derived($contactOpen || (!intro && !tutStep && $contactDue));
   // A message from Jonas comes up when the game is calm and nobody is in a challenge, and then stays until it is read.
@@ -85,6 +86,10 @@
     else if (calm && !askContact && !$inLevel && !$qOpen) messageUp = true;
   });
   const quiet = $derived(calm && !askContact && !messageUp);
+  // An ad between challenges comes at the first calm moment outside a challenge (never during one, nor in the introduction).
+  $effect(() => {
+    if ($interPending && calm && !askContact && !messageUp && !$inLevel && !$qOpen) showPendingInter();
+  });
   let wantAsk = $state(true);
   $effect(() => {
     const onVisible = () => { if (document.visibilityState === 'visible') wantAsk = true; };
@@ -101,7 +106,10 @@
   });
 
   function go(t: Tab) {
+    const from = tab;
     tab = t;
+    // From step 8, going from the village to the map can bring an ad.
+    if (from === 'byn' && t === 'pussel') interEvent('toMap');
     if (t === 'pussel') tutEvent('onMap');
     history.replaceState(null, '', `#${t}`);
     log('view', { tab: t });
@@ -159,6 +167,8 @@
     {#if $offerShown && !$offerOpen}<PersonalOffer />{/if}
     {#if $friendNote && !$hubOpen}<FriendNote />{/if}
     {#if $adOpen}<AdOverlay />{/if}
+    {#if $interOpen}{#key $interOpen.ad.id + $interOpen.trigger}<AdOverlay between />{/key}{/if}
+    {#if $removeAdsOpen && !$interOpen}<RemoveAds />{/if}
     {#if $adReward}<RewardBurst />{/if}
   {/if}
   <!-- Last, so it lies on top of anything that opens at the same moment. -->

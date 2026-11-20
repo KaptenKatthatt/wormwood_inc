@@ -8,7 +8,7 @@
   import { challengeNo } from '../lib/state/game';
   import { TOTAL_CHALLENGES, WORLDS, worldOf } from '../lib/match3/levels';
   import { WEEK_STEPS, type WeekStep } from '../lib/expansion/week';
-  import { adGroupChoice, devLeagueHoursLeft, devWeekStep, exp, testDay, weekOn } from '../lib/state/expansion';
+  import { adGroupChoice, devInterstitial, devLeagueHoursLeft, devWeekStep, exp, testDay, weekOn } from '../lib/state/expansion';
   import { LEAGUES, adGroupFor } from '../lib/expansion/social';
   import { EXPANSION_HOOKS } from '../lib/hooks';
   const tday = $derived.by(() => { void $now; void $daily; return testDay(); });
@@ -152,6 +152,11 @@
         {#each WEEK_STEPS as d}
           <button class="ghost" disabled={$exp.step >= d.step} onclick={() => devWeekStep(d.step as WeekStep)}>Till steg {d.step}</button>
         {/each}
+      </div>
+      <p>Mellanreklam: {$exp.inter?.removed ? 'borttagen (köpt)' : `${$exp.inter?.today ?? 0} i dag, ${$exp.inter?.since ?? 0} utmaningar sedan förra`}. Slås av under Krokar.</p>
+      <div class="buttons">
+        <button class="ghost" onclick={devInterstitial}>Visa mellanreklam nu</button>
+        <button class="ghost" onclick={() => exp.update((x) => ({ ...x, inter: { ...x.inter, removed: false, declinedDay: null, today: 0, lastAt: 0 } }))}>Nollställ mellanreklamen</button>
       </div>
       {#if $exp.league && weekOn('league')}
         <p>Veckoligan: {LEAGUES[$exp.league.tier ?? 0]}, vecka {$exp.league.week ?? 1}.</p>

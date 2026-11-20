@@ -20,7 +20,7 @@ export interface WeekStepDef {
 }
 
 export const WEEK_STEPS: WeekStepDef[] = [
-  { step: 6, name: 'Socialt', day: 2, world: 2, hooks: ['league', 'askHelp', 'album', 'ads', 'pass'] },
+  { step: 6, name: 'Socialt', day: 2, world: 2, hooks: ['league', 'askHelp', 'album', 'ads', 'interstitial', 'pass'] },
   { step: 7, name: 'Slump', day: 3, world: 3, hooks: ['chests', 'wheel', 'heroes'] },
   { step: 8, name: 'Erövring', day: 4, world: 4, hooks: ['conquest', 'troops', 'powerCreep', 'personalOffer', 'vip'] },
   { step: 9, name: 'Förpliktelse', day: 6, world: 5, hooks: ['neighboursNeeded', 'fakeGifts'] },
