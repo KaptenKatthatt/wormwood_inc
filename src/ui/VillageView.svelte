@@ -170,7 +170,6 @@
               <strong>{b.name}</strong> <span class="lvl">skog</span>
               <span class="fine">{b.world ? `Marken röjs när du når ${WORLDS[b.world - 1].name}.` : `Marken röjs när Stugan når nivå ${b.unlock}.`}</span>
             </div>
-            <span class="lock" aria-hidden="true">🌲</span>
           </li>
           {:else}
           <li>
@@ -199,7 +198,6 @@
           {/if}
         {/each}
       </ul>
-      <button class="primary play" onclick={onPlay}>Till Kartan</button>
     </div>
   {/if}
 </section>
@@ -244,9 +242,7 @@
   .lvl { color: var(--muted); font-size: .9rem; }
   .fine { color: var(--muted); font-size: .85rem; }
   .why { grid-column: 2; font-size: .8rem; color: var(--muted); text-align: right; }
-  .play { margin-top: 8px; }
   .locked { opacity: .7; }
-  .lock { font-size: 1.4rem; }
   .mood { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; align-items: center; gap: 8px; background: rgb(243 236 228 / .9); border-radius: 999px; padding: 4px 10px; }
   .face { font-size: 1.3rem; line-height: 1; }
   .track { flex: 1; height: 8px; background: #d8ccc0; border-radius: 4px; overflow: hidden; }
