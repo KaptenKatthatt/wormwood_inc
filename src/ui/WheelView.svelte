@@ -238,7 +238,7 @@
     <span class="pill" class:bump={bumped === 'gold'} aria-label={`${gold} guld`}><img src="/art/wheel/coin.webp" alt="" />{fmt(gold)}</span>
     <span class="pill" class:bump={bumped === 'gems'} aria-label={`${gems} ädelstenar`}><img src="/art/wheel/gem.webp" alt="" />{fmt(gems)}</span>
     <span class="pill" class:bump={bumped === 'lives'} aria-label={`${hearts} liv`}><img src="/art/wheel/heart.webp" alt="" />{hearts}</span>
-    <button class="x" onclick={close} disabled={spinning} aria-label="Stäng lyckohjulet">✕</button>
+    <button class="close-x x" onclick={close} disabled={spinning} aria-label="Stäng lyckohjulet">✕</button>
   </div>
 
   <div class="scene">
@@ -295,7 +295,7 @@
   .pill { display: flex; align-items: center; gap: 4px; padding: 2px 10px 2px 4px; border-radius: 999px; background: #fffaf2; border: 2px solid var(--deep); font-weight: 800; font-size: 1rem; font-variant-numeric: tabular-nums; transition: transform .15s; }
   .pill img { width: 1.5em; height: 1.5em; object-fit: contain; }
   .pill.bump { transform: scale(1.18); }
-  .x { margin-left: auto; width: 44px; height: 44px; border-radius: 50%; background: #fffaf2; color: var(--deep); border: 2px solid var(--deep); font-size: 1.2rem; font-weight: 800; padding: 0; }
+  .x { margin-left: auto; background: #fffaf2; color: var(--deep); border: 2px solid var(--deep); }
   .x:disabled { opacity: .5; }
 
   .scene { position: relative; flex: none; margin-top: auto; width: min(100%, 520px, (100dvh - 150px) * 2 / 3); aspect-ratio: 2 / 3; background: url(/art/wheel/scene.webp) center / cover no-repeat; container-type: inline-size; }

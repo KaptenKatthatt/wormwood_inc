@@ -138,7 +138,7 @@
           <h2 id="sheet-title">Bygg</h2>
           <span class="fine">{constr ? 'Ett bygge i taget. Det som pågår ska bli klart först.' : `Nästa bygge tar ${formatDuration(buildTime(nextNo))}.`}</span>
         </div>
-        <button class="ghost close" onclick={() => (sheet = false)} aria-label="Stäng bygglistan">✕</button>
+        <button class="close-x ghost" onclick={() => (sheet = false)} aria-label="Stäng bygglistan">✕</button>
       </div>
       <ul>
         {#each BUILDINGS as b (b.id)}
@@ -216,7 +216,6 @@
   .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
   .head div { display: grid; }
   h2 { margin: 0; font-size: 1.3rem; line-height: 1.1; }
-  .close { min-width: 44px; min-height: 44px; padding: 0; border-radius: 50%; }
   ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; overflow-y: auto; flex: 1; min-height: 0; }
   li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; border-bottom: 1px solid var(--line); padding: 6px 0; }
   li div { display: grid; }

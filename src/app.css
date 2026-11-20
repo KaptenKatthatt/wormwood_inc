@@ -30,6 +30,9 @@ html, body { margin: 0; height: 100%; background: var(--sea); color: var(--ink);
 button { font: inherit; font-weight: 700; border-radius: 6px; padding: 10px 16px; min-height: 48px; cursor: pointer; border: 2px solid transparent; }
 button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 button:disabled { opacity: .45; cursor: not-allowed; }
+/* Every round close cross takes its shape from here, so that none ends up an oval: a
+   component only adds its own colours. tests/closeCross.test.ts keeps them all on it. */
+button.close-x { flex: none; box-sizing: border-box; display: grid; place-items: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; aspect-ratio: 1; padding: 0; border-radius: 50%; font-size: 1.2rem; font-weight: 700; line-height: 1; }
 .primary { background: var(--falu); color: #fff6ee; }
 .primary:hover:not(:disabled) { background: var(--falu-hi); }
 .ghost { background: transparent; color: var(--ink); border-color: var(--line); }
