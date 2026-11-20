@@ -17,7 +17,7 @@
  */
 import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
-import { mkdir, readFile, writeFile, appendFile, stat, rename } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, appendFile, stat, rename, chmod } from 'node:fs/promises';
 import { join, extname, normalize, resolve } from 'node:path';
 import { createReach } from './reach.mjs';
 
@@ -57,6 +57,8 @@ export async function createApp(opts) {
   const dataDir = resolve(opts.dataDir);
   const now = opts.now ?? Date.now;
   await mkdir(join(dataDir, 'logs'), { recursive: true });
+  // Files written before 0.27.1 were readable by every user on the machine.
+  for (const f of ['admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
 
   // ---- persisted JSON ------------------------------------------------------
   /** @param {string} name @param {any} fallback */
@@ -66,7 +68,8 @@ export async function createApp(opts) {
   /** @param {string} name @param {any} value */
   async function writeJson(name, value) {
     const p = join(dataDir, name);
-    await writeFile(p + '.tmp', JSON.stringify(value));
+    // Only the server's own user may read the data: keys, push subscriptions, e-mail addresses.
+    await writeFile(p + '.tmp', JSON.stringify(value), { mode: 0o600 });
     await rename(p + '.tmp', p);
   }
 

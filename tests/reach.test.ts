@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { mkdtemp, readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, mkdir, stat, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -128,6 +128,10 @@ describe('the e-mail address', () => {
     expect(JSON.parse(await readFile(join(dataDir, 'contacts.json'), 'utf8'))[ANNA].email).toBe('anna@exempel.se');
     const logs = join(dataDir, 'logs');
     for (const f of (await readdir(logs)).filter((x) => x.endsWith('.ndjson'))) expect(await readFile(join(logs, f), 'utf8')).not.toContain('anna@exempel.se');
+  });
+
+  it('lies in a file only the server's own user may read', async () => {
+    for (const f of ['contacts.json', 'messages.json', 'players.json']) expect((await stat(join(dataDir, f))).mode & 0o777).toBe(0o600);
   });
 
   it('is removed when the tester asks, and all at once when Jonas does', async () => {
