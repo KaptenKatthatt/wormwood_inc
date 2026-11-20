@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { puzzleMusicFor, sliderGain, WORLD_EXTRA, WORLD_TUNES } from '../src/lib/audio/sound';
+import { DEFAULT_VOL, mapMusicFor, migrateAudio, puzzleMusicFor, sliderGain, WORLD_EXTRA, WORLD_TUNES } from '../src/lib/audio/sound';
 
 const AUDIO = new URL('../public/audio/', import.meta.url);
 const SRC = readFileSync(new URL('../src/lib/audio/sound.ts', import.meta.url), 'utf8');
@@ -70,5 +70,24 @@ describe('sound', () => {
         expect(credits.includes(`${dir}/${base}`), `${dir}/${f}`).toBe(true);
       }
     }
+  });
+});
+
+describe('stored sound settings', () => {
+  it('starts every slider at the standard', () => {
+    expect(migrateAudio({})).toMatchObject({ music: true, sfx: true, ambience: true, musicVol: DEFAULT_VOL, sfxVol: DEFAULT_VOL, ambienceVol: DEFAULT_VOL });
+  });
+  it('resets sliders from the old loudness scale once, keeping the switches', () => {
+    const s = migrateAudio({ music: false, sfx: true, ambience: false, musicVol: 0.1, sfxVol: 1 });
+    expect(s).toMatchObject({ music: false, ambience: false, musicVol: DEFAULT_VOL, sfxVol: DEFAULT_VOL });
+    expect(migrateAudio({ ...s, musicVol: 0.4 }).musicVol).toBe(0.4);
+  });
+});
+
+describe('map music', () => {
+  it('plays the village tune in the first world and the world tune after that', () => {
+    expect(mapMusicFor(1)).toBe('village');
+    expect(mapMusicFor(3)).toBe('world-3');
+    expect(mapMusicFor(4, [2])).toBe('village');
   });
 });

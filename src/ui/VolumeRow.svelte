@@ -6,8 +6,8 @@
    */
   import { audioSettings } from '../lib/audio/sound';
 
-  let { kind, label }: { kind: 'music' | 'sfx'; label: string } = $props();
-  const volKey = $derived(kind === 'music' ? 'musicVol' : 'sfxVol');
+  let { kind, label }: { kind: 'music' | 'sfx' | 'ambience'; label: string } = $props();
+  const volKey = $derived(kind === 'music' ? 'musicVol' : kind === 'sfx' ? 'sfxVol' : 'ambienceVol');
   const on = $derived($audioSettings[kind]);
   const percent = $derived(Math.round($audioSettings[volKey] * 100));
 </script>

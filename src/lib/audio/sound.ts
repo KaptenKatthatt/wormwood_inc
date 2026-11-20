@@ -55,22 +55,36 @@ const MATCH_STEPS = 8;
 /** Jingles that duck the music while they play (seconds). */
 const DUCK: Partial<Record<Sfx, number>> = { win: 4.5, lose: 5.5, buildDone: 3.5, attack: 3, defended: 2.5 };
 
-/** musicVol and sfxVol are the player's own sliders, 0 to 1 (Jonas, 2026-11-19). */
-export interface AudioSettings { music: boolean; ambience: boolean; sfx: boolean; musicVol: number; sfxVol: number }
-export const audioSettings = writable<AudioSettings>({ music: true, ambience: true, sfx: true, musicVol: 1, sfxVol: 1, ...load<Partial<AudioSettings>>('audio', {}) });
+/**
+ * musicVol, sfxVol and ambienceVol are the player's own sliders, 0 to 1.
+ * scale tells which loudness scale the stored sliders belong to: on scale 2
+ * (Jonas, 2026-11-20) 75 % is the standard and sounds like 10 % did before.
+ */
+export interface AudioSettings { music: boolean; ambience: boolean; sfx: boolean; musicVol: number; sfxVol: number; ambienceVol: number; scale: number }
+export const DEFAULT_VOL = 0.75;
+const SCALE = 2;
+/** Sliders saved on an older scale go back to the standard once; the on/off switches are kept. */
+export function migrateAudio(saved: Partial<AudioSettings>): AudioSettings {
+  const base: AudioSettings = { music: true, ambience: true, sfx: true, musicVol: DEFAULT_VOL, sfxVol: DEFAULT_VOL, ambienceVol: DEFAULT_VOL, scale: SCALE };
+  if (saved.scale === SCALE) return { ...base, ...saved };
+  return { ...base, music: saved.music ?? true, ambience: saved.ambience ?? true, sfx: saved.sfx ?? true };
+}
+export const audioSettings = writable<AudioSettings>(migrateAudio(load<Partial<AudioSettings>>('audio', {})));
 audioSettings.subscribe((s) => save('audio', s));
 
 /**
- * Levels into the master chain. Jonas found everything quiet on the phone
- * (2026-11-19): the music played 20 dB under full level, and the effects
- * could not go higher without clipping when several sounded at once. The
- * master chain below (boost, compressor, soft clip) lets the whole mix sit
- * about 10 dB higher and never clip.
+ * Levels into the output, with the slider at 100 %. Jonas found the game far
+ * too loud on 2026-11-20: 10 % on the slider was right with the phone at half
+ * volume. The cause was the master chain added the day before (a threefold
+ * boost, a compressor with its automatic make-up gain and a driven soft clip):
+ * it lifted quiet sound 21 dB, and the compressor made the upper half of the
+ * slider change almost nothing. The chain is gone; only a gentle soft clip is
+ * left as protection. The levels are set so that the standard, 75 %, sounds as
+ * 10 % did through the old chain (measured: the chain gave x11.4 there).
+ * The sea was not on any slider and played far above the music; it now sits at
+ * about half the music's level and has its own slider.
  */
-const LEVEL = { music: 0.6, ambience: 0.45, sfx: 1.2 };
-// out: the level of the finished mix. 0.26.3 was too loud on the phone, so Jonas
-// asked for the top volume 20 % down (2026-11-19).
-const MASTER = { boost: 3, headroom: 1.25, drive: 2, out: 0.8 };
+const LEVEL = { music: 0.12, ambience: 0.06, sfx: 0.24 };
 const LATENCY = 'balanced' as const;
 /**
  * Tracks that play louder than the common music level. The title tune plays
@@ -118,36 +132,23 @@ function buffer(path: string): Promise<AudioBuffer | null> {
 }
 
 /**
- * Everything the game plays goes through here: a boost, a compressor that holds
- * the loud moments down, and a soft clip that keeps the sum under full level
- * however many sounds play at once (hard clipping crackles).
+ * Everything the game plays goes through here: a soft clip that keeps the sum
+ * under full level however many sounds play at once (hard clipping crackles).
+ * It leaves quiet sound as it is.
  */
 function buildMaster(c: AudioContext): AudioNode {
-  const boost = c.createGain();
-  boost.gain.value = MASTER.boost;
-  const comp = c.createDynamicsCompressor();
-  comp.threshold.value = -20;
-  comp.knee.value = 8;
-  comp.ratio.value = 10;
-  comp.attack.value = 0.004;
-  comp.release.value = 0.15;
-  const pre = c.createGain();
-  pre.gain.value = 1 / MASTER.headroom;
   const clip = c.createWaveShaper();
   const n = 2049;
   const curve = new Float32Array(n);
-  for (let i = 0; i < n; i++) curve[i] = Math.tanh(((i / (n - 1)) * 2 - 1) * MASTER.drive) / Math.tanh(MASTER.drive);
+  for (let i = 0; i < n; i++) curve[i] = Math.tanh((i / (n - 1)) * 2 - 1);
   clip.curve = curve;
   clip.oversample = '4x';
-  boost.connect(comp);
-  comp.connect(pre);
-  pre.connect(clip);
   const out = c.createGain();
-  out.gain.value = away() ? 0 : MASTER.out;
+  out.gain.value = away() ? 0 : 1;
   outGain = out;
   clip.connect(out);
   out.connect(c.destination);
-  return boost;
+  return clip;
 }
 
 /** True while the player cannot see the game: another app, the home screen, a locked phone. */
@@ -179,7 +180,7 @@ function unhush(): void {
   }
   if (outGain) {
     outGain.gain.cancelScheduledValues(ctx.currentTime);
-    outGain.gain.value = MASTER.out;
+    outGain.gain.value = 1;
   }
   if (ctx.state !== 'closed') void ctx.resume().catch(() => undefined);
 }
@@ -245,6 +246,10 @@ function musicLevel(): number {
   const s = get(audioSettings);
   return s.music ? LEVEL.music * sliderGain(s.musicVol) : 0;
 }
+function ambienceLevel(): number {
+  const s = get(audioSettings);
+  return s.ambience ? LEVEL.ambience * sliderGain(s.ambienceVol) : 0;
+}
 function sfxLevel(): number {
   const s = get(audioSettings);
   return s.sfx ? LEVEL.sfx * sliderGain(s.sfxVol) : 0;
@@ -255,7 +260,7 @@ function applyVolumes(): void {
   const s = get(audioSettings);
   const t = ctx.currentTime;
   musicGain.gain.setTargetAtTime(musicLevel(), t, 0.15);
-  ambienceGain.gain.setTargetAtTime(s.ambience ? LEVEL.ambience : 0, t, 0.15);
+  ambienceGain.gain.setTargetAtTime(ambienceLevel(), t, 0.15);
   sfxGain.gain.setTargetAtTime(sfxLevel(), t, 0.05);
 }
 
@@ -300,6 +305,12 @@ async function syncAmbience(): Promise<void> {
   const buf = await buffer('music/ambience-sea');
   if (!buf || ambienceSrc || !(wantAmbience && get(audioSettings).ambience)) return;
   ambienceSrc = loop(buf, ambienceGain);
+}
+
+/** The tune of a world's map: the village tune in the first world, the world's own after that. */
+export function mapMusicFor(world: number, tunes: readonly number[] = WORLD_TUNES): Music {
+  if (tunes.includes(world)) return `world-${world}`;
+  return 'village';
 }
 
 /** Which music should play. null is silence. Safe to call before the first touch. */
@@ -372,7 +383,7 @@ export function playAd(id: string): () => void {
     src.buffer = buf;
     // Its own gain: the track plays even when only one of music and effects is on.
     const out = audio.createGain();
-    out.gain.value = LEVEL.sfx;
+    out.gain.value = LEVEL.sfx * sliderGain(s.sfx ? s.sfxVol : s.musicVol);
     out.connect(master);
     src.connect(out);
     src.start();

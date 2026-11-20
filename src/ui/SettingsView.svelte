@@ -9,7 +9,6 @@
   import { flush } from '../lib/log/logger';
   import InstallGuide from './InstallGuide.svelte';
   import Credits from './Credits.svelte';
-  import { audioSettings } from '../lib/audio/sound';
   import VolumeRow from './VolumeRow.svelte';
   import { doneTesting, openQuestionnaire, qState } from '../lib/state/questionnaire';
 
@@ -44,10 +43,7 @@
   <h2>Ljud</h2>
   <VolumeRow kind="music" label="Musik" />
   <VolumeRow kind="sfx" label="Ljudeffekter" />
-  <label class="row">
-    <input type="checkbox" checked={$audioSettings.ambience} onchange={(e) => audioSettings.update((a) => ({ ...a, ambience: e.currentTarget.checked }))} />
-    <span><strong>Havsljud</strong> i byn</span>
-  </label>
+  <VolumeRow kind="ambience" label="Havsljud i byn" />
 
   <h2>Hjälp</h2>
   <button class="ghost" onclick={() => startTutorial(true)}>Visa introduktionen igen</button>

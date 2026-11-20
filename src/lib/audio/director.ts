@@ -6,10 +6,27 @@
 import { get } from 'svelte/store';
 import { onLog } from '../log/logger';
 import { purse } from '../state/game';
-import { initSound, play, puzzleMusicFor, setMusic } from './sound';
+import { initSound, mapMusicFor, play, puzzleMusicFor, setMusic } from './sound';
 
 /** Hooks whose 'yes' means the player paid for something. */
 const PAID = new Set(['gemPacks', 'topUpGold', 'skipWait', 'buyLives', 'extraMoves', 'boosters', 'timedOffer', 'starterPack', 'repair', 'shield', 'soldiers']);
+
+/**
+ * The map plays the tune of the world it shows (Jonas, 2026-11-20: the music
+ * did not change between worlds). The title tune keeps playing over the first
+ * map until the first challenge or the first change of tab.
+ */
+let mapWorld = 1;
+let onMap = false;
+let titleOver = false;
+export function mapShown(world: number): void {
+  mapWorld = world;
+  onMap = true;
+  if (titleOver) setMusic(mapMusicFor(world), false);
+}
+export function mapHidden(): void {
+  onMap = false;
+}
 
 export function initSoundDirector(startTab: string): void {
   initSound();
@@ -27,10 +44,12 @@ export function initSoundDirector(startTab: string): void {
         break;
       case 'view':
         tab = String(d.tab);
+        titleOver = true;
         if (d.tab === 'byn') setMusic('village', true);
-        else if (d.tab === 'pussel') setMusic('village', false);
+        else if (d.tab === 'pussel' && onMap) setMusic(mapMusicFor(mapWorld), false);
         break;
       case 'level_start':
+        titleOver = true;
         if (typeof d.level === 'number') setMusic(puzzleMusicFor(d.level));
         break;
       case 'level_won': play('win'); break;

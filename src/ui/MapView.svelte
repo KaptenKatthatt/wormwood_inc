@@ -6,7 +6,8 @@
    * they follow the gravel road painted into the image. Only the next one can
    * be played; after challenge 40 the road starts over at 1.
    */
-  import { tick } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
+  import { mapHidden, mapShown } from '../lib/audio/director';
   import { ALL_LEVELS, LEVELS, WORLDS, goalText, levelAt, worldOf } from '../lib/match3/levels';
   import NODES from '../lib/match3/mapNodes.json';
   import WORLD_NODES from '../lib/match3/worldNodes.json';
@@ -28,6 +29,9 @@
   }
   let viewWorld = $state(1);
   $effect(() => { viewWorld = EXPANSION ? worldOf(current).id : 1; });
+  // The map plays the tune of the world it shows.
+  $effect(() => { mapShown(viewWorld); });
+  onDestroy(mapHidden);
   const world = $derived(WORLDS[viewWorld - 1]);
   const pts = $derived(roadFor(viewWorld));
   const worldLevels = $derived(EXPANSION ? ALL_LEVELS.slice(world.from - 1, world.to) : LEVELS);
