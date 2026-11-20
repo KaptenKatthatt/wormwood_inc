@@ -11,7 +11,7 @@
     {#if onClose}
       <div class="head">
         <h2 {id}>{title}</h2>
-        <button class="x" onclick={onClose} aria-label="Stäng">✕</button>
+        <button class="close-x x" onclick={onClose} aria-label="Stäng">✕</button>
       </div>
     {:else}
       <h2 {id}>{title}</h2>
@@ -28,7 +28,7 @@
   :global(body.coach-over-dialog) .card { max-height: calc(100dvh - var(--note-top) - 200px); }
   h2 { margin: 0; font-size: 1.3rem; }
   .head { position: sticky; top: -20px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -20px -20px 0; padding: 12px 12px 8px 20px; background: var(--panel); border-radius: 10px 10px 0 0; }
-  .x { flex: none; box-sizing: border-box; width: 44px; height: 44px; min-width: 44px; min-height: 44px; aspect-ratio: 1; padding: 0; border-radius: 50%; background: var(--panel); border: 2px solid var(--muted); color: var(--ink); font-size: 1.2rem; font-weight: 700; line-height: 1; }
+  .x { background: var(--panel); border: 2px solid var(--muted); color: var(--ink); }
   .card :global(p) { margin: 0; }
   .card :global(.buttons) { display: flex; flex-wrap: wrap; gap: 8px; }
   .card :global(.buttons button) { flex: 1 1 140px; }

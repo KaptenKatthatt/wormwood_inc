@@ -41,7 +41,7 @@
     <span class="tag">Reklam</span>
     {#if !done}
       <span class="count" aria-live="off">{left}</span>
-      <button class="close" data-no-click-sound onclick={() => adClosed(t)} aria-label="Stäng reklamen utan belöning">✕</button>
+      <button class="close-x close" data-no-click-sound onclick={() => adClosed(t)} aria-label="Stäng reklamen utan belöning">✕</button>
     {/if}
   </div>
   <div class="mark">
@@ -71,7 +71,7 @@
   .chrome { display: flex; align-items: center; gap: 10px; padding: 8px 10px 0 12px; }
   .tag { background: #fff; color: #1f3a5a; border-radius: 4px; padding: 0 6px; font-weight: 800; font-size: .8rem; margin-right: auto; }
   .count { min-width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgb(0 0 0 / .45); font-weight: 800; font-variant-numeric: tabular-nums; }
-  .close { min-width: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: rgb(0 0 0 / .45); color: #fff; border: 2px solid rgb(255 255 255 / .6); }
+  .close { background: rgb(0 0 0 / .45); color: #fff; border: 2px solid rgb(255 255 255 / .6); }
   .mark { align-self: start; justify-self: center; display: grid; justify-items: center; gap: 8px; margin-top: 3vh; padding: 0 16px; text-align: center; animation: drop .5s ease-out both; }
   @keyframes drop { from { transform: translateY(-18px) scale(.9); opacity: 0; } }
   .kicker { background: var(--accent); color: var(--ink); border-radius: 999px; padding: 0 12px; font-weight: 800; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; }
