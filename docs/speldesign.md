@@ -19,7 +19,9 @@ Avsnitten längre ner som beskriver det här gäller alltså som förslag, inte 
 
 **Standardanimation för guld och ädelstenar (Jonas 2026-11-20, godkänd).** I alla rutor där spelaren får guldmynt eller ädelstenar poppar de fram vid texten, hänger kort och flyger i en båge upp till sin räknare i menyfältet, som räknar upp medan de landar. Visas i mockupen av Dagens gåva: https://claude.ai/artifact/FFXiLDuVsxFYrvuaosShET.
 
-**Dagens gåva (Jonas 2026-11-20).** När gåvan väntar finns inga stängknappar, bara Hämta. Knappen efteråt heter "Då kör vi!" i stället för "Tack!". Sköldgåvan dag 4 ger texten "Du fick 8 timmars skydd mot attacker!". Inte inbyggt i spelet än.
+**Dagens gåva (Jonas 2026-11-20).** När gåvan väntar finns inga stängknappar, bara Hämta. Hämta tonar bort kalendern, och belöningen kommer fram med bild, antal, ett ljud och en skylt som "Du fick 100 guld!" eller "Du fick 8 timmars skydd mot attacker!". Ett tryck låter guld och ädelstenar flyga till menyfältet med standardanimationen, och spelaren hamnar direkt på Kartan utan fler skyltar. Det ersätter den tidigare knappen "Då kör vi!".
+
+**Lyckohjulet i handen (Jonas 2026-11-20).** Hjulet startas bara genom att dra det med fingret eller med knappen Snurra, aldrig med ett vanligt tryck. Det går inte att flytta medan vinstskylten visas. Inget belöningsljud hörs när ett snurr startar. Ett tryck på vinstskylten låter vinsten flyga till räknaren. Byggs som 0.26.25.
 
 **Veckopass, veckoliga och album (Jonas 2026-11-20).** Veckopasset ska med, men designas först med mockups på passet och på utmaningarna i det. Veckoligan ska med efter en mockup. Albumet ska designas, och bilderna tas fram och gås igenom med Jonas. Det är borta ur spelet tills det är färdigbyggt. Mockuparna görs i ordningen hjulet, kistor, veckopass, veckoliga, album, och inget byggs in förrän Jonas har sagt ja till respektive mockup.
 
