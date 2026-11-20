@@ -74,14 +74,30 @@
     return { id: d.id, name: BUILDINGS.find((b) => b.id === d.id)?.name ?? d.id, repairing: !!t, left: t ? remaining(t, $now) : 0, price: repairPrice(d.id) };
   }));
   const figures = $derived(hookOn('figures'));
+  // The speech bubble points down at the villager who speaks (Jonas chose bubble A, 2026-11-20).
+  // The scene says where that villager's head is; with nobody in sight the line shows at the bottom as before.
+  let speaker = $state<{ x: number; y: number } | null>(null);
+  let stageW = $state(0);
+  let stageH = $state(0);
+  let talkW = $state(0);
+  let talkH = $state(0);
+  const TAIL = 9;
+  const talk = $derived.by(() => {
+    if (!speaker || speaker.x < 12 || speaker.x > stageW - 12 || speaker.y < 40 || speaker.y > stageH) return null;
+    // Kept inside the picture; the tail still points at the villager.
+    const half = talkW / 2;
+    const left = Math.min(Math.max(speaker.x, half + 8), Math.max(half + 8, stageW - half - 8));
+    const top = Math.max(speaker.y, talkH + TAIL + 6);
+    return { left, top, tail: Math.min(Math.max(speaker.x - left, -half + 16), half - 16) };
+  });
   const face = $derived(['😢', '🙁', '😐', '🙂', '😊'][Math.min(4, Math.floor($stairs.mood / 20))]);
 
   const blockText = { busy: 'Ett bygge pågår', cap: 'Bygg ut Stugan först', gold: 'För lite guld', max: 'Högsta nivån', locked: '' } as const;
 </script>
 
 <section class="view">
-  <div class="canvas">
-    <GameCanvas scene={VillageScene} data={{ plots, look, layers, soldiers: $stairs.soldiers }} on={{ 'village-zoomed': zoomed }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
+  <div class="canvas" bind:clientWidth={stageW} bind:clientHeight={stageH}>
+    <GameCanvas scene={VillageScene} data={{ plots, look, layers, soldiers: $stairs.soldiers, speaking: figures && !!$bubble }} on={{ 'village-zoomed': zoomed, 'village-speaker': (at: { x: number; y: number } | null) => (speaker = at) }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
     {#if zoomHint && !sheet}
       <div class="zoomhint" aria-hidden="true">
         <span class="finger a"></span><span class="finger b"></span>
@@ -94,8 +110,11 @@
         <span class="track"><span style:width={`${$stairs.mood}%`}></span></span>
       </div>
     {/if}
+    {#if figures && $bubble && talk}
+      <p class="bubble talk" aria-live="polite" bind:clientWidth={talkW} bind:clientHeight={talkH} style:left={`${talk.left}px`} style:top={`${talk.top}px`} style:--tail={`${talk.tail}px`}>{$bubble}</p>
+    {/if}
     <div class="float">
-      {#if figures && $bubble}<p class="bubble" aria-live="polite">{$bubble}</p>{/if}
+      {#if figures && $bubble && !talk}<p class="bubble" aria-live="polite">{$bubble}</p>{/if}
       {#if xday > 0}
         <button class="xmas" onclick={() => xmasOpen.set(true)}>🎄 {countdownText(xday)} · 🍪 {$xmas.cookies}</button>
       {:else if CHRISTMAS && $xmas.decor.length > 0}
@@ -233,4 +252,6 @@
   .track { flex: 1; height: 8px; background: #d8ccc0; border-radius: 4px; overflow: hidden; }
   .track span { display: block; height: 100%; background: #3f6d3a; transition: width .4s; }
   .bubble { justify-self: center; margin: 0; background: #fff; color: #1f1a17; border-radius: 14px; padding: 6px 12px; font-weight: 600; box-shadow: 0 2px 8px rgb(0 0 0 / .25); max-width: 90%; text-align: center; }
+  .bubble.talk { position: absolute; margin: -9px 0 0; transform: translate(-50%, -100%); width: max-content; max-width: min(210px, 70%); font-size: 14px; line-height: 1.25; padding: 7px 12px; pointer-events: none; z-index: 2; }
+  .bubble.talk::after { content: ''; position: absolute; left: calc(50% + var(--tail, 0px)); top: 100%; transform: translateX(-50%); border: 8px solid transparent; border-top-color: #fff; border-bottom: 0; }
 </style>

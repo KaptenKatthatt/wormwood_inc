@@ -135,7 +135,32 @@ export class VillageScene extends Phaser.Scene {
     f.shadow.setPosition(ox + (w.x + 3) * s, oy + (w.y - 0.5) * s).setDepth(DEPTH.ground + depth - 0.01);
   }
 
+  /**
+   * Where the speech bubble points (Jonas chose bubble A on 2026-11-20): just
+   * over the head of the first villager, in CSS pixels of the canvas, or null
+   * when no villager is there. Sent while a villager is saying something.
+   */
+  private lastSpeaker = '';
+  private tellSpeaker(): void {
+    let at: { x: number; y: number } | null = null;
+    const n = this.registry.get('speaking') ? this.walkers.findIndex((w) => w.kind === 'villager') : -1;
+    if (n >= 0) {
+      const w = this.walkers[n];
+      const { s, ox, oy } = this.place;
+      const cam = this.cameras.main;
+      const k = this.registry.get('dpr') ?? 1;
+      const sx = (ox + w.x * s - cam.scrollX - cam.width / 2) * cam.zoom + cam.width / 2;
+      const sy = (oy + (w.y - 30) * s - cam.scrollY - cam.height / 2) * cam.zoom + cam.height / 2;
+      at = { x: Math.round(sx / k), y: Math.round(sy / k) };
+    }
+    const key = at ? `${at.x},${at.y}` : '';
+    if (key === this.lastSpeaker) return;
+    this.lastSpeaker = key;
+    this.game.events.emit('village-speaker', at);
+  }
+
   update(_time: number, delta: number): void {
+    this.tellSpeaker();
     if (this.still) return; // reduced motion: the figures stand where they are
     const dt = Math.min(0.1, delta / 1000);
     const levels = this.levels();
