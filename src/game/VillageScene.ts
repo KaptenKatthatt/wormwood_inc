@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import ART from './villageArt.json';
-import { cast, frameOf, recast, step, type FigureKind, type Walker } from '../lib/villageLife';
+import { cast, frameOf, newSmith, recast, SMITH_AT, SMITH_SPARK, step, stepSmith, type FigureKind, type Walker } from '../lib/villageLife';
+import { play as playSound } from '../lib/audio/sound';
 
 export interface PlotView { id: string; name: string; level: number; building: boolean; progress: number; locked?: boolean; damaged?: boolean }
 
@@ -71,6 +72,7 @@ export class VillageScene extends Phaser.Scene {
     this.load.image('v-bg', DIR + BG.file);
     for (const b of Object.values(BUILDINGS)) for (const s of Object.values(b.stages)) this.load.image(`v-${s.file}`, DIR + s.file);
     for (const k of ['hus', 'torn'] as const) this.load.image(`v-bygge-${k}`, DIR + ART.bygge[k].file);
+    this.load.spritesheet('v-people-smith', `${DIR}people/smith.webp`, { frameWidth: CELL.w, frameHeight: CELL.h });
     for (const k of PEOPLE) this.load.spritesheet(`v-people-${k}`, `${DIR}people/${k}.webp`, { frameWidth: CELL.w, frameHeight: CELL.h });
   }
 
@@ -81,6 +83,38 @@ export class VillageScene extends Phaser.Scene {
   /** Pictures of grand towers with ground around them: a figure beside the tower itself is drawn over the picture. */
   private aprons: { x0: number; x1: number; y0: number; body0: number; body1: number; front: number }[] = [];
   private readonly still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The smith at the anvil (Jonas approved him 2026-11-20): there while Smedjan stands whole.
+  private smith = newSmith();
+  private smithPic: Phaser.GameObjects.Image | null = null;
+  private smithAt: [number, number] = [0, 0];
+  private sparks: { dot: Phaser.GameObjects.Rectangle; x: number; y: number; vx: number; vy: number; life: number }[] = [];
+
+  private stepSparks(dt: number): void {
+    const { s, ox, oy } = this.place;
+    for (const p of this.sparks) {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 60 * dt; p.life -= dt;
+      p.dot.setPosition(ox + p.x * s, oy + p.y * s).setAlpha(Math.min(1, Math.max(0, p.life * 5)));
+      if (p.life <= 0) p.dot.destroy();
+    }
+    this.sparks = this.sparks.filter((p) => p.life > 0);
+  }
+
+  private stepSmithy(dt: number): void {
+    this.stepSparks(dt);
+    const pic = this.smithPic;
+    if (!pic) return;
+    const hit = stepSmith(this.smith, dt);
+    pic.setFrame(this.smith.frame);
+    if (!hit) return;
+    playSound('anvil');
+    const { s } = this.place;
+    const size = Math.max(1, 0.9 * s);
+    for (let k = 0; k < 7; k++) {
+      const dot = this.add.rectangle(0, 0, size, size, Phaser.Display.Color.GetColor(255, 170 + Math.floor(Math.random() * 70), 60)).setOrigin(0).setDepth(pic.depth + 0.1);
+      this.sparks.push({ dot, x: this.smithAt[0] + SMITH_SPARK[0], y: this.smithAt[1] + SMITH_SPARK[1], vx: -22 + Math.random() * 30, vy: -34 + Math.random() * 22, life: 0.18 + Math.random() * 0.2 });
+    }
+    this.stepSparks(0);
+  }
 
   private levels(): Record<string, number> {
     const plots: PlotView[] = this.registry.get('plots') ?? [];
@@ -106,6 +140,7 @@ export class VillageScene extends Phaser.Scene {
     const dt = Math.min(0.1, delta / 1000);
     const levels = this.levels();
     for (let n = 0; n < this.walkers.length; n++) { step(this.walkers[n], dt, levels); this.placeFigure(n); }
+    this.stepSmithy(dt);
   }
 
   /**
@@ -245,6 +280,8 @@ export class VillageScene extends Phaser.Scene {
     this.add.image(ox, oy, bg).setOrigin(0).setScale(s);
     this.place = { s, ox, oy };
     this.aprons = [];
+    this.smithPic = null;
+    this.sparks = []; // removeAll took the dots
 
     const plots: PlotView[] = this.registry.get('plots') ?? [];
     const byId = new Map(plots.map((p) => [p.id, p]));
@@ -270,6 +307,12 @@ export class VillageScene extends Phaser.Scene {
         const hurt = !!d && this.textures.exists(d.key);
         const t = d && hurt ? { key: d.key, pad: d.pad } : whole;
         const pic = this.add.image(ox + (st.x - t.pad) * s, oy + (st.y - t.pad) * s, t.key).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1).setDepth(front);
+        if (id === 'smedjan' && !p.damaged && !p.building) {
+          // The smith stands inside the open front, over the picture; a walker in front still covers him.
+          this.smithAt = SMITH_AT[stage];
+          this.smithPic = this.add.image(ox + this.smithAt[0] * s, oy + this.smithAt[1] * s, 'v-people-smith', this.smith.frame)
+            .setOrigin(0.5, CELL.foot / CELL.h).setScale(s / CELL.scale).setDepth(front + 0.5);
+        }
         if (p.damaged) {
           // The damaged picture where there is one; otherwise the building darkened. A red sign over it.
           if (!hurt) pic.setTint(0x8a7f78);

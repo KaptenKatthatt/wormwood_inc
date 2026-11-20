@@ -104,3 +104,9 @@ Tivolilåten "Galoppen" som spelas när lyckohjulet är öppet är skriven för
 spelet 2026-11-20 som noter i kod (`tools/audio/fair_tunes.py`) och spelad med
 FluidSynth och ljudbanken FluidR3_GM (MIT-licens, Frank Wen). Ingen befintlig
 melodi har använts.
+
+## Smedens hammarslag (`sfx/anvil`)
+
+Klangen när smeden slår på städet är gjord för spelet 2026-11-20 av fem
+sinustoner och ett kort brus, räknade i kod (`tools/audio/anvil.py`). Ingen
+inspelning har använts.

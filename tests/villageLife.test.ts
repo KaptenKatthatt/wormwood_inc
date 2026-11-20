@@ -68,3 +68,21 @@ describe('the roads', () => {
     expect(w.front).toBe(true);
   });
 });
+
+describe('the smith', () => {
+  it('strikes four times and then rests', async () => {
+    const { newSmith, stepSmith, SMITH_REST } = await import('../src/lib/villageLife');
+    const s = newSmith();
+    let hits = 0;
+    let t = 0;
+    while (!s.resting && t < 10) { if (stepSmith(s, 0.01)) hits++; t += 0.01; }
+    expect(hits).toBe(4);
+    expect(s.frame).toBe(3);
+    expect(s.t).toBeCloseTo(SMITH_REST, 5);
+    // nothing lands during the rest, and then he starts again
+    for (let n = 0; n < 200; n++) expect(stepSmith(s, 0.01)).toBe(false);
+    let again = false;
+    for (let n = 0; n < 100; n++) again = stepSmith(s, 0.01) || again;
+    expect(again).toBe(true);
+  });
+});

@@ -19,14 +19,16 @@ export type Sfx =
   | 'swap' | 'invalid' | 'win' | 'lose' | 'near' | 'purchase' | 'coins' | 'gems'
   | 'buildStart' | 'buildDone' | 'attack' | 'defended' | 'notify' | 'click'
   // the special tiles and the hard blocks (Jonas, 2026-11-19)
-  | 'rocket' | 'fireworks' | 'shine' | 'crack' | 'break' | 'hammer';
+  | 'rocket' | 'fireworks' | 'shine' | 'crack' | 'break' | 'hammer'
+  // the smith at the anvil in the village (Jonas, 2026-11-20)
+  | 'anvil';
 export type Music = 'title' | 'village' | 'wheel' | 'puzzle-brickor' | 'puzzle-gem-waltz' | `world-${number}` | `world-${number}-${string}`;
 
 const SFX_FILES: Record<Sfx, string> = {
   swap: 'swap', invalid: 'invalid', win: 'win', lose: 'lose', near: 'near', purchase: 'purchase',
   coins: 'coins', gems: 'gems', buildStart: 'build-start', buildDone: 'build-done', attack: 'attack',
   defended: 'defended', notify: 'notify', click: 'click',
-  rocket: 'rocket', fireworks: 'fireworks', shine: 'shine', crack: 'crack', break: 'break', hammer: 'hammer',
+  rocket: 'rocket', fireworks: 'fireworks', shine: 'shine', crack: 'crack', break: 'break', hammer: 'hammer', anvil: 'anvil',
 };
 const MUSIC_FILES: Record<string, string> = {
   title: 'title-solsken', village: 'village-udden', 'puzzle-brickor': 'puzzle-brickor', 'puzzle-gem-waltz': 'puzzle-gem-waltz',
