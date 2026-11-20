@@ -3,7 +3,7 @@ import { ALL_LEVELS, CHALLENGE_COUNT, LEVELS, TOTAL_CHALLENGES, WORLDS, levelAt,
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor } from '../src/lib/expansion/week';
 import { ADS, adGroupFor, adsFor, nextAd } from '../src/lib/expansion/social';
 import { ALBUM_SIZE, drawSticker, leagueRank, leagueTable, passReward, passTier, setComplete } from '../src/lib/expansion/social';
-import { PITY_HARD, WHEEL, drawChampion, legendaryChance, nearJackpot, openChest, spinWheel } from '../src/lib/expansion/luck';
+import { FIELD_DEG, FLAP_GRIP, PITY_HARD, WHEEL, WHEEL_FREE_START, discField, drawChampion, landingAngle, legendaryChance, nearJackpot, openChest, segmentAtAngle, spinWheel } from '../src/lib/expansion/luck';
 import { ERA_FACTOR, NEIGHBOURS, activeHelpers, battle, neighbourDefence, personalOffer, storehouse, vipTier } from '../src/lib/expansion/conquest';
 import { BUILDINGS, START_VILLAGE, cleared } from '../src/lib/economy/village';
 import { HOOKS, EXPANSION_HOOKS } from '../src/lib/hooks';
@@ -107,6 +107,24 @@ describe('step 7', () => {
       if (WHEEL[s].jackpot) jackpot++;
     }
     expect(near).toBeGreaterThan(jackpot * 20);
+  });
+
+  it('stops the painted wheel on the field that was drawn', () => {
+    expect(WHEEL_FREE_START).toBe(3);
+    expect(discField(WHEEL.findIndex((s) => s.jackpot))).toBe(1); // the gold field of the painting
+    for (let i = 0; i < WHEEL.length; i++) {
+      for (const r of [0, 0.25, 0.5, 0.75, 0.999]) {
+        const a = landingAngle(i, r);
+        expect(segmentAtAngle(a)).toBe(i);
+        expect(segmentAtAngle(a + 720)).toBe(i);
+      }
+    }
+    // Beside the jackpot the stop is staged within a few degrees of the peg that decides it.
+    const j = WHEEL.findIndex((s) => s.jackpot);
+    for (const i of [(j + 1) % WHEEL.length, (j + WHEEL.length - 1) % WHEEL.length]) {
+      const past = (((landingAngle(i, 0.5) + FLAP_GRIP) % FIELD_DEG) + FIELD_DEG) % FIELD_DEG;
+      expect(Math.min(past, FIELD_DEG - past)).toBeLessThan(6);
+    }
   });
 
   it('fills a chest', () => {

@@ -5,11 +5,11 @@
    */
   import Modal from './Modal.svelte';
   import {
-    buyGoldPass, buyRoyalChest, claimPass, draw, exp, freeSpinReady, hubOpen, leagueRows, openChestNow, passActive, spin,
+    buyGoldPass, buyRoyalChest, claimPass, draw, exp, hubOpen, leagueRows, openChestNow, passActive,
   } from '../lib/state/expansion';
   import { now, purse } from '../lib/state/game';
   import { ALBUM_SETS, ALBUM_SIZE, GOLD_PASS_GEMS, LEAGUE_DAYS, PASS_DAYS, PASS_TIERS, PASS_XP_PER_TIER, passReward, passTier, rewardText } from '../lib/expansion/social';
-  import { CHAMPIONS, CHEST_SLOTS, DRAW_GEMS, PITY_HARD, ROYAL_CHEST_GEMS, SPIN_GEMS, TEN_DRAW_GEMS, WHEEL, championPower, nearJackpot, type Champion, type ChestLoot } from '../lib/expansion/luck';
+  import { CHAMPIONS, CHEST_SLOTS, DRAW_GEMS, PITY_HARD, ROYAL_CHEST_GEMS, TEN_DRAW_GEMS, championPower, type Champion, type ChestLoot } from '../lib/expansion/luck';
   import { formatDuration, HOUR } from '../lib/time/clock';
   import { skipGems } from '../lib/economy/village';
   import { stickerName } from '../lib/expansion/social';
@@ -31,26 +31,11 @@
   let loot = $state<ChestLoot | null>(null);
   function openC(id: string) { loot = openChestNow(id); }
 
-  // wheel
-  let spinning = $state(false);
-  let angle = $state(0);
-  let result = $state<number | null>(null);
-  function doSpin() {
-    if (spinning) return;
-    const i = spin();
-    if (i === null) return;
-    result = null;
-    spinning = true;
-    const seg = 360 / WHEEL.length;
-    angle = angle - (angle % 360) + 360 * 5 + (360 - i * seg - seg / 2);
-    setTimeout(() => { spinning = false; result = i; }, 3200);
-  }
-
   // champions
   let drawn = $state<Champion[] | null>(null);
   function doDraw(ten: boolean) { drawn = draw(ten); }
 
-  function close() { hubOpen.set(null); loot = null; drawn = null; result = null; }
+  function close() { hubOpen.set(null); loot = null; drawn = null; }
 </script>
 
 {#if tab}
@@ -111,21 +96,6 @@
       {/each}
     </ul>
     <button class="primary" onclick={buyRoyalChest}>Köp en kunglig kista för 💎 {ROYAL_CHEST_GEMS}</button>
-  {:else if tab === 'hjul'}
-    <div class="wheelwrap">
-      <svg viewBox="-110 -110 220 220" class="wheel" style:transform={`rotate(${angle}deg)`} class:spinning aria-hidden="true">
-        {#each WHEEL as s, i}
-          {@const a0 = (i * 2 * Math.PI) / WHEEL.length - Math.PI / 2}
-          {@const a1 = ((i + 1) * 2 * Math.PI) / WHEEL.length - Math.PI / 2}
-          <path d={`M0,0 L${100 * Math.cos(a0)},${100 * Math.sin(a0)} A100,100 0 0 1 ${100 * Math.cos(a1)},${100 * Math.sin(a1)} Z`} fill={s.jackpot ? '#f2c230' : i % 2 ? '#fff8ec' : '#e9c9a0'} stroke="#7a2418" stroke-width="2" />
-          <text transform={`rotate(${(i + 0.5) * (360 / WHEEL.length)}) translate(0,-66)`} text-anchor="middle" class="seg">{s.label}</text>
-        {/each}
-        <circle r="14" fill="#b8382a" stroke="#fff" stroke-width="3" />
-      </svg>
-      <div class="pointer" aria-hidden="true">▼</div>
-    </div>
-    <p aria-live="polite" class="big">{result !== null ? (WHEEL[result].jackpot ? 'STORVINST! 💎 100' : nearJackpot(result) ? `${WHEEL[result].label}. Så nära storvinsten!` : `Du vann ${WHEEL[result].label}`) : ''}</p>
-    <button class="primary" disabled={spinning} onclick={doSpin}>{freeSpinReady() ? 'Snurra gratis' : `Snurra för 💎 ${SPIN_GEMS}`}</button>
   {:else if tab === 'kampar'}
     <p>Kämpar gör armén starkare när du anfaller grannbyar. Legendariska: 2 %. Garanterad legendarisk inom {PITY_HARD} dragningar: <strong>{PITY_HARD - $exp.pity} kvar</strong>.</p>
     {#if drawn}
@@ -164,14 +134,8 @@
   .album li.have { border-style: solid; border-color: #3f8f3a; color: var(--ink); background: #eef6e8; font-weight: 700; }
   .album li.rare:not(.have) { border-color: #e0b04a; }
   .chests li { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .wheelwrap { position: relative; width: min(260px, 80vw); margin: 0 auto; }
-  .wheel { width: 100%; display: block; }
-  .wheel.spinning { transition: transform 3.2s cubic-bezier(.15,.85,.25,1); }
-  .seg { font: 700 11px system-ui, sans-serif; fill: #5a1d14; }
-  .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: #b8382a; font-size: 1.6rem; }
   .legendarisk { color: #9a6a09; font-weight: 800; }
   .sällsynt { color: #2c6fa6; font-weight: 700; }
   .big { font-size: 1.1rem; font-weight: 700; }
   .fine { color: var(--muted); font-size: .9rem; }
-  @media (prefers-reduced-motion: reduce) { .wheel.spinning { transition-duration: .3s; } }
 </style>

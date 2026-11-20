@@ -24,6 +24,7 @@
   import Modal from './ui/Modal.svelte';
   import NeighboursView from './ui/NeighboursView.svelte';
   import WeekHub from './ui/WeekHub.svelte';
+  import WheelView from './ui/WheelView.svelte';
   import AdOverlay from './ui/AdOverlay.svelte';
   import PersonalOffer from './ui/PersonalOffer.svelte';
   import FriendNote from './ui/FriendNote.svelte';
@@ -137,7 +138,7 @@
   {/if}
   {#if $settings.logging === null}<Consent />{/if}
   {#if EXPANSION && !tutStep}
-    {#if $hubOpen}<WeekHub />{/if}
+    {#if $hubOpen === 'hjul'}<WheelView />{:else if $hubOpen}<WeekHub />{/if}
     {#if $offerShown && !$offerOpen}<PersonalOffer />{/if}
     {#if $friendNote && !$hubOpen}<FriendNote />{/if}
     {#if $adOpen}<AdOverlay />{/if}

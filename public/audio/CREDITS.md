@@ -97,3 +97,10 @@ speakerröst på svenska (ElevenLabs Eleven v4, syntetisk röst), musik
 (ElevenLabs Music v2.5) och en ljudeffekt (ElevenLabs Text to Sound v3).
 Ingen människa har läst in rösterna och ingen befintlig musik har använts.
 Manus, promptar och mixning finns i `tools/audio/ads.py`.
+
+## Lyckohjulets musik (`music/wheel-galop`)
+
+Tivolilåten "Galoppen" som spelas när lyckohjulet är öppet är skriven för
+spelet 2026-11-20 som noter i kod (`tools/audio/fair_tunes.py`) och spelad med
+FluidSynth och ljudbanken FluidR3_GM (MIT-licens, Frank Wen). Ingen befintlig
+melodi har använts.

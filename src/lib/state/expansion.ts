@@ -22,7 +22,7 @@ import {
   SET_REWARD, drawSticker, helpLives, leagueRank, leagueTable, passReward, passTier, passXp, setComplete, stickerName, type PassReward,
 } from '../expansion/social';
 import {
-  CHEST_SLOTS, DRAW_GEMS, ROYAL_CHEST_GEMS, SPIN_GEMS, TEN_DRAW_GEMS, WHEEL, WOOD_CHEST_CHANCE, WOOD_CHEST_TIME,
+  CHEST_SLOTS, DRAW_GEMS, ROYAL_CHEST_GEMS, SPIN_GEMS, TEN_DRAW_GEMS, WHEEL, WHEEL_FREE_START, WOOD_CHEST_CHANCE, WOOD_CHEST_TIME,
   championPower, drawChampion, nearJackpot, openChest, spinWheel, type Champion, type ChestKind, type ChestLoot,
 } from '../expansion/luck';
 import {
@@ -55,6 +55,8 @@ export interface ExpState {
   ads: { day: string; count: number };
   chests: { id: string; kind: ChestKind; readyAt: number }[];
   wheelFreeDay: string | null;
+  /** Free spins left of the first ones. */
+  wheelFreeLeft: number;
   champions: Record<string, number>;
   pity: number;
   freeDraws: number;
@@ -73,7 +75,7 @@ export interface ExpState {
 function start(): ExpState {
   return {
     step: 5, reached: {}, maxWorld: 1, stars: {}, league: null, album: [], dupes: 0, setsRewarded: [], albumRewarded: false, pass: null,
-    help: null, lastHelp: 0, ads: { day: '', count: 0 }, chests: [], wheelFreeDay: null, champions: {}, pity: 0, freeDraws: 0,
+    help: null, lastHelp: 0, ads: { day: '', count: 0 }, chests: [], wheelFreeDay: null, wheelFreeLeft: WHEEL_FREE_START, champions: {}, pity: 0, freeDraws: 0,
     knekt: 0, ryttare: 0, mercs: 0, eras: {}, owned: [], offerDay: null, helpers: [], gateOpen: false, fakeDay: { day: '', count: 0 },
   };
 }
@@ -379,21 +381,29 @@ export function openChestNow(id: string): ChestLoot | null {
   return loot;
 }
 
-export function freeSpinReady(): boolean {
-  return get(exp).wheelFreeDay !== dayKey(now());
+/** The free spins: what is left of the first three, and whether today's is unused. */
+export function wheelFree(): { starter: number; daily: boolean } {
+  const s = get(exp);
+  return { starter: s.wheelFreeLeft, daily: s.wheelFreeLeft <= 0 && s.wheelFreeDay !== dayKey(now()) };
 }
 
-/** Spins the wheel (free once a day, then gems). Returns the segment index. */
+export function freeSpinReady(): boolean {
+  const f = wheelFree();
+  return f.starter > 0 || f.daily;
+}
+
+/** Spins the wheel (the first three spins free, then one free a day, the rest for gems). Returns the segment index. */
 export function spin(): number | null {
-  const free = freeSpinReady();
+  const f = wheelFree();
+  const free = f.starter > 0 || f.daily;
   if (!free && !payGems(SPIN_GEMS, 'wheel', { item: 'spin' })) return null;
   const i = spinWheel(rng);
   const seg = WHEEL[i];
-  if (free) exp.update((x) => ({ ...x, wheelFreeDay: dayKey(now()) }));
+  if (free) exp.update((x) => ({ ...x, wheelFreeLeft: Math.max(0, x.wheelFreeLeft - 1), wheelFreeDay: dayKey(now()) }));
   if (seg.gold) addGold(seg.gold);
   if (seg.gems) purse.update((p) => ({ ...p, gems: p.gems + seg.gems! }));
   if (seg.lives) lives.update((l) => { const s = settleLives(l, now()); return { ...s, count: Math.min(s.max, s.count + seg.lives!) }; });
-  logHook('wheel', { free, segment: i, prize: seg.label, nearJackpot: nearJackpot(i), jackpot: !!seg.jackpot }, 'shown');
+  logHook('wheel', { free, starter: f.starter > 0, segment: i, prize: seg.label, nearJackpot: nearJackpot(i), jackpot: !!seg.jackpot }, 'shown');
   return i;
 }
 

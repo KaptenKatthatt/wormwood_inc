@@ -20,7 +20,7 @@ export type Sfx =
   | 'buildStart' | 'buildDone' | 'attack' | 'defended' | 'notify' | 'click'
   // the special tiles and the hard blocks (Jonas, 2026-11-19)
   | 'rocket' | 'fireworks' | 'shine' | 'crack' | 'break' | 'hammer';
-export type Music = 'title' | 'village' | 'puzzle-brickor' | 'puzzle-gem-waltz' | `world-${number}` | `world-${number}-${string}`;
+export type Music = 'title' | 'village' | 'wheel' | 'puzzle-brickor' | 'puzzle-gem-waltz' | `world-${number}` | `world-${number}-${string}`;
 
 const SFX_FILES: Record<Sfx, string> = {
   swap: 'swap', invalid: 'invalid', win: 'win', lose: 'lose', near: 'near', purchase: 'purchase',
@@ -30,6 +30,8 @@ const SFX_FILES: Record<Sfx, string> = {
 };
 const MUSIC_FILES: Record<string, string> = {
   title: 'title-solsken', village: 'village-udden', 'puzzle-brickor': 'puzzle-brickor', 'puzzle-gem-waltz': 'puzzle-gem-waltz',
+  // The wheel of fortune has fairground music of its own (Jonas, 2026-11-20).
+  wheel: 'wheel-galop',
 };
 /**
  * Each world has its own puzzle music (Jonas, 2026-11-19). A world listed
@@ -316,6 +318,11 @@ export function mapMusicFor(world: number, tunes: readonly number[] = WORLD_TUNE
   return 'village';
 }
 
+/** What setMusic was last asked for, so an overlay with music of its own can hand back afterwards. */
+export function musicNow(): { name: Music | null; ambience: boolean } {
+  return { name: wantMusic, ambience: wantAmbience };
+}
+
 /** Which music should play. null is silence. Safe to call before the first touch. */
 export function setMusic(name: Music | null, ambience = false): void {
   wantMusic = name;
@@ -418,6 +425,12 @@ export function playMatch(step: number): void {
   // Past the top of the scale, keep rising a little by playing faster.
   const rate = step >= MATCH_STEPS ? 1 + 0.06 * (step - MATCH_STEPS + 1) : 1;
   void playFile(`sfx/match-${i}`, Math.min(rate, 1.5));
+}
+
+/** One tick of the wheel of fortune as a peg slips under the flap; they come too fast for play(). */
+export function playTick(rate = 1): void {
+  if (!ctx || !get(audioSettings).sfx) return;
+  void playFile('sfx/click', rate);
 }
 
 let started = false;

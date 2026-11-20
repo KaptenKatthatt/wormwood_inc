@@ -56,6 +56,9 @@ export const WHEEL: WheelSegment[] = [
 export const WHEEL_WEIGHTS = [1, 30, 10, 8, 15, 8, 3, 25];
 export const SPIN_GEMS = 10;
 
+/** The first spins are free, then one a day (Jonas, 2026-11-20). */
+export const WHEEL_FREE_START = 3;
+
 export function spinWheel(rng: Rng): number {
   return pick(rng, WHEEL_WEIGHTS);
 }
@@ -64,6 +67,45 @@ export function spinWheel(rng: Rng): number {
 export function nearJackpot(i: number): boolean {
   const j = WHEEL.findIndex((s) => s.jackpot);
   return i !== j && (i === (j + 1) % WHEEL.length || i === (j + WHEEL.length - 1) % WHEEL.length);
+}
+
+// The painted disc (public/art/wheel/disc.webp) has eight fields of 45 degrees,
+// counted clockwise from the top; its gold field is the second one.
+export const FIELD_DEG = 45;
+/**
+ * The leather flap rests against a peg until the peg is this many degrees past
+ * the pointer, so a field wins until its last peg has slipped under the flap.
+ */
+export const FLAP_GRIP = 6;
+
+/** Where segment i of WHEEL is painted on the disc. */
+export function discField(i: number): number {
+  return (i + 1) % WHEEL.length;
+}
+
+/**
+ * The disc angle under the pointer when the wheel stops on segment i (r is a
+ * random number, 0 to 1). The disc turns clockwise, so the fields pass the
+ * pointer in falling order. Beside the jackpot the stop is staged: before it,
+ * the flap is bent hard over the last peg and holds; after it, the flap has
+ * just crept over the peg and slipped.
+ */
+export function landingAngle(i: number, r: number): number {
+  const n = WHEEL.length;
+  const f = discField(i);
+  const j = discField(WHEEL.findIndex((s) => s.jackpot));
+  let a: number;
+  if (f === (j + 1) % n) a = f * FIELD_DEG - (2 + r * 2.5);
+  else if (f === (j + n - 1) % n) a = (f + 1) * FIELD_DEG - FLAP_GRIP - (1 + r * 3);
+  else a = f * FIELD_DEG - FLAP_GRIP + 9 + r * 26;
+  return ((a % 360) + 360) % 360;
+}
+
+/** The segment that wins with this disc angle under the pointer. */
+export function segmentAtAngle(angle: number): number {
+  const n = WHEEL.length;
+  const field = Math.floor((((angle % 360) + 360) % 360 + FLAP_GRIP) / FIELD_DEG) % n;
+  return (field + n - 1) % n;
 }
 
 // ------------------------------------------------------------------ champions (gacha)
