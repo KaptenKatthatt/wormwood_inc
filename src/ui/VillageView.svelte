@@ -140,7 +140,7 @@
       <div class="fabs">
         {#if !sheet}
           <button class="fab" data-tut="build-open" onclick={() => (sheet = true)} aria-haspopup="dialog">
-            <svg viewBox="0 0 40 40" aria-hidden="true"><g transform="rotate(-35 20 20)"><rect x="17.5" y="12" width="5" height="25" rx="2" fill="#c98f4e" stroke="#5a1d14" stroke-width="2"/><rect x="8" y="4" width="24" height="11" rx="3" fill="#cfd6dd" stroke="#3a3f45" stroke-width="2"/></g></svg>
+            <img class="hammer" src="/art/ui/hammare.webp" alt="" />
             <span>Bygg</span>
           </button>
         {/if}
@@ -222,7 +222,8 @@
   .fabs > * { pointer-events: auto; }
   .fab { width: 84px; height: 84px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-content: center; justify-items: center; gap: 0; line-height: 1;
     background: radial-gradient(circle at 40% 35%, #c9473a, #8b2a1e); color: #fff; border: 4px solid #fff; box-shadow: 0 0 0 3px var(--deep), 0 5px 0 3px var(--deep); font-weight: 800; font-size: 1.05rem; }
-  .fab svg { width: 38px; height: 38px; }
+  /* The painted carpenter's hammer (Jonas, 2026-11-20). */
+  .fab .hammer { width: 44px; height: 44px; filter: drop-shadow(0 2px 1px rgb(0 0 0 / .4)); }
   .fab:active { transform: translateY(3px); box-shadow: 0 0 0 3px var(--deep), 0 2px 0 3px var(--deep); }
   .xmas { background: var(--falu); color: #fff; border: 0; border-radius: 12px; padding: 10px; font: inherit; font-weight: 700; min-height: 44px; box-shadow: 0 3px 0 var(--deep); }
   .shade { position: absolute; inset: 0; background: rgb(0 0 0 / .25); }

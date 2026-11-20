@@ -322,7 +322,7 @@
       <div class="boosters">
         <div class="bw">
           <button class="b" class:armed={tool === 'hammer'} aria-pressed={tool === 'hammer'} onclick={useHammer} aria-label={`Hammare: ta bort en bricka, ${$freeBoosters.hammer > 0 ? "gratis" : `${PRICE.hammer} ädelstenar`}`}>
-            <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="17" y="14" width="6" height="24" rx="2" fill="#a8743c" stroke="#5a1d14" stroke-width="2"/><rect x="6" y="4" width="28" height="12" rx="3" fill="#8a96a3" stroke="#3a3f45" stroke-width="2"/></svg>
+            <img class="hammer" src="/art/ui/hammare.webp" alt="" />
             <span class="price">{$freeBoosters.hammer > 0 ? 'Gratis' : `💎 ${PRICE.hammer}`}</span>
           </button>
           <span class="lbl" aria-hidden="true">{tool === 'hammer' ? 'Tryck på' : 'Ta bort'}<br />en bricka</span>
@@ -462,6 +462,8 @@
     background: radial-gradient(circle at 40% 35%, #fff8ec, #e9d9bd); border: 4px solid #8b2a1e; box-shadow: 0 4px 0 var(--deep); }
   .b.armed { background: radial-gradient(circle at 40% 35%, #fff3b0, #f0c75a); transform: translateY(2px); box-shadow: 0 2px 0 var(--deep); }
   .b svg { width: 36px; height: 36px; }
+  /* The painted carpenter's hammer, the same as on the village's build button (Jonas, 2026-11-20). */
+  .b .hammer { width: 44px; height: 44px; filter: drop-shadow(0 2px 1px rgb(0 0 0 / .3)); }
   .plus { font-size: 1.4rem; font-weight: 800; color: #8b2a1e; }
   .price { position: absolute; bottom: -12px; background: #2c6fa6; color: #fff; border: 2px solid #fff; border-radius: 10px; padding: 0 7px; font-weight: 800; font-size: .8rem; white-space: nowrap; }
   .lbl { background: rgb(255 248 236 / .95); border: 2px solid #7a2418; border-radius: 10px; padding: 1px 6px 0; color: var(--deep); font-weight: 800; font-size: 13px; line-height: 1.15; text-align: center; box-shadow: 0 2px 0 var(--deep); }
