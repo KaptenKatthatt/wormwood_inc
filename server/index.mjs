@@ -10,6 +10,7 @@ const app = await createApp({
   dataDir: process.env.DATA_DIR ?? new URL('../data', import.meta.url).pathname,
   webpush,
   contact: process.env.VAPID_CONTACT,
+  adminKey: process.env.ADMIN_KEY,
 });
 
 setInterval(() => { app.flushDue().catch((e) => console.error('flushDue', e)); }, 10_000);

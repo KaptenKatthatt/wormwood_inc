@@ -9,6 +9,8 @@
  *  - POST /api/push/cancel    cancel one
  *  - POST /api/push/test      send one now
  *  - GET  /api/health
+ *  - /api/messages/*, /api/contact/*, /api/admin/*: messages from Jonas and the
+ *    testers' e-mail addresses (server/reach.mjs)
  *
  * Data lives in DATA_DIR as plain JSON / NDJSON files; there is one player
  * per device, identified by a random pseudonymous id made in the browser.
@@ -17,6 +19,7 @@ import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
 import { mkdir, readFile, writeFile, appendFile, stat, rename } from 'node:fs/promises';
 import { join, extname, normalize, resolve } from 'node:path';
+import { createReach } from './reach.mjs';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -42,7 +45,7 @@ const ID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 const MAX_BODY = 64 * 1024;
 
 /**
- * @param {{ distDir: string, testDistDir?: string, dataDir: string, webpush?: any, contact?: string, now?: () => number }} opts
+ * @param {{ distDir: string, testDistDir?: string, dataDir: string, webpush?: any, contact?: string, now?: () => number, adminKey?: string }} opts
  */
 export async function createApp(opts) {
   const devDist = resolve(opts.distDir);
@@ -107,7 +110,19 @@ export async function createApp(opts) {
     }
   }
 
+  /** One server-made line in the playtest log, in the shape of the lines the game sends. */
+  /** @param {'test' | 'dev'} site @param {string} playerId @param {string} name @param {object} data */
+  async function appendEvent(site, playerId, name, data) {
+    const received = now();
+    const logDir = site === 'test' ? join(dataDir, 'logs') : join(dataDir, 'logs', 'dev');
+    await mkdir(logDir, { recursive: true });
+    const line = JSON.stringify({ received, site, playerId, session: 'server', seq: null, v: null, t: received, gameT: null, name, ctx: null, data });
+    await appendFile(join(logDir, `${new Date(received).toISOString().slice(0, 10)}.ndjson`), line + '\n');
+  }
+  const reach = await createReach({ readJson, writeJson, now, sendPush, appendEvent, adminKey: opts.adminKey });
+
   async function flushDue() {
+    await reach.expireContacts();
     const t = now();
     const due = scheduled.filter((s) => s.at <= t);
     if (due.length === 0) return 0;
@@ -279,6 +294,11 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
       return json(res, 200, { ok: true, stored: lines.length });
     }
 
+    if (path.startsWith('/api/messages/') || path.startsWith('/api/contact/') || path.startsWith('/api/admin/')) {
+      const out = await reach.handle(path, body, isTestHost(String(req.headers.host ?? '')) ? 'test' : 'dev');
+      if (out) return json(res, out.status, out.body);
+    }
+
     if (path === '/api/push/subscribe') {
       const sub = body.subscription;
       if (!validId(body.playerId) || typeof sub?.endpoint !== 'string' || !sub.keys?.p256dh || !sub.keys?.auth) {
@@ -330,5 +350,5 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
     });
   });
 
-  return { server, flushDue, get scheduled() { return scheduled; }, get subs() { return subs; } };
+  return { server, flushDue, reach, get scheduled() { return scheduled; }, get subs() { return subs; } };
 }

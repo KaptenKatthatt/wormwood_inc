@@ -30,6 +30,15 @@ Node 20 or newer is required.
 ```
 
 The VAPID keys are generated on first start into `/var/lib/wormwood/vapid.json`.
+
+## The admin key
+
+Writing to the testers and listing their e-mail addresses (dev menu, "Testarna")
+needs the admin key. It is `ADMIN_KEY` in `/etc/wormwood/env` if set; otherwise the
+server makes one on first start and keeps it in `/var/lib/wormwood/admin-key.json`.
+Jonas pastes it into the dev menu once per device. The addresses live in
+`/var/lib/wormwood/contacts.json`, apart from the logs, and the server empties that
+file by itself after 31 January 2027.
 Keep that file: new keys make every existing push subscription invalid.
 
 ## Reading the playtest log

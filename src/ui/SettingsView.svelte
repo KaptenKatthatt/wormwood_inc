@@ -11,6 +11,18 @@
   import Credits from './Credits.svelte';
   import VolumeRow from './VolumeRow.svelte';
   import { doneTesting, openQuestionnaire, qState } from '../lib/state/questionnaire';
+  import { contact, contactOpen, contactsOpen, inbox, markRead, removeContact } from '../lib/state/reach';
+  import { dayText } from '../lib/reach';
+  let openMessage = $state('');
+  // Newest first, as in a mailbox.
+  const messages = $derived([...$inbox.messages].reverse());
+  function toggleMessage(id: string) {
+    openMessage = openMessage === id ? '' : id;
+    if (openMessage) markRead(id);
+  }
+  async function dropContact() {
+    toast((await removeContact()) ? 'Mejladressen är borttagen.' : 'Det gick inte just nu. Försök igen om en stund.');
+  }
 
   let pushStatus = $state('');
   let credits = $state(false);
@@ -40,6 +52,16 @@
 </script>
 
 <section class="settings">
+  {#if messages.length}
+    <h2>Meddelanden från Jonas</h2>
+    {#each messages as m (m.id)}
+      <button class="message" class:unread={!$inbox.read.includes(m.id)} aria-expanded={openMessage === m.id} onclick={() => toggleMessage(m.id)}>
+        <strong>{m.title}</strong>
+        <small>{dayText(m.sentAt)}</small>
+        {#if openMessage === m.id}<span class="body">{m.body}</span>{/if}
+      </button>
+    {/each}
+  {/if}
   <h2>Ljud</h2>
   <VolumeRow kind="music" label="Musik" />
   <VolumeRow kind="sfx" label="Ljudeffekter" />
@@ -64,10 +86,19 @@
   <h2>Speltest</h2>
   <label class="row">
     <input type="checkbox" checked={$settings.logging === true} onchange={(e) => setLogging(e.currentTarget.checked)} />
-    <span><strong>Skicka testdata</strong>: vad du gör i spelet och när, till Jonas Olson. Inget namn, ingen e-post.</span>
+    <span><strong>Skicka testdata</strong>: vad du gör i spelet och när, till Jonas Olson. Inget namn.</span>
   </label>
   <p>Din testkod: <strong class="code">{testCode(playerId)}</strong>. Vill du att dina uppgifter raderas, säg koden till Jonas.</p>
 
+  {#if $contact}
+    <h2>Mejladress</h2>
+    <p>Jonas får höra av sig till <strong class="mail">{$contact}</strong>.</p>
+    <button class="ghost" onclick={dropContact}>Ta bort min mejladress</button>
+  {:else if contactsOpen()}
+    <h2>Mejladress</h2>
+    <p>Ingen mejladress är sparad.</p>
+    <button class="ghost" onclick={() => contactOpen.set(true)}>Lägg till en mejladress</button>
+  {/if}
   {#if $settings.logging === true}
     {#if $qState.stage === 'done'}
       <p>Du har svarat på alla frågor om spelet. Tack!</p>
@@ -96,4 +127,11 @@
   .status { color: var(--muted); }
   .version { margin: 16px 0 0; font-size: .85rem; opacity: .7; text-align: center; }
   .code { font-family: ui-monospace, monospace; font-size: 1.1rem; letter-spacing: .08em; }
+  .mail { overflow-wrap: anywhere; }
+  /* The same cool, plain look as the message when it comes up (JonasMessage.svelte). */
+  .message { flex: none; display: grid; gap: 2px; text-align: left; background: #e7f1f5; border: 2px solid #7fa9bd; color: #17384a; font-weight: 400; padding: 8px 14px; }
+  .message strong { font-weight: 700; }
+  .message small { opacity: .8; }
+  .message.unread strong::before { content: '● '; color: var(--falu); }
+  .message .body { margin-top: 6px; white-space: pre-line; overflow-wrap: anywhere; }
 </style>

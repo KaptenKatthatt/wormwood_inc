@@ -37,6 +37,9 @@
   import Questionnaire from './ui/Questionnaire.svelte';
   import { offerQuestionnaire, qOpen } from './lib/state/questionnaire';
   import { letter, village } from './lib/state/game';
+  import JonasMessage from './ui/JonasMessage.svelte';
+  import ContactAsk from './ui/ContactAsk.svelte';
+  import { contactDue, contactOpen, initReach, pendingMessage } from './lib/state/reach';
   // The start screen shows each time the app opens (Jonas, 2026-11-18).
   let intro = $state(true);
 
@@ -69,7 +72,17 @@
 
   // The questionnaire that stands in for the interview: the game asks when it
   // opens or comes back after the free week, but never on top of something else.
-  const quiet = $derived(!intro && !tutStep && $settings.logging !== null && !$quitFlow && !$awayReport && !$streakRepair && !$calendarOpen && !$offerOpen && !$shopOpen && !$letter && !$adOpen && !$hubOpen && !$offerShown && !$friendNote && !$xmasOpen);
+  const calm = $derived(!intro && !tutStep && $settings.logging !== null && !$quitFlow && !$awayReport && !$streakRepair && !$calendarOpen && !$offerOpen && !$shopOpen && !$letter && !$adOpen && !$hubOpen && !$offerShown && !$friendNote && !$xmasOpen);
+  // The question about an e-mail address follows the consent, or is opened from Settings.
+  const askContact = $derived($contactOpen || (!intro && !tutStep && $contactDue));
+  // A message from Jonas comes up when the game is calm and nobody is in a challenge, and then stays until it is read.
+  $effect(() => initReach());
+  let messageUp = $state(false);
+  $effect(() => {
+    if (!$pendingMessage) messageUp = false;
+    else if (calm && !askContact && !$inLevel && !$qOpen) messageUp = true;
+  });
+  const quiet = $derived(calm && !askContact && !messageUp);
   let wantAsk = $state(true);
   $effect(() => {
     const onVisible = () => { if (document.visibilityState === 'visible') wantAsk = true; };
@@ -137,7 +150,8 @@
       </div>
     </Modal>
   {/if}
-  {#if $settings.logging === null}<Consent />{/if}
+  {#if $settings.logging === null}<Consent />{:else if askContact}<ContactAsk />{/if}
+  {#if messageUp && $pendingMessage}{#key $pendingMessage.id}<JonasMessage message={$pendingMessage} />{/key}{/if}
   {#if EXPANSION && !tutStep}
     {#if $hubOpen === 'hjul'}<WheelView />{:else if $hubOpen === 'kistor'}<ChestView />{:else if $hubOpen}<WeekHub />{/if}
     {#if $offerShown && !$offerOpen}<PersonalOffer />{/if}

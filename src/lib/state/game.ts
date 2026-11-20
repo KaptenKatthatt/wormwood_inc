@@ -37,6 +37,8 @@ export interface Settings {
   letters: boolean;
   /** Day hooks: from the second day ('auto'), always or never. */
   dayMode: DayMode;
+  /** The question about an e-mail address, after the consent, has been answered or skipped. */
+  contactAsked: boolean;
 }
 
 const ALL_HOOKS_ON = Object.fromEntries(HOOKS.map((h) => [h.id, true])) as Record<HookId, boolean>;
@@ -53,6 +55,7 @@ export const settings = writable<Settings>({
   hooks: { ...ALL_HOOKS_ON, ...(storedSettings.hooks ?? {}) },
   letters: storedSettings.letters ?? false,
   dayMode: storedSettings.dayMode ?? 'auto',
+  contactAsked: storedSettings.contactAsked ?? false,
 });
 settings.subscribe((s) => save('settings', s));
 
