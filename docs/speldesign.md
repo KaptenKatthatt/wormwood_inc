@@ -13,6 +13,8 @@ Inget läggs in i spelet utan att Jonas har gått igenom det och godkänt det, f
 
 Avsnitten längre ner som beskriver det här gäller alltså som förslag, inte som beslut.
 
+**Lyckohjulet (Jonas 2026-11-20).** Hasardspelen i steg 7 ska vara med i spelet, men de ska designas om och bli mycket mer spektakulära innan de läggs tillbaka. Lyckohjulet ger tre gratis snurr totalt och därefter en gratis snurr per dag. Övriga snurr kostar ädelstenar (i dag 10, priset är inte omprövat). Riggningen med nästan-vinst är kvar: hjulet stannar bredvid storvinsten ungefär 55 av 100 snurr och visar "Så nära storvinsten!", och det förklaras i genomgången efter testet. En mockup av ett spektakulärt hjul tas fram i tråden "Gå igenom guldspel och minispel", och inget byggs in förrän Jonas har sagt ja till den. Kistor, kämpar, album, veckopass och veckoliga är inte genomgångna än.
+
 **Övriga beslut 2026-11-20:** det första anfallet är kvar som det är (senast 23 minuter in i första passet, och efter 20 timmars frånvaro). Vintermarknaden (värld 5) är stängd till 1 december. Rakettipset säger "brickan bredvid" i stället för "en granne", och fyrverkeritipset säger "fem brickor i vinkel" med en bild. Långa dialoger har ett runt stängkryss uppe till höger. Byn går att zooma med två fingrar, med en fingeranimation de tre första gångerna. Bakåtgesten frågar innan spelet stängs. Liv i byn med figurer och händelser tas fram i tråden "Ge byn liv med figurer och händelser". De fyra sista punkterna är byggda som 0.26.16 och väntar på Jonas ja.
 
 ## 1. Syfte med designen
