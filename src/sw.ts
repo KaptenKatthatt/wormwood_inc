@@ -45,7 +45,8 @@ registerRoute(
     return fresh;
   },
 );
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/api\//] }));
+// The testers' office is the server's own page, not the game: let it through to the network.
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/api\//, /^\/kontor/] }));
 
 self.addEventListener('message', (e) => {
   if (e.data?.type === 'SKIP_WAITING') void self.skipWaiting();
