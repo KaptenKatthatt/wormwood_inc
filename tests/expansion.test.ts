@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ALL_LEVELS, CHALLENGE_COUNT, LEVELS, TOTAL_CHALLENGES, WORLDS, levelAt, makeChallenge, worldOf } from '../src/lib/match3/levels';
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor } from '../src/lib/expansion/week';
 import { ADS, adGroupFor, adsFor, nextAd } from '../src/lib/expansion/social';
-import { ALBUM_SIZE, drawSticker, leagueRank, leagueTable, passReward, passTier, setComplete } from '../src/lib/expansion/social';
+import { ALBUM_SIZE, MISSIONS, drawSticker, freshMissions, leagueRank, leagueTable, missionProgress, missionReady, missionsOn, passReward, passTier, setComplete } from '../src/lib/expansion/social';
 import { FIELD_DEG, FLAP_GRIP, PITY_HARD, WHEEL, WHEEL_FREE_START, chestSkipGems, discField, drawChampion, landingAngle, legendaryChance, nearJackpot, openChest, segmentAtAngle, spinWheel } from '../src/lib/expansion/luck';
 import { ERA_FACTOR, NEIGHBOURS, activeHelpers, battle, neighbourDefence, personalOffer, storehouse, vipTier } from '../src/lib/expansion/conquest';
 import { BUILDINGS, START_VILLAGE, cleared } from '../src/lib/economy/village';
@@ -77,7 +77,7 @@ describe('step 6', () => {
   it('gives more on the gold track of the pass', () => {
     expect(passTier(35)).toBe(3);
     expect(passTier(10_000)).toBe(20);
-    expect(passReward(5, true).draw).toBe(true);
+    expect(passReward(5, true).gems).toBe(40);
     expect(passReward(5, false).gems).toBe(5);
   });
 });
@@ -131,6 +131,33 @@ describe('step 7', () => {
     const l = openChest('royal', makeRng(2));
     expect(l.gold).toBeGreaterThanOrEqual(300);
     expect(l.stickers).toHaveLength(3);
+  });
+});
+
+describe("the pass's missions", () => {
+  const byId = (id: string) => MISSIONS.find((m) => m.id === id)!;
+  it('counts a win on the daily and the weekly mission, and is ready at the goal', () => {
+    let m = freshMissions('2026-11-20');
+    for (let i = 0; i < 3; i++) m = missionProgress(m, 'win', '2026-11-20');
+    expect(m.have['d-wins']).toBe(3);
+    expect(m.have['w-wins']).toBe(3);
+    expect(missionReady(m, byId('d-wins'))).toBe(true);
+    expect(missionReady(m, byId('w-wins'))).toBe(false);
+    expect(missionProgress(m, 'win', '2026-11-20').have['d-wins']).toBe(3);
+    expect(missionReady({ ...m, got: ['d-wins'] }, byId('d-wins'))).toBe(false);
+  });
+  it('starts the daily missions over on a new day and keeps the weekly ones', () => {
+    let m = missionProgress(freshMissions('2026-11-20'), 'win', '2026-11-20');
+    m = missionProgress({ ...m, got: ['d-wins', 'w-chests'] }, 'chest', '2026-11-20');
+    const next = missionsOn(m, '2026-11-21');
+    expect(next.have['d-wins']).toBeUndefined();
+    expect(next.have['w-wins']).toBe(1);
+    expect(next.have['w-chests']).toBe(1);
+    expect(next.got).toEqual(['w-chests']);
+  });
+  it('gives three missions a day and two a week', () => {
+    expect(MISSIONS.filter((m) => !m.weekly)).toHaveLength(3);
+    expect(MISSIONS.filter((m) => m.weekly)).toHaveLength(2);
   });
 });
 

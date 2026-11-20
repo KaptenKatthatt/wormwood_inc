@@ -19,7 +19,8 @@ import { ON_HOLD, type HookId } from '../hooks';
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor, type WeekStep } from '../expansion/week';
 import {
   ADS_PER_DAY, adGroupFor, nextAd, type AdFilm, type AdGroup, ALBUM_REWARD, ALBUM_SIZE, GOLD_PASS_GEMS, HELP_COOLDOWN, HELP_DELAY, LEAGUE_DAYS, LEAGUE_PRIZES, PASS_DAYS,
-  SET_REWARD, drawSticker, helpLives, leagueRank, leagueTable, passReward, passTier, passXp, setComplete, stickerName, type PassReward,
+  MISSIONS, PASS_XP_PER_TIER, PASS_TIERS, SET_REWARD, drawSticker, helpLives, leagueRank, leagueTable, missionProgress, missionReady, missionsOn, passReward, passTier, passXp, setComplete, stickerName,
+  type Mission, type MissionEvent, type MissionState, type PassReward,
 } from '../expansion/social';
 import {
   CHEST_SLOTS, DRAW_GEMS, ROYAL_CHEST_GEMS, SPIN_GEMS, TEN_DRAW_GEMS, WHEEL, WHEEL_FREE_START, WOOD_CHEST_CHANCE, WOOD_CHEST_TIME,
@@ -49,7 +50,7 @@ export interface ExpState {
   dupes: number;
   setsRewarded: number[];
   albumRewarded: boolean;
-  pass: { startedAt: number; xp: number; gold: boolean; claimedFree: number[]; claimedGold: number[] } | null;
+  pass: { startedAt: number; xp: number; gold: boolean; claimedFree: number[]; claimedGold: number[]; missions?: MissionState } | null;
   help: { arrivesAt: number; lives: number } | null;
   lastHelp: number;
   ads: { day: string; count: number };
@@ -258,12 +259,57 @@ export function passActive(): boolean {
   return !!p && now() - p.startedAt < PASS_DAYS * 24 * HOUR;
 }
 
+/** A new pass starts when the old one has run its seven days; what was not collected is gone. */
+export function renewPass(): void {
+  const s = get(exp);
+  if (s.step < 6 || !s.pass || passActive()) return;
+  exp.update((x) => ({ ...x, pass: { startedAt: now(), xp: 0, gold: false, claimedFree: [], claimedGold: [] } }));
+  log('pass_renewed', { levelReached: passTier(s.pass.xp), gold: s.pass.gold });
+}
+
+/** The missions the player can do something about: none that asks for a game that is not there yet. */
+export function passMissions(): Mission[] {
+  return MISSIONS.filter((m) => (m.on === 'spin' ? weekOn('wheel') : m.on === 'chest' ? weekOn('chests') : true));
+}
+
+export function missionState(): MissionState {
+  return missionsOn(get(exp).pass?.missions, dayKey(now()));
+}
+
+/** Something a mission may ask for has happened. */
+export function missionEvent(on: MissionEvent): void {
+  if (!weekOn('pass') || !passActive()) return;
+  exp.update((x) => ({ ...x, pass: x.pass && { ...x.pass, missions: missionProgress(x.pass.missions, on, dayKey(now())) } }));
+}
+
+/** Collects a finished mission's points. Returns the points, or 0. */
+export function claimMission(id: string): number {
+  const m = passMissions().find((x) => x.id === id);
+  const st = missionState();
+  if (!m || !passActive() || !missionReady(st, m)) return 0;
+  exp.update((x) => ({ ...x, pass: x.pass && { ...x.pass, xp: Math.min(PASS_TIERS * PASS_XP_PER_TIER, x.pass.xp + m.xp), missions: { ...st, got: [...st.got, id] } } }));
+  logHook('pass', { mission: id, xp: m.xp }, 'yes');
+  return m.xp;
+}
+
+/** What waits in the pass: rewards to take and missions to collect. */
+export function passWaiting(): number {
+  const p = get(exp).pass;
+  if (!p || !passActive()) return 0;
+  let n = 0;
+  for (let t = 1; t <= passTier(p.xp); t++) {
+    if (!p.claimedFree.includes(t)) n++;
+    if (p.gold && !p.claimedGold.includes(t)) n++;
+  }
+  const st = missionState();
+  return n + passMissions().filter((m) => missionReady(st, m)).length;
+}
+
 export function buyGoldPass(): boolean {
   const p = get(exp).pass;
   if (!p || p.gold || !passActive()) return false;
   if (!payGems(GOLD_PASS_GEMS, 'pass', { item: 'goldPass', tier: passTier(p.xp) })) return false;
   exp.update((x) => ({ ...x, pass: x.pass && { ...x.pass, gold: true } }));
-  toast('Guldpasset är ditt!');
   return true;
 }
 
@@ -380,6 +426,7 @@ export function openChestNow(id: string): ChestLoot | null {
   if (!hookOn('heroes')) loot.draws = 0;
   exp.update((x) => ({ ...x, chests: x.chests.filter((y) => y.id !== id) }));
   giveLoot(loot);
+  missionEvent('chest');
   logHook('chests', { kind: c.kind, loot, paid: left > 0 }, 'shown');
   return loot;
 }
@@ -406,6 +453,7 @@ export function spin(): number | null {
   if (seg.gold) addGold(seg.gold);
   if (seg.gems) purse.update((p) => ({ ...p, gems: p.gems + seg.gems! }));
   if (seg.lives) lives.update((l) => { const s = settleLives(l, now()); return { ...s, count: Math.min(s.max, s.count + seg.lives!) }; });
+  missionEvent('spin');
   logHook('wheel', { free, starter: f.starter > 0, segment: i, prize: seg.label, nearJackpot: nearJackpot(i), jackpot: !!seg.jackpot }, 'shown');
   return i;
 }
@@ -632,8 +680,11 @@ function onWin(info: { level: number; stars: number }): void {
   const s = get(exp);
   if (hookOn('stars')) exp.update((x) => ({ ...x, stars: { ...x.stars, [info.level]: Math.max(x.stars[info.level] ?? 0, info.stars) } }));
   if (weekOn('league') && s.league && !s.league.done) exp.update((x) => ({ ...x, league: x.league && { ...x.league, points: x.league.points + info.stars } }));
+  renewPass();
   if (weekOn('pass') && passActive()) {
-    const before = passTier(s.pass!.xp);
+    missionEvent('win');
+    if (info.stars >= 3) missionEvent('stars3');
+    const before = passTier(get(exp).pass!.xp);
     exp.update((x) => ({ ...x, pass: x.pass && { ...x.pass, xp: x.pass.xp + passXp(info.stars) } }));
     const after = passTier(get(exp).pass!.xp);
     if (after > before) toast(`Veckopasset: nivå ${after}! Hämta belöningen.`);
