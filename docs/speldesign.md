@@ -17,6 +17,10 @@ Avsnitten längre ner som beskriver det här gäller alltså som förslag, inte 
 
 **Kistöppningen (Jonas 2026-11-20, godkänd som i mockupen https://claude.ai/artifact/W7bPVpydaiJB4WKvC4X6F8).** Två tryck skakar kistan. På det tredje hoppar den, snurrar och slår ner. Locket slår upp först, och först därefter sprutar guldet ut: inget får komma ur en stängd kista. Sedan flyger guldet upp till räknaren i menyfältet. Den kungliga kistan har en större öppning med uppladdning, konfetti och fyrverkeri. Kistorna är inte inbyggda i spelet än.
 
+**Standardanimation för guld och ädelstenar (Jonas 2026-11-20, godkänd).** I alla rutor där spelaren får guldmynt eller ädelstenar poppar de fram vid texten, hänger kort och flyger i en båge upp till sin räknare i menyfältet, som räknar upp medan de landar. Visas i mockupen av Dagens gåva: https://claude.ai/artifact/FFXiLDuVsxFYrvuaosShET.
+
+**Dagens gåva (Jonas 2026-11-20).** När gåvan väntar finns inga stängknappar, bara Hämta. Knappen efteråt heter "Då kör vi!" i stället för "Tack!". Sköldgåvan dag 4 ger texten "Du fick 8 timmars skydd mot attacker!". Inte inbyggt i spelet än.
+
 **Veckopass, veckoliga och album (Jonas 2026-11-20).** Veckopasset ska med, men designas först med mockups på passet och på utmaningarna i det. Veckoligan ska med efter en mockup. Albumet ska designas, och bilderna tas fram och gås igenom med Jonas. Det är borta ur spelet tills det är färdigbyggt. Mockuparna görs i ordningen hjulet, kistor, veckopass, veckoliga, album, och inget byggs in förrän Jonas har sagt ja till respektive mockup.
 
 **Kistor och kämpar (Jonas 2026-11-20).** Kistorna ska vara med. En mockup av en spektakulär kistöppning tas fram och godkänns av Jonas före bygge. Siffrorna är oförändrade tills dess: 30 % chans till en kista efter vinst, 3 timmars väntan, 4 platser, och en kunglig kista för 50 ädelstenar. Kämparna (dragningarna) läggs i backloggen och tas när striderna mot grannbyar byggs, efter att grannbyarna är genomgångna. Följden är att belöningen "dragning" i den kungliga kistan och på veckopassets guldspår behöver bytas mot något annat.
