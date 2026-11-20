@@ -9,7 +9,6 @@ describe('hook staircase', () => {
     expect(nextStep(2, 4, 'longBuild')).toBe(3);
     expect(nextStep(3, 15, 'loss')).toBe(3);
     expect(nextStep(3, 20.5, 'loss')).toBe(4);
-    expect(nextStep(2, 4, 'quit')).toBe(5);
   });
   it('uses the clock as a fallback and never goes down', () => {
     expect(nextStep(1, 8)).toBe(2);

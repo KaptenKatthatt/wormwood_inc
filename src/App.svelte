@@ -4,11 +4,10 @@
   import VillageView from './ui/VillageView.svelte';
   import SettingsView from './ui/SettingsView.svelte';
   import Consent from './ui/Consent.svelte';
-  import { awayReport, calendarOpen, inLevel, streakRepair, offerOpen, quitFlow, settings, shopOpen, toasts } from './lib/state/game';
+  import { awayReport, calendarOpen, inLevel, streakRepair, offerOpen, settings, shopOpen, toasts } from './lib/state/game';
   import Letter from './ui/Letter.svelte';
   import Offer from './ui/Offer.svelte';
   import Banners from './ui/Banners.svelte';
-  import QuitFlow from './ui/QuitFlow.svelte';
   import Shop from './ui/Shop.svelte';
   import Coach from './ui/Coach.svelte';
   import Calendar from './ui/Calendar.svelte';
@@ -75,7 +74,7 @@
 
   // The questionnaire that stands in for the interview: the game asks when it
   // opens or comes back after the free week, but never on top of something else.
-  const calm = $derived(!intro && !tutStep && $settings.logging !== null && !$quitFlow && !$awayReport && !$streakRepair && !$calendarOpen && !$offerOpen && !$shopOpen && !$letter && !$adOpen && !$interOpen && !$removeAdsOpen && !$hubOpen && !$offerShown && !$friendNote && !$xmasOpen);
+  const calm = $derived(!intro && !tutStep && $settings.logging !== null && !$awayReport && !$streakRepair && !$calendarOpen && !$offerOpen && !$shopOpen && !$letter && !$adOpen && !$interOpen && !$removeAdsOpen && !$hubOpen && !$offerShown && !$friendNote && !$xmasOpen);
   // The question about an e-mail address follows the consent, or is opened from Settings.
   const askContact = $derived($contactOpen || (!intro && !tutStep && $contactDue));
   // A message from Jonas comes up when the game is calm and nobody is in a challenge, and then stays until it is read.
@@ -151,7 +150,6 @@
   {#if $shopOpen}<Shop />{/if}
   <Coach />
   {#if !tutStep}<Letter />{/if}
-  {#if $quitFlow}<QuitFlow />{/if}
   {#if $closeAsked}
     <Modal title="Vill du stänga spelet?">
       <div class="buttons">
@@ -172,7 +170,7 @@
     {#if $adReward}<RewardBurst />{/if}
   {/if}
   <!-- Last, so it lies on top of anything that opens at the same moment. -->
-  {#if $qOpen && !tutStep && !$quitFlow}<Questionnaire />{/if}
+  {#if $qOpen && !tutStep}<Questionnaire />{/if}
 </div>
 {/if}
 

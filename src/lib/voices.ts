@@ -7,13 +7,12 @@
  */
 import type { Step } from './staircase';
 
-export const LETTERS: Record<Step | 'quit' | 'attackLost' | 'defended', string> = {
+export const LETTERS: Record<Step | 'attackLost' | 'defended', string> = {
   1: 'Välkommen till udden! Här finns lite guld och några ädelstenar, så att du kommer igång.',
   2: 'Så nära du var! Ibland behövs bara några drag till, och det är inget att skämmas för.',
   3: 'Fina saker tar tid, och det är helt i sin ordning att vänta. Men vill du se byn växa redan nu finns det alltid en genväg.',
   4: 'Ett startpaket väntar på dig! Det finns bara kvar en liten stund, så passa på.',
   5: 'Främlingar är på väg över vattnet för att anfalla byn! Stärk försvaret innan de är framme, byborna litar på dig.',
-  quit: 'Går du redan? Byborna har precis börjat känna sig trygga med dig här.',
   attackLost: 'Det gick inte riktigt den här gången, men byborna är oskadda. Med lite hjälp blir allt som vanligt igen.',
   defended: 'Vad stolta byborna är över dig! De pratar inte om något annat.',
 };

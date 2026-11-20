@@ -4,7 +4,7 @@ Ett match-3-spel med en by, byggt som PWA för ett examensarbete om
 engagemangsdriven design ("Kära spelare – En studie i manipulation och
 underhållning"). Spelet är bara på svenska.
 
-**Status:** spelbar första version enligt speldesignen (`docs/speldesign.md` på grenen claude/project-thread-poksrp): tre match-3-banor, liv, extra drag, byn med fem byggnader och kostnadskurva, butik med testplånbok. Hela kroktrappan i fem steg finns: rådgivarens brev, bybornas pratbubblor och trivselmätare, nästa bana som startar av sig själv, startpaketet med nedräkning, anfallet med sköld och soldater, knappen Lämna testomgång med tjat och ett tack (frågorna om press per steg ligger sist i frågeformuläret). Grafiken är platshållare. Tonen är varm och trygg på ytan (beslut 2026-11-17); temat syns bara i titel och analys.
+**Status:** spelbar första version enligt speldesignen (`docs/speldesign.md` på grenen claude/project-thread-poksrp): tre match-3-banor, liv, extra drag, byn med fem byggnader och kostnadskurva, butik med testplånbok. Hela kroktrappan i fem steg finns: rådgivarens brev, bybornas pratbubblor och trivselmätare, nästa bana som startar av sig själv, startpaketet med nedräkning, anfallet med sköld och soldater (frågorna om press per steg ligger sist i frågeformuläret). Knappen Lämna testomgång togs bort 2026-11-20: avhopp räknas i stället från när testaren spelade senast, under Data i Testarnas kontor. Grafiken är platshållare. Tonen är varm och trygg på ytan (beslut 2026-11-17); temat syns bara i titel och analys.
 
 ## Stack
 
@@ -28,7 +28,7 @@ rätt verklig tid (`/api/push/schedule`), så notisen kommer även när spelet �
 
 ## Kroktrappan
 
-`src/lib/staircase.ts` avgör steget (1 Mild, 2 Lockande, 3 Begränsande, 4 Stressande, 5 Skuldbeläggande) från händelser i spelet (förlust, långt bygge, slut på liv, Lämna testomgång), med klockan som reserv (minut 3, 6, 10 och 12 i speltid). Texterna ligger i `src/lib/voices.ts`. Nedräkningar som spelaren ska hinna reagera på (anfallet, startpaketet) går i verkliga sekunder även med snabbad klocka.
+`src/lib/staircase.ts` avgör steget (1 Mild, 2 Lockande, 3 Begränsande, 4 Stressande, 5 Skuldbeläggande) från händelser i spelet (förlust, långt bygge, slut på liv), med klockan som reserv (minut 3, 6, 10 och 12 i speltid). Texterna ligger i `src/lib/voices.ts`. Nedräkningar som spelaren ska hinna reagera på (anfallet, startpaketet) går i verkliga sekunder även med snabbad klocka.
 
 ## Match-3 och riggad nära vinst
 
@@ -36,7 +36,7 @@ rätt verklig tid (`/api/push/schedule`), så notisen kommer även när spelet �
 
 ## Introduktionen
 
-`src/lib/tutorial.ts` håller elva steg som spelaren gör på riktigt: spela bana 1, byta brickor (två brickor blinkar som tips), målet, liven, bygga stugan i byn, ädelstenarna, var Lämna testomgång finns och hemskärmen. `src/ui/Coach.svelte` ringar in det som ska tryckas på och läser upp varje steg för skärmläsare. Introduktionen startar efter samtycket, går att hoppa över och kan visas igen under Inställningar. Kroktrappan väntar tills introduktionen är klar. Brädet går också att spela med piltangenter och Enter.
+`src/lib/tutorial.ts` håller elva steg som spelaren gör på riktigt: spela bana 1, byta brickor (två brickor blinkar som tips), målet, liven, bygga stugan i byn, ädelstenarna och hemskärmen. `src/ui/Coach.svelte` ringar in det som ska tryckas på och läser upp varje steg för skärmläsare. Introduktionen startar efter samtycket, går att hoppa över och kan visas igen under Inställningar. Kroktrappan väntar tills introduktionen är klar. Brädet går också att spela med piltangenter och Enter.
 
 ## Utvecklarmeny och testplånbok
 

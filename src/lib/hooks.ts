@@ -30,6 +30,10 @@ export const ON_HOLD: readonly string[] = [
   // The Neighbours tab went the same way the same day: the army, the villages to
   // take over, the loyalty tiers and the neighbours who help and want gifts.
   'askHelp', 'conquest', 'troops', 'powerCreep', 'vip', 'neighboursNeeded', 'fakeGifts',
+  // The Leave test round button went on 2026-11-20 (Jonas: nobody presses a button to stop
+  // playing a mobile game), and the guilt letter came with it. Drop-outs are read from the
+  // server instead: the last time a tester played, and the step reached.
+  'guilt',
 ];
 
 export const HOOKS: { id: HookId; step: number; name: string; what: string }[] = [
@@ -51,7 +55,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'weekend', step: 0, name: 'Dagskrok: helgmarknad', what: 'Fredag 18 till söndag midnatt: dubbelt guld för vunna banor, med nedräkning.' },
   { id: 'gemPacks', step: 0, name: 'Ädelstenspaket', what: 'Butiken med paket för kronor, märkta "Populärast" och "Bäst värde".' },
   { id: 'attack', step: 5, name: 'Anfall och sköld', what: 'Grannar anfaller byn; sköld för ädelstenar eller soldater för guld.' },
-  { id: 'guilt', step: 5, name: 'Skuld när man slutar', what: 'Ett brev och byborna ber spelaren stanna när hen trycker Lämna testomgång.' },
+  { id: 'guilt', step: 5, name: 'Skuld när man slutar', what: 'Ett brev och byborna ber spelaren stanna när hen trycker Lämna testomgång. Vilar sedan knappen togs bort 2026-11-20.' },
   { id: 'figures', step: 0, name: 'Figurer som pressar', what: 'Breven till spelaren, bybornas pratbubblor och trivselmätaren.' },
   // ---- The expansion: steps 6-9 come during the week at home (day or world, whichever is first).
   { id: 'stars', step: 1, name: 'Stjärnor per bana', what: '1-3 stjärnor efter hur många drag som var kvar. Lexikonet: Poäng, nivåer och märken.' },

@@ -47,8 +47,16 @@ export function tidy(events) {
 const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
 const iso = (ms) => (ms == null ? '' : new Date(ms).toISOString().slice(0, 19).replace('T', ' '));
 
+/**
+ * A tester who has not opened the game for this many days counts as dropped
+ * out, at the step they had reached. There is no quit button (Jonas,
+ * 2026-11-20: nobody presses a button to stop playing a mobile game).
+ */
+export const DROPOUT_DAYS = 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /** One row per player. */
-export function playerRows(events) {
+export function playerRows(events, now = Date.now()) {
   const by = new Map();
   for (const e of events) {
     let p = by.get(e.playerId);
@@ -79,7 +87,8 @@ export function playerRows(events) {
       case 'level_won': p.won += 1; p.highest = Math.max(p.highest, d.level ?? 0); break;
       case 'level_lost': p.lost += 1; break;
       case 'level_left': p.left += 1; break;
-      case 'quit_pressed': p.quit += 1; break;
+      case 'quit_pressed': p.quit += 1; break; // the button that went on 2026-11-20
+      case 'week_step': p.step = Math.max(p.step, d.step ?? 0); break;
       case 'ad_watched': p.ads += 1; break;
       case 'purchase': p.purchases += 1; p.kronor += d.kronor ?? 0; break;
       case 'data_withdrawn': p.withdrawn = true; break;
@@ -97,15 +106,29 @@ export function playerRows(events) {
   }
   return [...by.values()].map((p) => ({
     player: p.player, code: p.code, site: p.site, first_seen: iso(p.first), last_seen: iso(p.last),
+    days_since_last: Math.floor(((now - p.last) / DAY_MS) * 10) / 10,
+    status: p.withdrawn ? 'withdrawn' : now - p.last >= DROPOUT_DAYS * DAY_MS ? 'dropped out' : 'playing',
     days_played: p.days.size, test_day: p.testDay, sessions: p.sessions.size, visits: p.visits, minutes_played: Math.round(p.seconds / 6) / 10,
     levels_started: p.started, levels_won: p.won, levels_lost: p.lost, levels_left: p.left, highest_level_won: p.highest,
     hook_step: p.step, hooks_shown: p.hooksShown, hooks_yes: p.hooksYes, hooks_no: p.hooksNo, hooks_cannot_afford: p.cannotAfford,
-    gems_spent: p.gems, purchases: p.purchases, pretend_kronor: p.kronor, ads_watched: p.ads, quit_pressed: p.quit,
+    gems_spent: p.gems, purchases: p.purchases, pretend_kronor: p.kronor, ads_watched: p.ads,
     last_hook: p.lastHook, last_event: p.lastEvent, questionnaire: p.questionnaire, withdrawn: p.withdrawn ? 'yes' : '',
     versions: [...p.versions].join(' '), events: p.events,
     // Events the server never got: holes in the player's own numbering.
     events_missing: p.seqs ? p.maxSeq - p.minSeq + 1 - p.seqs : '',
   }));
+}
+
+/** One row per step of the staircase (1-5 in the first session, 6-9 in the week): who reached it, and who stopped there. */
+export function dropoutRows(players) {
+  const rows = [];
+  for (let step = 1; step <= 9; step++) {
+    const here = players.filter((p) => p.hook_step === step && p.status !== 'withdrawn');
+    const reached = players.filter((p) => p.hook_step >= step && p.status !== 'withdrawn').length;
+    const dropped = here.filter((p) => p.status === 'dropped out').length;
+    rows.push({ step, reached, dropped_out_here: dropped, playing_here: here.length - dropped, share_dropped_here: reached ? `${Math.round((dropped / reached) * 100)} %` : '' });
+  }
+  return rows;
 }
 
 /** One row per player and hook. */

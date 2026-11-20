@@ -1,8 +1,7 @@
 /**
  * The hook staircase (game design, section 4): five steps of rising pressure.
  * Each step starts on an event in the game, with the clock as a fallback if
- * the event is late. Steps only go up, and may skip (trying to quit jumps
- * straight to step 5).
+ * the event is late. Steps only go up.
  */
 import { MINUTE } from './time/clock';
 
@@ -17,8 +16,7 @@ export const FALLBACK_MINUTES: Record<Step, number> = { 1: 0, 2: 8, 3: 14, 4: 20
 export type StairEvent =
   | 'loss'          // a level was lost, or the player ran out of moves
   | 'longBuild'     // a build of 5 minutes or more started
-  | 'noLives'       // lives ran out
-  | 'quit';         // the player pressed Lämna testomgång
+  | 'noLives';      // lives ran out
 
 /** The step after `event` at `minutesIn`, given the current step. */
 export function nextStep(current: Step, minutesIn: number, event?: StairEvent): Step {
@@ -27,7 +25,6 @@ export function nextStep(current: Step, minutesIn: number, event?: StairEvent): 
   if (event === 'loss' && s < 2) s = 2;
   if ((event === 'longBuild' || event === 'noLives') && s < 3) s = 3;
   if (event === 'loss' && minutesIn >= FALLBACK_MINUTES[4] && s < 4) s = 4;
-  if (event === 'quit') s = 5;
   return s;
 }
 

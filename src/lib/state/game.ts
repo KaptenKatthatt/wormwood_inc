@@ -390,7 +390,6 @@ export function startBuild(id: BuildingId): boolean {
   purse.set({ ...p, gold: p.gold - cost });
   village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id }, last: { ...v.last, [id]: { gold: cost, ms: buildTime(n) } } });
   if (buildTime(n) >= 5 * MINUTE) stairEvent('longBuild');
-  if (n >= 2) tipOnce('quit', 'När du vill sluta spela: tryck Lämna testomgång längst ner i byn.');
   log('build_start', { building: id, toLevel: v.levels[id] + 1, buildNo: n, gold: cost, timeMs: buildTime(n), minutesIn: minutesIn() });
   return true;
 }
@@ -563,14 +562,14 @@ export function startRepair(id: BuildingId): boolean {
 
 /** Moves the staircase on, on an event or by the clock. */
 export function stairEvent(event?: StairEvent): void {
-  if (tutorialActive() && event !== 'quit') return; // the introduction is not part of the staircase
+  if (tutorialActive()) return; // the introduction is not part of the staircase
   const st = get(stairs);
   const mins = minutesIn();
   const step = nextStep(st.step, mins, event);
   if (step === st.step) return;
   stairs.set({ ...st, step, reached: { ...st.reached, [step]: mins } });
   log('step', { step, from: st.step, event: event ?? 'clock', minutesIn: mins });
-  if (event !== 'quit') writeLetter(step);
+  writeLetter(step);
   if (step >= 4) openOffer();
 }
 
@@ -619,7 +618,7 @@ function stairTick(): void {
     offerOpen.set(false);
     logHook('timedOffer', {}, 'expired');
   }
-  // the attack comes at minute 12 (not when step 5 was reached by trying to quit)
+  // the attack comes at minute 12
   const s2 = get(stairs);
   if (s2.step === 5 && !s2.attack && minutesIn() >= FALLBACK_MINUTES[5] && hookOn('attack')) startAttack();
   const s3 = get(stairs);
@@ -865,39 +864,6 @@ export function devNewDay(): void {
 
 export function cancelAwayPushes(): void {
   for (const id of AWAY_PUSH_IDS) void cancelPush(playerId, id);
-}
-
-// ------------------------------------------------------------------ quitting and the survey
-
-export const quitFlow = writable<null | 'nag' | 'thanks'>(null);
-
-export function pressQuit(): void {
-  stairEvent('quit');
-  log('quit_pressed', { minutesIn: minutesIn(), step: get(stairs).step });
-  if (hookOn('guilt')) {
-    changeMood(-5);
-    say(pickLine(BUBBLES.sad));
-    logHook('guilt', { minutesIn: minutesIn() }, 'shown');
-    quitFlow.set('nag');
-  } else {
-    quit();
-  }
-}
-
-export function answerNag(stay: boolean): void {
-  logHook('guilt', { minutesIn: minutesIn() }, stay ? 'yes' : 'no');
-  if (stay) { quitFlow.set(null); changeMood(5); } else quit();
-}
-
-/**
- * Pressing Lämna testomgång (Avsluta until 2026-11-20) only logs that the player wanted to stop and says thanks
- * (Jonas, 2026-11-20). The questions about each step that used to follow here
- * gave the study away, and came every time; they are now last in the
- * questionnaire, after the debriefing.
- */
-function quit(): void {
-  log('quit', { minutesIn: minutesIn(), stepReached: get(stairs).step, purse: get(purse) });
-  quitFlow.set('thanks');
 }
 
 /** The welcome letter, once per player: the first time they open the village on their own after the introduction. */
