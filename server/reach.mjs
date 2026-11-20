@@ -49,7 +49,7 @@ const EMAIL_RE = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;.]{2,}$/;
 export const validEmail = (/** @type {unknown} */ v) => typeof v === 'string' && v.length <= 254 && EMAIL_RE.test(v);
 
 /**
- * @typedef {{ id: string, title: string, body: string, sentAt: number, site: 'test' | 'dev', playerId?: string, to: string, push: boolean, recipients: number, shown: string[], read: string[] }} Message
+ * @typedef {{ id: string, title: string, body: string, sentAt: number, site: 'test' | 'dev', playerId?: string, playerIds?: string[], to: string, push: boolean, recipients: number, shown: string[], read: string[] }} Message
  * @typedef {{ email: string, site: 'test' | 'dev', savedAt: number }} Contact
  * @typedef {{ site: 'test' | 'dev', first: number, last: number }} Player
  * @typedef {{ code: string, testCode: string, madeAt: number, usedAt?: number, site?: 'test' | 'dev' }} Topup
@@ -63,10 +63,15 @@ export const validEmail = (/** @type {unknown} */ v) => typeof v === 'string' &&
  *   sendPush: (playerId: string, payload: object) => Promise<boolean>,
  *   appendEvent: (site: 'test' | 'dev', playerId: string, name: string, data: object) => Promise<void>,
  *   adminKey?: string,
+ *   codeOf?: (playerId: string) => string,
+ *   playersOf?: (code: string, known: string[]) => string[],
  * }} deps
  */
 export async function createReach(deps) {
   const { readJson, writeJson, now, sendPush, appendEvent } = deps;
+  // A tester let in with an invitation has its code as test code (server/invites.mjs).
+  const codeOf = deps.codeOf ?? testCode;
+  const playersOf = deps.playersOf ?? ((/** @type {string} */ code, /** @type {string[]} */ known) => known.filter((id) => testCode(id) === code));
   /** @type {Message[]} */
   const messages = await readJson('messages.json', []);
   /** @type {Record<string, Contact>} */
@@ -109,7 +114,7 @@ export async function createReach(deps) {
   }
 
   /** @param {Message} m @param {string} playerId @param {Player} p */
-  const isFor = (m, playerId, p) => (m.playerId ? m.playerId === playerId : m.site === p.site && m.sentAt >= p.first);
+  const isFor = (m, playerId, p) => (m.playerIds ? m.playerIds.includes(playerId) : m.playerId ? m.playerId === playerId : m.site === p.site && m.sentAt >= p.first);
 
   /**
    * @param {string} path
@@ -185,7 +190,7 @@ export async function createReach(deps) {
       return {
         players: { test: count('test'), dev: count('dev') },
         messages: messages.slice(-50).reverse().map((m) => ({ id: m.id, title: m.title, body: m.body, sentAt: m.sentAt, to: m.to, push: m.push, recipients: m.recipients, shown: m.shown.length, read: m.read.length })),
-        contacts: Object.entries(contacts).map(([id, c]) => ({ code: testCode(id), email: c.email, site: c.site, savedAt: c.savedAt })).sort((a, b) => a.savedAt - b.savedAt),
+        contacts: Object.entries(contacts).map(([id, c]) => ({ code: codeOf(id), email: c.email, site: c.site, savedAt: c.savedAt })).sort((a, b) => a.savedAt - b.savedAt),
         contactsEnd: CONTACTS_END,
         topups: topups.slice(-50).reverse().map((t) => ({ code: t.code, testCode: t.testCode, madeAt: t.madeAt, usedAt: t.usedAt ?? null })),
       };
@@ -207,14 +212,14 @@ export async function createReach(deps) {
         target = { site: body.to, to: body.to === 'test' ? 'alla testare' : 'dev' };
       } else {
         const code = body.to.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-        const id = Object.keys(players).find((x) => testCode(x) === code);
-        if (!id) return { status: 404, body: { error: 'okänd testkod' } };
-        ids = [id];
-        target = { site: players[id].site, playerId: id, to: code };
+        // An invitation can be on two phones (Safari and the home screen app); both get it.
+        ids = playersOf(code, Object.keys(players)).filter((x) => players[x]);
+        if (!ids.length) return { status: 404, body: { error: 'okänd testkod' } };
+        target = { site: players[ids[0]].site, playerId: ids[0], playerIds: ids, to: code };
       }
       const t = now();
       /** @type {Message} */
-      const m = { id: `m${t.toString(36)}${randomBytes(3).toString('hex')}`, title, body: text, sentAt: t, site: /** @type {'test' | 'dev'} */ (target.site), playerId: target.playerId, to: String(target.to), push: body.push === true, recipients: ids.length, shown: [], read: [] };
+      const m = { id: `m${t.toString(36)}${randomBytes(3).toString('hex')}`, title, body: text, sentAt: t, site: /** @type {'test' | 'dev'} */ (target.site), playerId: target.playerId, playerIds: target.playerIds, to: String(target.to), push: body.push === true, recipients: ids.length, shown: [], read: [] };
       messages.push(m);
       await writeJson('messages.json', messages);
       let pushed = 0;
@@ -251,5 +256,5 @@ export async function createReach(deps) {
     return { status: 404, body: { error: 'finns inte' } };
   }
 
-  return { handle, expireContacts, get adminKey() { return adminKey; } };
+  return { handle, expireContacts, isAdmin, get adminKey() { return adminKey; } };
 }

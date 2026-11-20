@@ -9,7 +9,7 @@
   import { MORE, PART1, answered, debrief, part2, pick, type Question } from '../lib/questionnaire';
   import { answerAsk, chooseContinue, closeQuestionnaire, mandatory, finishDebrief, finishPart1, finishPart2, qOpen, qState, reached, setAnswer } from '../lib/state/questionnaire';
   import { playerId } from '../lib/state/game';
-  import { testCode } from '../lib/testCode';
+  import { myCode } from '../lib/invite';
 
   const r = reached();
   const second = part2(r);
@@ -119,7 +119,7 @@
           <label class="check"><input type="radio" name="mayUse" checked={mayUse === true} onchange={() => (mayUse = true)} /><span>Ja, det går bra</span></label>
           <label class="check"><input type="radio" name="mayUse" checked={mayUse === false} onchange={() => (mayUse = false)} /><span>Nej, radera mina uppgifter</span></label>
         </div>
-        <p class="fine">Du kan ändra dig senare. Säg då din testkod <strong class="code">{testCode(playerId)}</strong> till Jonas.</p>
+        <p class="fine">Du kan ändra dig senare. Säg då din testkod <strong class="code">{myCode(playerId)}</strong> till Jonas.</p>
       </fieldset>
       {#if !part2Done}<p class="fine" id="q-why2">Svara på alla frågor för att skicka.</p>{/if}
       <button class="primary" disabled={!part2Done} aria-describedby={part2Done ? undefined : 'q-why2'} onclick={() => next(() => finishPart2(mayUse === true))}>Skicka svaren</button>
@@ -127,9 +127,9 @@
     {:else}
       <h2 id="q-title" tabindex="-1">Tack för hjälpen!</h2>
       {#if $qState.mayUse === false}
-        <p>Jonas raderar dina uppgifter, och spelet skickar inget mer. Din testkod är <strong class="code">{testCode(playerId)}</strong> om du vill fråga om det.</p>
+        <p>Jonas raderar dina uppgifter, och spelet skickar inget mer. Din testkod är <strong class="code">{myCode(playerId)}</strong> om du vill fråga om det.</p>
       {:else}
-        <p>Dina svar är sparade. Vill du senare att dina uppgifter raderas, säg din testkod <strong class="code">{testCode(playerId)}</strong> till Jonas.</p>
+        <p>Dina svar är sparade. Vill du senare att dina uppgifter raderas, säg din testkod <strong class="code">{myCode(playerId)}</strong> till Jonas.</p>
       {/if}
       <p>Du får gärna fortsätta spela så länge du vill.</p>
       <button class="primary" onclick={closeQuestionnaire}>Stäng</button>

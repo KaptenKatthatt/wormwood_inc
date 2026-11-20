@@ -20,6 +20,7 @@
   }
   let pick = $state(1);
   import DevReach from './DevReach.svelte';
+  import DevInvites from './DevInvites.svelte';
   import { CHRISTMAS } from '../lib/config/flags';
   import { devAskQuestionnaire, devResetQuestionnaire, devStudyEnd, qState } from '../lib/state/questionnaire';
   import { DUE_DAY, STUDY_END } from '../lib/questionnaire';
@@ -39,6 +40,8 @@
   <p class="fine">Syns inte i versionen som testpersonerna får.</p>
 
   <DevReach />
+
+  <DevInvites />
 
   {#if EXPANSION}
     <fieldset>

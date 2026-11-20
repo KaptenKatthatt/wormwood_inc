@@ -11,6 +11,8 @@
  *  - GET  /api/health
  *  - /api/messages/*, /api/contact/*, /api/admin/*: messages from Jonas and the
  *    testers' e-mail addresses (server/reach.mjs)
+ *  - POST /api/signup, /api/invite/check, /api/admin/invites/*: signing up and
+ *    letting the testers in (server/invites.mjs)
  *
  * Data lives in DATA_DIR as plain JSON / NDJSON files; there is one player
  * per device, identified by a random pseudonymous id made in the browser.
@@ -20,6 +22,7 @@ import { createReadStream } from 'node:fs';
 import { mkdir, readFile, writeFile, appendFile, stat, rename, chmod } from 'node:fs/promises';
 import { join, extname, normalize, resolve } from 'node:path';
 import { createReach } from './reach.mjs';
+import { createInvites, SIGNUP_ORIGINS } from './invites.mjs';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -45,7 +48,7 @@ const ID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 const MAX_BODY = 64 * 1024;
 
 /**
- * @param {{ distDir: string, testDistDir?: string, dataDir: string, webpush?: any, contact?: string, now?: () => number, adminKey?: string }} opts
+ * @param {{ distDir: string, testDistDir?: string, dataDir: string, webpush?: any, contact?: string, now?: () => number, adminKey?: string, signupOrigins?: string[] }} opts
  */
 export async function createApp(opts) {
   const devDist = resolve(opts.distDir);
@@ -58,7 +61,7 @@ export async function createApp(opts) {
   const now = opts.now ?? Date.now;
   await mkdir(join(dataDir, 'logs'), { recursive: true });
   // Files written before 0.27.1 were readable by every user on the machine.
-  for (const f of ['admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json', 'topups.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
+  for (const f of ['signups.json', 'invites.json', 'rounds.json', 'admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json', 'topups.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
 
   // ---- persisted JSON ------------------------------------------------------
   /** @param {string} name @param {any} fallback */
@@ -122,10 +125,12 @@ export async function createApp(opts) {
     const line = JSON.stringify({ received, site, playerId, session: 'server', seq: null, v: null, t: received, gameT: null, name, ctx: null, data });
     await appendFile(join(logDir, `${new Date(received).toISOString().slice(0, 10)}.ndjson`), line + '\n');
   }
-  const reach = await createReach({ readJson, writeJson, now, sendPush, appendEvent, adminKey: opts.adminKey });
+  const invites = await createInvites({ readJson, writeJson, now, appendEvent });
+  const reach = await createReach({ readJson, writeJson, now, sendPush, appendEvent, adminKey: opts.adminKey, codeOf: invites.codeOf, playersOf: invites.playersOf });
 
   async function flushDue() {
     await reach.expireContacts();
+    await invites.expire();
     const t = now();
     const due = scheduled.filter((s) => s.at <= t);
     if (due.length === 0) return 0;
@@ -253,6 +258,24 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
     }
     if (limited(ip)) return json(res, 429, { error: 'för många anrop' });
 
+    // The signup form on jonasolson.se is the one route another site may call.
+    if (path === '/api/signup') {
+      const origin = String(req.headers.origin ?? '');
+      const allowed = (opts.signupOrigins ?? SIGNUP_ORIGINS).includes(origin);
+      const cors = allowed ? { 'access-control-allow-origin': origin, vary: 'Origin' } : {};
+      if (req.method === 'OPTIONS') {
+        res.writeHead(allowed ? 204 : 403, { ...cors, 'access-control-allow-methods': 'POST', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '86400' }).end();
+        return;
+      }
+      if (req.method !== 'POST') return json(res, 405, { error: 'fel metod' });
+      if (!allowed) return json(res, 403, { error: 'fel sida' });
+      if (limited(`signup:${ip}`, 5)) { res.writeHead(429, { ...cors, 'content-type': MIME['.json'] }).end(JSON.stringify({ error: 'för många anrop' })); return; }
+      const out = await invites.signup(await readBody(req));
+      res.writeHead(out.status, { ...cors, 'content-type': MIME['.json'], 'cache-control': 'no-store' });
+      res.end(JSON.stringify(out.body));
+      return;
+    }
+
     if (path === '/api/health' && req.method === 'GET') {
       return json(res, 200, { ok: true, push: Boolean(webpush), subscribers: Object.keys(subs).length, scheduled: scheduled.length });
     }
@@ -295,6 +318,17 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
       await mkdir(logDir, { recursive: true });
       await appendFile(join(logDir, `${day}.ndjson`), lines.join('\n') + '\n');
       return json(res, 200, { ok: true, stored: lines.length });
+    }
+
+    if (path === '/api/invite/check') {
+      const out = await invites.check(body, isTestHost(String(req.headers.host ?? '')) ? 'test' : 'dev');
+      return json(res, out.status, out.body);
+    }
+    if (path.startsWith('/api/admin/invites/')) {
+      if (!reach.isAdmin(body?.key)) return json(res, 403, { error: 'fel nyckel' });
+      const out = await invites.admin(path, body);
+      if (out) return json(res, out.status, out.body);
+      return json(res, 404, { error: 'finns inte' });
     }
 
     if (path.startsWith('/api/messages/') || path.startsWith('/api/contact/') || path.startsWith('/api/admin/') || path === '/api/wallet/redeem') {
@@ -353,5 +387,5 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
     });
   });
 
-  return { server, flushDue, reach, get scheduled() { return scheduled; }, get subs() { return subs; } };
+  return { server, flushDue, reach, invites, get scheduled() { return scheduled; }, get subs() { return subs; } };
 }
