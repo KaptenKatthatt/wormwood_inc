@@ -37,7 +37,7 @@ Avsnitten längre ner som beskriver det här gäller alltså som förslag, inte 
 | Skärgården | 100 / 60 / 30 | 300 | 75 |
 | Havet | 150 / 100 / 50 | 400 | 100 |
 
-Utseende och prisutdelning visas i en mockup som Jonas ska godkänna innan något byggs. Mockuparna görs i ordningen hjulet, kistor, veckopass, veckoliga, album, och inget byggs in förrän Jonas har sagt ja till respektive mockup.
+Jonas sa 2026-11-20 "ser bra ut" om ligans klickbara mockup, https://claude.ai/artifact/Fyx6BWHeTGxe4i22URrRm6 (ligaskärm med fem vimplar, zoner för upp- och nedflyttning, pris per plats, notis när man blir omkörd, markerat sista dygn, prisutdelning och flytt mellan ligor). Om den ska byggas in är frågat men inte besvarat. Mockuparna görs i ordningen hjulet, kistor, veckopass, veckoliga, album, och inget byggs in förrän Jonas har sagt ja till respektive mockup.
 
 **Kistor och kämpar (Jonas 2026-11-20).** Kistorna ska vara med. En mockup av en spektakulär kistöppning tas fram och godkänns av Jonas före bygge. Siffrorna är oförändrade tills dess: 30 % chans till en kista efter vinst, 3 timmars väntan, 4 platser, och en kunglig kista för 50 ädelstenar. Kämparna (dragningarna) läggs i backloggen och tas när striderna mot grannbyar byggs, efter att grannbyarna är genomgångna. Följden är att belöningen "dragning" i den kungliga kistan och på veckopassets guldspår behöver bytas mot något annat.
 
