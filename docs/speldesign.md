@@ -2,6 +2,19 @@
 
 Designdokument för My Dear Wormwood (förstudietitel "Kära spelare"). Besluten är Jonas, fattade i designpasset 2026-11-17. Dokumentet är byggunderlag, inte rapporttext. Det levande originalet är https://claude.ai/artifact/Mo6ghHMRrEjxGcDtBeGwFv och uppdateras vid varje designbeslut; den här filen hålls i synk med det. Siffrorna är startvärden som balanseras efter användartesterna.
 
+## Regel för vad som får finnas i spelet (Jonas 2026-11-20)
+
+Inget läggs in i spelet utan att Jonas har gått igenom det och godkänt det, funktion för funktion. En plan som är godkänd som helhet räcker inte.
+
+**Vilande tills Jonas har gått igenom dem (ute ur spelet sedan 0.26.15):**
+- Raden med spel över kartan: liga, pass, album, kistor, lyckohjul och mästare. Gås igenom i tråden "Gå igenom guldspel och minispel".
+- Hela fliken Grannar: armé, byar att ta över, lojalitetsnivåer, och grannar som hjälper till och vill ha gåvor.
+- De fyra senare byggnaderna Ladan, Skolan, Hamnen och Gästgiveriet. Deras funktion bestäms när grannbyarna och kistorna är genomgångna. De behöver en tomt och en bild först.
+
+Avsnitten längre ner som beskriver det här gäller alltså som förslag, inte som beslut.
+
+**Övriga beslut 2026-11-20:** det första anfallet är kvar som det är (senast 23 minuter in i första passet, och efter 20 timmars frånvaro). Vintermarknaden (värld 5) är stängd till 1 december. Rakettipset säger "brickan bredvid" i stället för "en granne", och fyrverkeritipset säger "fem brickor i vinkel" med en bild. Långa dialoger har ett runt stängkryss uppe till höger. Byn går att zooma med två fingrar, med en fingeranimation de tre första gångerna. Bakåtgesten frågar innan spelet stängs. Liv i byn med figurer och händelser tas fram i tråden "Ge byn liv med figurer och händelser". De fyra sista punkterna är byggda som 0.26.16 och väntar på Jonas ja.
+
 ## 1. Syfte med designen
 
 Spelet ska mäta vid vilket steg i en trappa med ökande press som spelaren slutar spela (förstudien, Syfte). Därför ska varje krok ha ett tydligt ögonblick, kunna loggas och kunna slås av och på.
@@ -112,7 +125,7 @@ Nya hinders grafik visas för Jonas och godkänns innan den läggs ut.
 - Pärla + raket: alla brickor av den färgen blir raketer.
 - Pärla + pärla: hela brädet rensas.
 
-**Stjärnor och slutfest.** Varje utmaning ger 1–3 stjärnor efter antal drag kvar, och en stjärna räcker för att gå vidare. Tre stjärnor ger 30 extra guld, och stjärnorna visas på kartan. När målet är klart blir varje drag som är kvar en raket som smäller av och ger 5 guld (byggt i 0.20.0).
+**Stjärnor och slutfest.** Varje utmaning ger 1–3 stjärnor efter antal drag kvar, och en stjärna räcker för att gå vidare. En vinst ger 10 guld per stjärna (Jonas 2026-11-20; förut 30 guld bara för tre stjärnor), och stjärnorna visas på kartan. När målet är klart blir varje drag som är kvar en raket som smäller av och ger 5 guld (byggt i 0.20.0).
 
 **Brädet per region och värld (Jonas 2026-11-18):** varje region och värld har egen bakgrund, sex egna brickor, egen ramfärg och sina två hinder. Skärgården, Skogen och Fjällen är godkända och skickade till bygget. Den nya isen (en iskub) godkändes kl. 10.50. Värld 2–5 godkändes kl. 10.52. Mappningen finns i /mnt/project-files/pussel-stil/regioner/README.md, och granskningssidan är https://claude.ai/artifact/1mk7hqiYTf6p5RY4m9hGtN
 
