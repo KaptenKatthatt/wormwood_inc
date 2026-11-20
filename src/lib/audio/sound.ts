@@ -60,13 +60,16 @@ const DUCK: Partial<Record<Sfx, number>> = { win: 4.5, lose: 5.5, buildDone: 3.5
  * scale tells which loudness scale the stored sliders belong to: on scale 2
  * (Jonas, 2026-11-20) 75 % is the standard and sounds like 10 % did before.
  */
-export interface AudioSettings { music: boolean; ambience: boolean; sfx: boolean; musicVol: number; sfxVol: number; ambienceVol: number; scale: number }
+export interface AudioSettings { music: boolean; ambience: boolean; sfx: boolean; musicVol: number; sfxVol: number; ambienceVol: number; scale: number; sea?: number }
 export const DEFAULT_VOL = 0.75;
+/** The sea's standard is 60 % (Jonas, 2026-11-20, after listening on the phone); its slider only shows in the dev build. */
+export const DEFAULT_AMBIENCE_VOL = 0.6;
 const SCALE = 2;
 /** Sliders saved on an older scale go back to the standard once; the on/off switches are kept. */
 export function migrateAudio(saved: Partial<AudioSettings>): AudioSettings {
-  const base: AudioSettings = { music: true, ambience: true, sfx: true, musicVol: DEFAULT_VOL, sfxVol: DEFAULT_VOL, ambienceVol: DEFAULT_VOL, scale: SCALE };
-  if (saved.scale === SCALE) return { ...base, ...saved };
+  const base: AudioSettings = { music: true, ambience: true, sfx: true, musicVol: DEFAULT_VOL, sfxVol: DEFAULT_VOL, ambienceVol: DEFAULT_AMBIENCE_VOL, scale: SCALE, sea: 1 };
+  // The sea's standard changed after scale 2 went out: a sea slider saved before that goes to the new standard once.
+  if (saved.scale === SCALE) return saved.sea === 1 ? { ...base, ...saved } : { ...base, ...saved, ambienceVol: DEFAULT_AMBIENCE_VOL, sea: 1 };
   return { ...base, music: saved.music ?? true, ambience: saved.ambience ?? true, sfx: saved.sfx ?? true };
 }
 export const audioSettings = writable<AudioSettings>(migrateAudio(load<Partial<AudioSettings>>('audio', {})));

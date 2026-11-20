@@ -43,7 +43,7 @@
   <h2>Ljud</h2>
   <VolumeRow kind="music" label="Musik" />
   <VolumeRow kind="sfx" label="Ljudeffekter" />
-  <VolumeRow kind="ambience" label="Havsljud i byn" />
+  {#if DEV_MENU}<VolumeRow kind="ambience" label="Havsljud i byn" />{/if}
 
   <h2>Hjälp</h2>
   <button class="ghost" onclick={() => startTutorial(true)}>Visa introduktionen igen</button>

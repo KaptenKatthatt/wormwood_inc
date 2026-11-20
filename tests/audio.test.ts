@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_VOL, mapMusicFor, migrateAudio, puzzleMusicFor, sliderGain, WORLD_EXTRA, WORLD_TUNES } from '../src/lib/audio/sound';
+import { DEFAULT_AMBIENCE_VOL, DEFAULT_VOL, mapMusicFor, migrateAudio, puzzleMusicFor, sliderGain, WORLD_EXTRA, WORLD_TUNES } from '../src/lib/audio/sound';
 
 const AUDIO = new URL('../public/audio/', import.meta.url);
 const SRC = readFileSync(new URL('../src/lib/audio/sound.ts', import.meta.url), 'utf8');
@@ -75,12 +75,16 @@ describe('sound', () => {
 
 describe('stored sound settings', () => {
   it('starts every slider at the standard', () => {
-    expect(migrateAudio({})).toMatchObject({ music: true, sfx: true, ambience: true, musicVol: DEFAULT_VOL, sfxVol: DEFAULT_VOL, ambienceVol: DEFAULT_VOL });
+    expect(migrateAudio({})).toMatchObject({ music: true, sfx: true, ambience: true, musicVol: DEFAULT_VOL, sfxVol: DEFAULT_VOL, ambienceVol: DEFAULT_AMBIENCE_VOL });
   });
   it('resets sliders from the old loudness scale once, keeping the switches', () => {
     const s = migrateAudio({ music: false, sfx: true, ambience: false, musicVol: 0.1, sfxVol: 1 });
     expect(s).toMatchObject({ music: false, ambience: false, musicVol: DEFAULT_VOL, sfxVol: DEFAULT_VOL });
     expect(migrateAudio({ ...s, musicVol: 0.4 }).musicVol).toBe(0.4);
+    // a sea slider saved at the first standard of scale 2 moves to the new one once, the rest is kept
+    const old = migrateAudio({ music: true, sfx: true, ambience: true, musicVol: 0.4, sfxVol: 0.75, ambienceVol: 0.75, scale: 2 });
+    expect(old).toMatchObject({ musicVol: 0.4, ambienceVol: DEFAULT_AMBIENCE_VOL });
+    expect(migrateAudio({ ...old, ambienceVol: 0.9 }).ambienceVol).toBe(0.9);
   });
 });
 
