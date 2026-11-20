@@ -90,7 +90,8 @@ export interface PassReward { gold?: number; gems?: number; chest?: boolean; dra
 /** Free track: small things. Gold track: what the player really wants. */
 export function passReward(tier: number, gold: boolean): PassReward {
   if (!gold) return tier % 5 === 0 ? { gems: 5 } : tier % 2 === 0 ? { gold: 60 } : { lives: 1 };
-  if (tier % 5 === 0) return { draw: true };
+  // Every fifth level was a champion draw; the champions are in the backlog, so it is gems (Jonas, 2026-11-20).
+  if (tier % 5 === 0) return { gems: 40 };
   if (tier % 4 === 0) return { chest: true };
   return tier % 2 === 0 ? { gems: 15 } : { gold: 250 };
 }
@@ -102,6 +103,46 @@ export function passTier(xp: number): number {
 /** XP for a win: two plus the stars. */
 export function passXp(stars: number): number {
   return 2 + stars;
+}
+
+// The pass's missions (Jonas, 2026-11-20: "we shall have the missions too"): three a day and two a week.
+// A finished mission gives pass points when the player collects it.
+
+export type MissionEvent = 'win' | 'stars3' | 'spin' | 'chest';
+export interface Mission { id: string; text: string; need: number; xp: number; on: MissionEvent; weekly?: boolean }
+export const MISSIONS: readonly Mission[] = [
+  { id: 'd-wins', text: 'Vinn 3 utmaningar', need: 3, xp: 10, on: 'win' },
+  { id: 'd-stars', text: 'Få 3 stjärnor på en utmaning', need: 1, xp: 5, on: 'stars3' },
+  { id: 'd-spin', text: 'Snurra lyckohjulet', need: 1, xp: 5, on: 'spin' },
+  { id: 'w-wins', text: 'Vinn 20 utmaningar', need: 20, xp: 30, on: 'win', weekly: true },
+  { id: 'w-chests', text: 'Öppna 3 kistor', need: 3, xp: 20, on: 'chest', weekly: true },
+];
+
+/** How far each mission has come, and which have been collected. The day's missions start over when the day changes. */
+export interface MissionState { day: string; have: Record<string, number>; got: string[] }
+
+export function freshMissions(day: string): MissionState {
+  return { day, have: {}, got: [] };
+}
+
+/** The same state on a new day: the weekly missions keep their count, the daily ones start over. */
+export function missionsOn(m: MissionState | undefined, day: string): MissionState {
+  if (!m) return freshMissions(day);
+  if (m.day === day) return m;
+  const weekly = (id: string) => MISSIONS.some((x) => x.id === id && x.weekly);
+  return { day, have: Object.fromEntries(Object.entries(m.have).filter(([id]) => weekly(id))), got: m.got.filter(weekly) };
+}
+
+/** One thing the player did, counted on every mission that asks for it. */
+export function missionProgress(m: MissionState | undefined, on: MissionEvent, day: string): MissionState {
+  const s = missionsOn(m, day);
+  const have = { ...s.have };
+  for (const x of MISSIONS) if (x.on === on) have[x.id] = Math.min(x.need, (have[x.id] ?? 0) + 1);
+  return { ...s, have };
+}
+
+export function missionReady(m: MissionState, x: Mission): boolean {
+  return (m.have[x.id] ?? 0) >= x.need && !m.got.includes(x.id);
 }
 
 export function rewardText(r: PassReward): string {

@@ -205,6 +205,7 @@ const WHEEL = !ON_HOLD.includes('wheel');
 /** The same for the Neighbours tab and the neighbours who help. */
 /** The chests came back the same day, with the opening Jonas approved. */
 const CHESTS = !ON_HOLD.includes('chests');
+const PASS = !ON_HOLD.includes('pass');
 const NEIGHBOURS = !ON_HOLD.includes('conquest');
 
 const PARTS: { id: string; label: string; when: (r: Reached) => boolean }[] = [
@@ -214,7 +215,7 @@ const PARTS: { id: string; label: string; when: (r: Reached) => boolean }[] = [
   { id: 's4', label: 'Startpaketet som bara fanns kvar en kort stund', when: (r) => r.steps.includes(4) },
   { id: 's5', label: 'Anfallet mot byn och byborna som ville att du skulle stanna', when: (r) => r.steps.includes(5) },
   { id: 'day', label: 'Dagens gåva, sviten och notiserna', when: (r) => r.secondDay },
-  { id: 's6', label: GAMES ? 'Ligan, säsongspasset, albumet och reklamen' : NEIGHBOURS ? 'Reklamfilmerna och att be grannarna om liv' : 'Reklamfilmerna', when: (r) => r.weekStep >= 6 },
+  { id: 's6', label: GAMES ? 'Ligan, säsongspasset, albumet och reklamen' : NEIGHBOURS ? `${PASS ? 'Veckopasset, reklamfilmerna' : 'Reklamfilmerna'} och att be grannarna om liv` : PASS ? 'Veckopasset och reklamfilmerna' : 'Reklamfilmerna', when: (r) => r.weekStep >= 6 },
   { id: 's7', label: GAMES ? 'Kistorna, lyckohjulet och mästardragningarna' : CHESTS && WHEEL ? 'Kistorna och lyckohjulet' : CHESTS ? 'Kistorna' : 'Lyckohjulet', when: (r) => (GAMES || WHEEL || CHESTS) && r.weekStep >= 7 },
   { id: 's8', label: NEIGHBOURS ? 'Anfallen på grannbyar, trupperna och erbjudandena' : 'Erbjudandet som var bara för dig', when: (r) => r.weekStep >= 8 },
   { id: 's9', label: 'Grannarna som behövde hjälp och skickade gåvor', when: (r) => NEIGHBOURS && r.weekStep >= 9 },

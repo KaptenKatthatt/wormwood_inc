@@ -4,20 +4,22 @@
    * A button shows up when its hook's step is reached, with a badge when
    * something waits (a chest that is ready, today's free spin).
    */
-  import { exp, freeSpinReady, hubOpen, leagueRows, passActive, weekOn } from '../lib/state/expansion';
+  import { exp, freeSpinReady, hubOpen, leagueRows, passWaiting, renewPass, weekOn } from '../lib/state/expansion';
   import { now } from '../lib/state/game';
   import { leagueRank, passTier, ALBUM_SIZE, PASS_TIERS } from '../lib/expansion/social';
   import { logHook } from '../lib/state/game';
+
+  // A pass that has run out gives way to a new one.
+  $effect(() => { void $now; renewPass(); });
 
   type Id = 'liga' | 'pass' | 'album' | 'kistor' | 'hjul' | 'kampar';
   const items = $derived.by(() => {
     void $now; void $exp;
     const out: { id: Id; icon: string; art?: string; label: string; badge?: string }[] = [];
     if (weekOn('league') && $exp.league) out.push({ id: 'liga', icon: '🏆', label: `Plats ${leagueRank(leagueRows())}` });
-    if (weekOn('pass') && passActive()) {
-      const t = passTier($exp.pass!.xp);
-      const open = Array.from({ length: t }, (_, i) => i + 1).some((k) => !$exp.pass!.claimedFree.includes(k) || ($exp.pass!.gold && !$exp.pass!.claimedGold.includes(k)));
-      out.push({ id: 'pass', icon: '🎟️', label: `Pass ${t}/${PASS_TIERS}`, badge: open ? '!' : undefined });
+    if (weekOn('pass') && $exp.pass) {
+      const waiting = passWaiting();
+      out.push({ id: 'pass', icon: '🎟️', art: '/art/pass/ticket.webp', label: `Pass ${passTier($exp.pass.xp)}/${PASS_TIERS}`, badge: waiting ? String(waiting) : undefined });
     }
     if (weekOn('album')) out.push({ id: 'album', icon: '📔', label: `${$exp.album.length}/${ALBUM_SIZE}` });
     if (weekOn('chests')) {
