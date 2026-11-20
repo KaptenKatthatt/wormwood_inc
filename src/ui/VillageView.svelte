@@ -81,7 +81,7 @@
 
 <section class="view">
   <div class="canvas">
-    <GameCanvas scene={VillageScene} data={{ plots, look, layers }} on={{ 'village-zoomed': zoomed }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
+    <GameCanvas scene={VillageScene} data={{ plots, look, layers, soldiers: $stairs.soldiers }} on={{ 'village-zoomed': zoomed }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
     {#if zoomHint && !sheet}
       <div class="zoomhint" aria-hidden="true">
         <span class="finger a"></span><span class="finger b"></span>

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import ART from './villageArt.json';
+import { cast, frameOf, recast, step, type FigureKind, type Walker } from '../lib/villageLife';
 
 export interface PlotView { id: string; name: string; level: number; building: boolean; progress: number; locked?: boolean; damaged?: boolean }
 
@@ -13,6 +14,20 @@ const WINTER_PAD = 10;
 /** The damaged pictures (in damaged/, same file names) have this margin for the rubble at the foot. */
 const DAMAGED_PAD = 8;
 type Look = 'summer' | 'a' | 'b' | 'c';
+
+/** The figures' pictures: four steps seen from the front, four from behind, at four times their size in the village. */
+const PEOPLE: FigureKind[] = ['villager', 'soldier', 'priest'];
+const CELL = { w: 160, h: 192, foot: 186, scale: 4 };
+/** Drawing order: the background, then buildings and figures back to front, then signs and decorations. */
+const DEPTH = { ground: 1000, signs: 9000, decor: 9500 };
+const TOWER_IDS = ['vakttornet', 'tornet_o', 'tornet_s', 'tornet_v'];
+
+/** How far down the picture a building's front reaches: what stands lower is in front of it. */
+function frontOf(id: string, stage: '1' | '2' | '3'): number {
+  // The grandest towers' pictures carry a piece of ground and wall around the tower; the tower's foot is where the middle one's is.
+  const st = BUILDINGS[id].stages[TOWER_IDS.includes(id) && stage === '3' ? '2' : stage];
+  return st.y + st.h - 8;
+}
 /** How far in the village zooms. */
 const MAX_ZOOM = 3;
 
@@ -45,6 +60,41 @@ export class VillageScene extends Phaser.Scene {
     this.load.image('v-bg', DIR + BG.file);
     for (const b of Object.values(BUILDINGS)) for (const s of Object.values(b.stages)) this.load.image(`v-${s.file}`, DIR + s.file);
     for (const k of ['hus', 'torn'] as const) this.load.image(`v-bygge-${k}`, DIR + ART.bygge[k].file);
+    for (const k of PEOPLE) this.load.spritesheet(`v-people-${k}`, `${DIR}people/${k}.webp`, { frameWidth: CELL.w, frameHeight: CELL.h });
+  }
+
+  // Life in the village (Jonas approved the figures 2026-11-20): who walks follows the buildings.
+  private walkers: Walker[] = [];
+  private figures: { pic: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Ellipse }[] = [];
+  private place = { s: 1, ox: 0, oy: 0 };
+  /** Pictures of grand towers with ground around them: a figure beside the tower itself is drawn over the picture. */
+  private aprons: { x0: number; x1: number; y0: number; body0: number; body1: number; front: number }[] = [];
+  private readonly still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  private levels(): Record<string, number> {
+    const plots: PlotView[] = this.registry.get('plots') ?? [];
+    return Object.fromEntries(plots.map((p) => [p.id, p.locked ? 0 : p.level]));
+  }
+
+  private placeFigure(n: number): void {
+    const w = this.walkers[n];
+    const f = this.figures[n];
+    if (!w || !f) return;
+    const { s, ox, oy } = this.place;
+    let depth = w.y;
+    for (const a of this.aprons) {
+      const beside = w.x < a.body0 - 4 || w.x > a.body1 + 4;
+      if (beside && w.x >= a.x0 && w.x <= a.x1 && w.y >= a.y0 && w.y < a.front) depth = Math.max(depth, a.front + 1);
+    }
+    f.pic.setPosition(ox + w.x * s, oy + w.y * s).setFrame((w.front ? 0 : 4) + frameOf(w)).setFlipX(w.flip).setDepth(DEPTH.ground + depth);
+    f.shadow.setPosition(ox + (w.x + 3) * s, oy + (w.y - 0.5) * s).setDepth(DEPTH.ground + depth - 0.01);
+  }
+
+  update(_time: number, delta: number): void {
+    if (this.still) return; // reduced motion: the figures stand where they are
+    const dt = Math.min(0.1, delta / 1000);
+    const levels = this.levels();
+    for (let n = 0; n < this.walkers.length; n++) { step(this.walkers[n], dt, levels); this.placeFigure(n); }
   }
 
   /**
@@ -125,11 +175,13 @@ export class VillageScene extends Phaser.Scene {
     this.registry.events.on('changedata-plots', this.draw, this);
     this.registry.events.on('changedata-look', this.draw, this);
     this.registry.events.on('changedata-layers', this.draw, this);
+    this.registry.events.on('changedata-soldiers', this.draw, this);
     this.events.once('shutdown', () => {
       this.scale.off('resize', this.draw, this);
       this.registry.events.off('changedata-plots', this.draw, this);
       this.registry.events.off('changedata-look', this.draw, this);
       this.registry.events.off('changedata-layers', this.draw, this);
+      this.registry.events.off('changedata-soldiers', this.draw, this);
     });
   }
 
@@ -171,6 +223,8 @@ export class VillageScene extends Phaser.Scene {
     const layers: string[] = this.registry.get('layers') ?? [];
     const bg = look !== 'summer' && this.textures.exists(`v-${look}-${BG.file}`) ? `v-${look}-${BG.file}` : 'v-bg';
     this.add.image(ox, oy, bg).setOrigin(0).setScale(s);
+    this.place = { s, ox, oy };
+    this.aprons = [];
 
     const plots: PlotView[] = this.registry.get('plots') ?? [];
     const byId = new Map(plots.map((p) => [p.id, p]));
@@ -184,11 +238,17 @@ export class VillageScene extends Phaser.Scene {
       if (!p || p.locked) continue; // a locked or unknown plot is just the background
       const b = BUILDINGS[id];
       if (p.level > 0) {
-        const st = b.stages[stageOf(p.level)];
+        const stage = stageOf(p.level);
+        const st = b.stages[stage];
+        const front = DEPTH.ground + frontOf(id, stage);
+        if (stage === '3' && TOWER_IDS.includes(id)) {
+          const body = b.stages['2'];
+          this.aprons.push({ x0: st.x, x1: st.x + st.w, y0: st.y, body0: body.x, body1: body.x + body.w, front: front - DEPTH.ground });
+        }
         const whole = this.tex(look, st.file);
         const hurt = p.damaged && look === 'summer' && this.textures.exists(`v-damaged-${st.file}`);
         const t = hurt ? { key: `v-damaged-${st.file}`, pad: DAMAGED_PAD } : whole;
-        const pic = this.add.image(ox + (st.x - t.pad) * s, oy + (st.y - t.pad) * s, t.key).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1);
+        const pic = this.add.image(ox + (st.x - t.pad) * s, oy + (st.y - t.pad) * s, t.key).setOrigin(0).setScale(s).setAlpha(p.building ? 0.55 : 1).setDepth(front);
         if (p.damaged) {
           // The damaged picture where there is one; otherwise the building darkened. A red sign over it.
           if (!hurt) pic.setTint(0x8a7f78);
@@ -196,22 +256,31 @@ export class VillageScene extends Phaser.Scene {
           const r = (hurt ? 10 : 13) * k;
           const cx = pic.x + pic.displayWidth / 2;
           const cy = hurt ? pic.y : pic.y + r;
-          this.add.circle(cx, cy, r, 0x9c2a1e).setStrokeStyle(2 * k, 0xffffff);
-          this.add.text(cx, cy, '!', { fontFamily: 'sans-serif', fontStyle: 'bold', fontSize: `${(hurt ? 14 : 18) * k}px`, color: '#ffffff' }).setOrigin(0.5);
+          this.add.circle(cx, cy, r, 0x9c2a1e).setStrokeStyle(2 * k, 0xffffff).setDepth(DEPTH.signs);
+          this.add.text(cx, cy, '!', { fontFamily: 'sans-serif', fontStyle: 'bold', fontSize: `${(hurt ? 14 : 18) * k}px`, color: '#ffffff' }).setOrigin(0.5).setDepth(DEPTH.signs);
         }
       }
       if (p.building) {
         const g = b.bygge;
-        const pic = this.add.image(ox + g.x * s, oy + g.y * s, `v-bygge-${g.kind}`).setOrigin(0).setScale(s * g.scale);
+        const pic = this.add.image(ox + g.x * s, oy + g.y * s, `v-bygge-${g.kind}`).setOrigin(0).setScale(s * g.scale).setDepth(DEPTH.signs);
         // how far the build has come, under the scaffold
         const bw = pic.displayWidth * 0.8;
         const bx = pic.x + (pic.displayWidth - bw) / 2;
         const by = pic.y + pic.displayHeight + 4 * k;
-        this.add.rectangle(bx, by, bw, 6 * k, 0x000000, 0.45).setOrigin(0);
-        this.add.rectangle(bx, by, bw * p.progress, 6 * k, 0xf2c230).setOrigin(0);
+        this.add.rectangle(bx, by, bw, 6 * k, 0x000000, 0.45).setOrigin(0).setDepth(DEPTH.signs);
+        this.add.rectangle(bx, by, bw * p.progress, 6 * k, 0xf2c230).setOrigin(0).setDepth(DEPTH.signs);
       }
     }
     // The Christmas decorations, in the background's pixels, over the buildings.
-    for (const f of layers) if (this.textures.exists(`v-xmas-${f}`)) this.add.image(ox, oy, `v-xmas-${f}`).setOrigin(0).setScale(s);
+    for (const f of layers) if (this.textures.exists(`v-xmas-${f}`)) this.add.image(ox, oy, `v-xmas-${f}`).setOrigin(0).setScale(s).setDepth(DEPTH.decor);
+
+    // The figures: the same walkers go on where they were; new ones come when something is built.
+    const levels = this.levels();
+    this.walkers = recast(this.walkers, cast(levels, this.registry.get('soldiers') ?? 0), levels);
+    this.figures = this.walkers.map((w) => ({
+      shadow: this.add.ellipse(0, 0, 12 * s, 4.8 * s, 0x14190a, 0.3),
+      pic: this.add.image(0, 0, `v-people-${w.kind}`, 1).setOrigin(0.5, CELL.foot / CELL.h).setScale(s / CELL.scale),
+    }));
+    for (let n = 0; n < this.walkers.length; n++) this.placeFigure(n);
   }
 }
