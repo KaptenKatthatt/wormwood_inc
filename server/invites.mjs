@@ -38,7 +38,7 @@ export const SIGNUP_ORIGINS = ['https://www.jonasolson.se', 'https://jonasolson.
 
 /**
  * @typedef {{ id: string, at: number, name: string, email: string, phone: 'android' | 'iphone', where: 'plats' | 'distans', note: string, kind: 'omgang' | 'egen' }} Signup
- * @typedef {{ round: Round, name: string, signupId: string | null, createdAt: number, players: string[], firstSeen: number | null, lastSeen: number | null }} Invite
+ * @typedef {{ round: Round, name: string, signupId: string | null, createdAt: number, players: string[], firstSeen: number | null, lastSeen: number | null, email?: string, answered?: number | null }} Invite
  */
 
 /** Makes a code like the test codes. */
@@ -59,10 +59,14 @@ export const cleanCode = (/** @type {unknown} */ v) => (typeof v === 'string' ? 
  *   now: () => number,
  *   appendEvent: (site: 'test' | 'dev', playerId: string, name: string, data: object) => Promise<void>,
  *   sendPush?: (playerId: string, payload: object) => Promise<boolean>,
+ *   onSignup?: (signup: Signup) => Promise<void>,
+ *   onInvite?: (code: string) => Promise<{ mailed: boolean, error?: string }>,
  * }} deps
  */
 export async function createInvites(deps) {
   const { readJson, writeJson, now, appendEvent, sendPush } = deps;
+  /** Set by server/outreach.mjs, which is made after this module. */
+  const hooks = { onSignup: deps.onSignup, onInvite: deps.onInvite };
   /** @type {Signup[]} */
   let signups = await readJson('signups.json', []);
   /** @type {Record<string, Invite>} */
@@ -87,7 +91,7 @@ export async function createInvites(deps) {
     if (now() < CONTACTS_END) return false;
     let changed = false;
     if (signups.length) { signups = []; changed = true; await writeJson('signups.json', signups); }
-    for (const inv of Object.values(invites)) if (inv.name) { inv.name = ''; changed = true; }
+    for (const inv of Object.values(invites)) if (inv.name || inv.email) { inv.name = ''; inv.email = ''; changed = true; }
     if (changed) await writeJson('invites.json', invites);
     return changed;
   }
@@ -123,7 +127,7 @@ export async function createInvites(deps) {
           return {
             code, round: i.round, name: i.name, createdAt: i.createdAt, phones: i.players.length, firstSeen: i.firstSeen, lastSeen: i.lastSeen,
             day: i.firstSeen ? Math.floor((t - i.firstSeen) / 86_400_000) + 1 : null,
-            email: s?.email ?? '', phone: s?.phone ?? '', where: s?.where ?? '', note: s?.note ?? '',
+            email: i.email || s?.email || '', phone: s?.phone ?? '', where: s?.where ?? '', note: s?.note ?? '', answered: i.answered ?? null, players: i.players.slice(),
           };
         })
         .sort((a, b) => a.createdAt - b.createdAt),
@@ -154,6 +158,7 @@ export async function createInvites(deps) {
     signups.push(added);
     await writeJson('signups.json', signups);
     void announce(added);
+    if (hooks.onSignup) void hooks.onSignup(added).catch((e) => console.error('onSignup', e));
     return { status: 200, body: { ok: true } };
   }
 
@@ -216,11 +221,16 @@ export async function createInvites(deps) {
       if (s && Object.values(invites).some((i) => i.signupId === s.id)) return { status: 409, body: { error: 'redan inbjuden' } };
       const name = s ? s.name : typeof body.name === 'string' ? body.name.trim().slice(0, 60) : '';
       if (!name) return { status: 400, body: { error: 'skriv ett namn' } };
+      const typed = typeof body.email === 'string' ? body.email.trim().slice(0, 254) : '';
+      if (typed && !validEmail(typed)) return { status: 400, body: { error: 'e-postadressen ser fel ut' } };
+      const email = s ? s.email : typed;
       let code = newCode();
       while (invites[code]) code = newCode();
-      invites[code] = { round, name, signupId: s?.id ?? null, createdAt: now(), players: [], firstSeen: null, lastSeen: null };
+      invites[code] = { round, name, signupId: s?.id ?? null, createdAt: now(), players: [], firstSeen: null, lastSeen: null, email, answered: null };
       await writeJson('invites.json', invites);
-      return { status: 200, body: { ok: true, code, ...view() } };
+      // The invitation mail goes by itself when there is an address (server/outreach.mjs).
+      const mail = body.mail !== false && email && hooks.onInvite ? await hooks.onInvite(code).catch((e) => ({ mailed: false, error: String(e?.message ?? e) })) : { mailed: false };
+      return { status: 200, body: { ok: true, code, mail, ...view() } };
     }
 
     if (path === '/api/admin/invites/round') {
@@ -252,5 +262,14 @@ export async function createInvites(deps) {
     return null;
   }
 
-  return { signup, check, admin, codeOf, playersOf, expire, overview };
+  /** The tester behind a player has answered the questions (the game logged questionnaire_part1). */
+  async function markAnswered(/** @type {string} */ playerId) {
+    for (const inv of Object.values(invites)) {
+      if (inv.players.includes(playerId) && !inv.answered) { inv.answered = now(); await writeJson('invites.json', invites); }
+    }
+  }
+  /** For server/outreach.mjs: the live records (read only) and the round days. */
+  const raw = () => ({ invites, signups, rounds });
+
+  return { signup, check, admin, codeOf, playersOf, expire, overview, markAnswered, raw, hooks };
 }

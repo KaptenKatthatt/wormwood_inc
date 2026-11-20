@@ -23,6 +23,8 @@ import { mkdir, readFile, writeFile, appendFile, stat, rename, chmod } from 'nod
 import { join, extname, normalize, resolve } from 'node:path';
 import { createReach } from './reach.mjs';
 import { createInvites, SIGNUP_ORIGINS } from './invites.mjs';
+import { createOutreach } from './outreach.mjs';
+import { readFile as readText } from 'node:fs/promises';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -48,7 +50,7 @@ const ID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 const MAX_BODY = 64 * 1024;
 
 /**
- * @param {{ distDir: string, testDistDir?: string, dataDir: string, webpush?: any, contact?: string, now?: () => number, adminKey?: string, signupOrigins?: string[] }} opts
+ * @param {{ distDir: string, testDistDir?: string, dataDir: string, webpush?: any, contact?: string, now?: () => number, adminKey?: string, signupOrigins?: string[], mail?: { apiKey?: string, inbox?: string, fetch?: typeof fetch }, testSite?: string }} opts
  */
 export async function createApp(opts) {
   const devDist = resolve(opts.distDir);
@@ -61,7 +63,7 @@ export async function createApp(opts) {
   const now = opts.now ?? Date.now;
   await mkdir(join(dataDir, 'logs'), { recursive: true });
   // Files written before 0.27.1 were readable by every user on the machine.
-  for (const f of ['signups.json', 'invites.json', 'rounds.json', 'signup-watchers.json', 'admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json', 'topups.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
+  for (const f of ['signups.json', 'invites.json', 'rounds.json', 'signup-watchers.json', 'outbox.json', 'templates.json', 'autos.json', 'admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json', 'topups.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
 
   // ---- persisted JSON ------------------------------------------------------
   /** @param {string} name @param {any} fallback */
@@ -127,10 +129,12 @@ export async function createApp(opts) {
   }
   const invites = await createInvites({ readJson, writeJson, now, appendEvent, sendPush });
   const reach = await createReach({ readJson, writeJson, now, sendPush, appendEvent, adminKey: opts.adminKey, codeOf: invites.codeOf, playersOf: invites.playersOf });
+  const outreach = await createOutreach({ readJson, writeJson, now, dataDir, invites, reach, testSite: opts.testSite ?? 'skargardsbyn.84.247.143.6.sslip.io', apiKey: opts.mail?.apiKey, inbox: opts.mail?.inbox, fetch: opts.mail?.fetch });
 
   async function flushDue() {
     await reach.expireContacts();
     await invites.expire();
+    await outreach.tick().catch((e) => console.error('outreach', e));
     const t = now();
     const due = scheduled.filter((s) => s.at <= t);
     if (due.length === 0) return 0;
@@ -254,6 +258,13 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
         return;
       }
       if (moved) { res.writeHead(301, { location: moved + url, 'cache-control': 'no-store' }).end(); return; }
+      // Testarnas kontor: Jonas's page, on the dev site only (it does nothing without the admin key).
+      if ((path === '/kontor' || path === '/kontor/') && !isTestHost(String(req.headers.host ?? ''))) {
+        const page = await readText(new URL('./kontor.html', import.meta.url), 'utf8');
+        res.writeHead(200, { 'content-type': MIME['.html'], 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow', 'referrer-policy': 'no-referrer', 'x-frame-options': 'DENY' });
+        res.end(page);
+        return;
+      }
       return serveStatic(res, path, String(req.headers.host ?? ''));
     }
     if (limited(ip)) return json(res, 429, { error: 'för många anrop' });
@@ -317,12 +328,20 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
       const logDir = testSite ? join(dataDir, 'logs') : join(dataDir, 'logs', 'dev');
       await mkdir(logDir, { recursive: true });
       await appendFile(join(logDir, `${day}.ndjson`), lines.join('\n') + '\n');
+      // The office stops the "questions are waiting" mail once they are answered.
+      if (testSite && body.events.some((/** @type {any} */ e) => e?.name === 'questionnaire_part1')) await invites.markAnswered(body.playerId);
       return json(res, 200, { ok: true, stored: lines.length });
     }
 
     if (path === '/api/invite/check') {
       const out = await invites.check(body, isTestHost(String(req.headers.host ?? '')) ? 'test' : 'dev');
       return json(res, out.status, out.body);
+    }
+    if (path.startsWith('/api/admin/kontor/')) {
+      if (!reach.isAdmin(body?.key)) return json(res, 403, { error: 'fel nyckel' });
+      const out = await outreach.admin(path, body);
+      if (out) return json(res, out.status, out.body);
+      return json(res, 404, { error: 'finns inte' });
     }
     if (path.startsWith('/api/admin/invites/')) {
       if (!reach.isAdmin(body?.key)) return json(res, 403, { error: 'fel nyckel' });
@@ -387,5 +406,5 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
     });
   });
 
-  return { server, flushDue, reach, invites, get scheduled() { return scheduled; }, get subs() { return subs; } };
+  return { server, flushDue, reach, invites, outreach, get scheduled() { return scheduled; }, get subs() { return subs; } };
 }

@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Testarnas kontor</title>
+<!--
+  Testarnas kontor (Jonas, 2026-11-20): one page for everything about the
+  testers. Served by server/app.mjs at /kontor on the dev site; every call
+  carries the admin key, which the page keeps in this browser.
+  Server side: server/invites.mjs, server/outreach.mjs, server/reach.mjs.
+-->
+<style>
+  :root {
+    --bg: #efe4d4; --panel: #fffaf2; --ink: #2b1a14; --muted: #6a554b; --line: #dccab4;
+    --falu: #8a2a1c; --sea: #1f5364; --sea-soft: #e3eff3; --ok: #2f7a2c; --ok-soft: #e4f2e2; --wait: #8a5a00; --wait-soft: #fbefd4;
+    --display: 'Baloo 2', 'Nunito Sans', system-ui, sans-serif; --body: 'Nunito Sans', system-ui, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg: #1d1714; --panel: #2a221e; --ink: #f3e8dc; --muted: #c0aea2; --line: #4a3c34;
+    --falu: #e0705c; --sea: #8cc5d8; --sea-soft: #1f3540; --ok: #8fd18a; --ok-soft: #1f3420; --wait: #f0c264; --wait-soft: #3a2f17; color-scheme: dark } }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); }
+  .wrap { max-width: 820px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 64px max(16px, env(safe-area-inset-left)); display: grid; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; }
+  h1 { font: 800 1.9rem/1 var(--display); color: var(--falu); margin: 0; }
+  h2 { font: 800 1.3rem/1.1 var(--display); margin: 0; }
+  h3 { font-size: 1rem; margin: 0; }
+  p { margin: 0; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  nav button { font: 700 .95rem var(--body); border: 2px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
+  nav button[aria-selected="true"] { background: var(--falu); border-color: var(--falu); color: var(--panel); }
+  .card { background: var(--panel); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 10px; }
+  .list > .row:first-child { border-top: 0; padding-top: 0; }
+  .list { display: grid; gap: 10px; }
+  .who { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
+  .who b { font-size: 1.02rem; overflow-wrap: anywhere; }
+  .pill { font-size: .8rem; font-weight: 700; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .p-ok { background: var(--ok-soft); color: var(--ok); } .p-wait { background: var(--wait-soft); color: var(--wait); } .p-sea { background: var(--sea-soft); color: var(--sea); } .p-red { background: var(--falu); color: var(--panel); }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  button.btn { font: 700 .92rem var(--body); border-radius: 10px; padding: 8px 12px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; min-height: 40px; }
+  button.main { background: var(--sea); border-color: var(--sea); color: var(--panel); }
+  button.danger { border-color: var(--falu); color: var(--falu); }
+  button:disabled { opacity: .55; cursor: progress; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--sea); outline-offset: 2px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .tile { background: var(--panel); border-radius: 12px; padding: 12px; display: grid; gap: 2px; }
+  .tile b { font: 800 1.7rem/1 var(--display); font-variant-numeric: tabular-nums; }
+  .tile span { font-size: .85rem; color: var(--muted); }
+  .auto { border-left: 5px solid var(--sea); background: var(--sea-soft); border-radius: 0 10px 10px 0; padding: 10px 12px; display: grid; gap: 6px; }
+  .auto.off { border-left-color: var(--line); background: var(--bg); }
+  .when { font-size: .8rem; font-weight: 700; color: var(--sea); text-transform: uppercase; letter-spacing: .06em; }
+  .warn { background: var(--wait-soft); border: 2px dashed var(--wait); border-radius: 10px; padding: 10px 12px; }
+  label.f { display: grid; gap: 4px; font-weight: 700; font-size: .92rem; }
+  input, textarea, select { font: inherit; font-weight: 400; border: 2px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--panel); color: var(--ink); width: 100%; }
+  textarea { min-height: 150px; resize: vertical; }
+  .check { display: flex; gap: 10px; align-items: center; font-weight: 700; }
+  .check input { width: 22px; height: 22px; accent-color: var(--falu); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; white-space: nowrap; }
+  pre.mail { white-space: pre-wrap; font: inherit; font-size: .92rem; background: var(--bg); border-radius: 8px; padding: 10px 12px; margin: 0; overflow-wrap: anywhere; }
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); background: var(--ink); color: var(--panel); padding: 10px 16px; border-radius: 10px; font-weight: 700; max-width: calc(100vw - 32px); z-index: 5; }
+  @media (max-width: 520px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Testarnas kontor</h1>
+    <span class="muted" id="mailstate"></span>
+  </header>
+
+  <section class="card" id="login" hidden>
+    <h2>Logga in</h2>
+    <p class="muted">Klistra in nyckeln, samma som under Testarna i spelets dev-version. Den sparas i den här webbläsaren.</p>
+    <form id="loginform" class="grid2">
+      <label class="f" for="key">Nyckel <input id="key" type="password" autocomplete="current-password"></label>
+      <div style="align-self:end"><button class="btn main" type="submit">Öppna kontoret</button></div>
+    </form>
+    <p class="muted" id="loginerr" role="alert"></p>
+  </section>
+
+  <nav role="tablist" aria-label="Delar" id="tabs" hidden>
+    <button role="tab" data-tab="idag">I dag</button>
+    <button role="tab" data-tab="anmalningar">Anmälningar <span class="pill p-red" id="nsign" hidden></span></button>
+    <button role="tab" data-tab="testare">Testare</button>
+    <button role="tab" data-tab="omgangar">Omgångar</button>
+    <button role="tab" data-tab="pafyllning">Påfyllning</button>
+    <button role="tab" data-tab="mejl">Mejl</button>
+    <button role="tab" data-tab="data">Data</button>
+  </nav>
+
+  <main id="main" hidden>
+    <section data-view="idag" class="wrap" style="padding:0">
+      <div class="tiles" id="tiles"></div>
+      <div class="card"><h2>Att göra</h2><div class="list" id="todo"></div></div>
+      <div class="card"><h2>Mejl som går av sig själva det närmaste dygnet</h2><div class="list" id="upcoming"></div>
+        <p class="muted">Automatiska mejl går bara mellan 07.00 och 21.00, och aldrig två gånger till samma person.</p></div>
+    </section>
+
+    <section data-view="anmalningar" class="card" hidden>
+      <h2>Nya anmälningar</h2>
+      <p class="muted">Välj omgång, så skapas inbjudan och mejlet med personlig länk går iväg direkt.</p>
+      <div class="list" id="signups"></div>
+      <h3>Bjud in någon som inte har anmält sig</h3>
+      <form id="freeform" class="grid2">
+        <label class="f" for="fname">Namn <input id="fname" required maxlength="60"></label>
+        <label class="f" for="femail">E-post (frivilligt) <input id="femail" type="email" maxlength="254"></label>
+        <label class="f" for="fround">Omgång <select id="fround">
+          <option value="pilot">Piloten</option><option value="1">Omgång 1</option><option value="2">Omgång 2</option><option value="egen">Egen start</option><option value="jonas">Jonas själv (räknas inte i datan)</option>
+        </select></label>
+        <div style="align-self:end"><button class="btn main" type="submit">Bjud in</button></div>
+      </form>
+    </section>
+
+    <section data-view="testare" class="card" hidden>
+      <h2>Testarna</h2>
+      <p class="muted">Kod, omgång och var testaren är. Länken kan du alltid kopiera här.</p>
+      <div class="list" id="testers"></div>
+    </section>
+
+    <section data-view="omgangar" class="card" hidden>
+      <h2>Omgångar</h2>
+      <p class="muted">En omgång går att spela från sin dag. Påminnelsen går 18.00 kvällen före, och "Nu kan du spela" 07.00 samma dag.</p>
+      <div class="list" id="rounds"></div>
+    </section>
+
+    <section data-view="pafyllning" class="card" hidden>
+      <h2>Påfyllning av låtsaspengar</h2>
+      <p class="muted">Välj testare. Koden på 100 kr mejlas till testaren direkt, och visas här om det inte finns någon adress.</p>
+      <form id="topupform" class="grid2">
+        <label class="f" for="tcode">Testare <select id="tcode"></select></label>
+        <div style="align-self:end"><button class="btn main" type="submit">Ge 100 kr</button></div>
+      </form>
+      <p id="topupout" class="warn" hidden></p>
+      <h3>Senaste koderna</h3>
+      <div class="list" id="topups"></div>
+    </section>
+
+    <section data-view="mejl" class="card" hidden>
+      <h2>Mejlen</h2>
+      <p class="muted">Kryssa ur ett mejl för att stänga av det. I texterna fylls {namn}, {lank}, {kod}, {omgang} och {startdag} i. Svar på mejlen går till <b id="replyto"></b>.</p>
+      <div class="list" id="autos"></div>
+      <h3>Skriv till en testare</h3>
+      <form id="manualform" class="grid2">
+        <label class="f" for="mcode">Testare <select id="mcode"></select></label>
+        <label class="f" for="msubject">Ämne <input id="msubject" maxlength="120" required></label>
+        <label class="f" style="grid-column:1/-1" for="mtext">Text <textarea id="mtext" required>Hej {namn}!
+
+</textarea></label>
+        <div><button class="btn main" type="submit">Skicka mejlet</button></div>
+      </form>
+      <h3>Skickat</h3>
+      <div class="list" id="outbox"></div>
+    </section>
+
+    <section data-view="data" class="card" hidden>
+      <h2>Data</h2>
+      <p class="muted">Bara testversionens logg, utan ditt eget spelande.</p>
+      <div class="list">
+        <div class="row"><div class="who"><b>Var testarna slutar</b><span class="muted">En rad per testare: dagar, speltid, sista krok och trappsteg.</span></div><div class="btns"><button class="btn" data-report="players">Visa</button><button class="btn" data-csv="players">Ladda ner</button></div></div>
+        <div class="row"><div class="who"><b>Svaren på frågorna</b><span class="muted">En rad per testare och del.</span></div><div class="btns"><button class="btn" data-report="answers">Visa</button><button class="btn" data-csv="answers">Ladda ner</button></div></div>
+        <div class="row"><div class="who"><b>Krokarna</b><span class="muted">Hur ofta varje krok visades och vad testaren gjorde.</span></div><div class="btns"><button class="btn" data-report="hooks">Visa</button><button class="btn" data-csv="hooks">Ladda ner</button></div></div>
+        <div class="row"><div class="who"><b>Alla händelser</b><span class="muted">Hela loggen, en händelse per rad.</span></div><div class="btns"><button class="btn" data-csv="events">Ladda ner</button></div></div>
+      </div>
+      <div class="tablewrap" id="report"></div>
+      <h3>Radera en testares data</h3>
+      <p class="muted">När en testare ber om det. Allt testaren gjort i spelet tas bort ur loggen och går inte att få tillbaka.</p>
+      <form id="wipeform" class="grid2">
+        <label class="f" for="wcode">Testare <select id="wcode"></select></label>
+        <label class="f" for="wconfirm">Skriv testkoden igen <input id="wconfirm" autocomplete="off"></label>
+        <div style="align-self:end"><button class="btn danger" type="submit">Radera</button></div>
+      </form>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+const KEY = 'kontorKey';
+const ROUND = { pilot: 'Piloten', 1: 'Omgång 1', 2: 'Omgång 2', egen: 'Egen start', jonas: 'Jonas själv' };
+const AUTO = {
+  confirm: 'Direkt efter anmälan', invite: 'När du väljer omgång', before: 'Kvällen före startdagen, 18.00', start: 'Startdagen, 07.00',
+  quiet: 'Tre dagar utan att öppna spelet', day8: 'Dag 8, om frågorna inte är besvarade', thanks: 'Från 20 december, tack till alla som spelat',
+};
+const KIND = { ...AUTO, manual: 'Skrivet av dig', topup: 'Påfyllning' };
+const TEST_SITE = location.host.replace(/^dev\./, '');
+const linkFor = (code) => `https://${TEST_SITE}/?kod=${code}`;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const when = (ms) => new Date(ms).toLocaleString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' });
+const dayOnly = (ms) => new Date(ms).toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Stockholm' });
+const toInput = (ms) => (ms ? new Date(ms).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' }) : '');
+const fromInput = (d) => (d ? Date.parse(`${d}T00:00:00+01:00`) : null);
+function load() { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } }
+function save(v) { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch {} }
+
+let inv = null, kon = null, reach = null;
+let timer;
+function toast(t) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(timer); timer = setTimeout(() => (el.hidden = true), 4000); }
+
+async function call(path, extra = {}) {
+  const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: load(), ...extra }) }).catch(() => null);
+  if (!r) { toast('Servern svarar inte. Försök igen.'); return null; }
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 403) { save(''); showLogin('Nyckeln stämmer inte.'); return null; }
+  if (!r.ok) { toast(j.error ? `Det gick inte: ${j.error}.` : `Det gick inte (${r.status}).`); return null; }
+  return j;
+}
+async function refresh() {
+  const [a, b, c] = await Promise.all([call('/api/admin/invites/overview'), call('/api/admin/kontor/overview'), call('/api/admin/overview')]);
+  if (!a || !b || !c) return false;
+  inv = a; kon = b; reach = c;
+  render();
+  return true;
+}
+function showLogin(err = '') { $('login').hidden = false; $('tabs').hidden = true; $('main').hidden = true; $('loginerr').textContent = err; }
+$('loginform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  save($('key').value.trim());
+  if (await refresh()) { $('login').hidden = true; $('tabs').hidden = false; $('main').hidden = false; show(location.hash.slice(1) || 'idag'); }
+});
+
+// ---- tabs ----
+const tabs = [...document.querySelectorAll('#tabs [role=tab]')];
+function show(name) {
+  if (!document.querySelector(`[data-view="${name}"]`)) name = 'idag';
+  tabs.forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+  document.querySelectorAll('[data-view]').forEach((v) => (v.hidden = v.dataset.view !== name));
+  if (location.hash.slice(1) !== name) history.replaceState(null, '', '#' + name);
+}
+tabs.forEach((t) => t.addEventListener('click', () => show(t.dataset.tab)));
+window.addEventListener('hashchange', () => { if (!$('main').hidden) show(location.hash.slice(1)); });
+
+// ---- render ----
+function statusOf(i) {
+  if (i.round === 'jonas') return ['Du', 'p-sea'];
+  if (i.answered) return ['Har svarat', 'p-ok'];
+  if (!i.firstSeen) { const r = inv.rounds.find((x) => x.round === i.round); return r && !r.open ? ['Väntar på start', 'p-sea'] : ['Inte öppnat', 'p-wait']; }
+  if (i.day >= 8) return [`Dag ${i.day}, frågor väntar`, 'p-wait'];
+  return [`Spelar, dag ${i.day}`, 'p-ok'];
+}
+function testerOptions(sel, withEmailOnly = false) {
+  const keep = sel.value;
+  sel.innerHTML = inv.invites.filter((i) => !withEmailOnly || i.email).map((i) => `<option value="${esc(i.code)}">${esc(i.name || '(namn raderat)')} · ${esc(i.code)} · ${esc(ROUND[i.round])}</option>`).join('') || '<option value="">Inga testare än</option>';
+  if (keep) sel.value = keep;
+}
+function render() {
+  $('mailstate').textContent = kon.mail.ready ? `Mejlen går från ${kon.mail.from}` : 'Mejlen är inte inkopplade på servern än';
+  $('replyto').textContent = kon.mail.replyTo;
+  const n = inv.signups.length;
+  $('nsign').hidden = !n; $('nsign').textContent = n;
+
+  const playing = inv.invites.filter((i) => i.firstSeen && i.round !== 'jonas').length;
+  const answered = inv.invites.filter((i) => i.answered).length;
+  $('tiles').innerHTML = [[inv.signups.length + inv.invites.filter((i) => i.round !== 'jonas').length, 'anmälda och inbjudna'], [inv.invites.filter((i) => i.round !== 'jonas').length, 'inbjudna'], [playing, 'har börjat spela'], [answered, 'har svarat på frågorna']]
+    .map(([v, t]) => `<div class="tile"><b>${v}</b><span>${t}</span></div>`).join('');
+
+  const todo = [];
+  if (!kon.mail.ready) todo.push(`<div class="row warn"><div class="who"><b>Mejlen är inte inkopplade</b><span class="muted">Inget mejl går iväg förrän AgentMail-nyckeln och avsändaren finns på servern.</span></div></div>`);
+  if (n) todo.push(`<div class="row"><div class="who"><b>${n} ${n === 1 ? 'ny anmälan' : 'nya anmälningar'}</b><span class="muted">Välj omgång, så går inbjudan iväg av sig själv.</span></div><button class="btn main" data-go="anmalningar">Visa</button></div>`);
+  for (const r of inv.rounds) if (['pilot', '1', '2'].includes(r.round) && r.invited && !r.opensAt) todo.push(`<div class="row"><div class="who"><b>${esc(ROUND[r.round])} har ingen startdag</b><span class="muted">De inbjudna kan inte börja förrän dagen är satt.</span></div><button class="btn main" data-go="omgangar">Sätt dag</button></div>`);
+  const failed = kon.outbox.filter((m) => m.status === 'failed').slice(0, 3);
+  for (const m of failed) todo.push(`<div class="row"><div class="who"><b>Mejlet gick inte fram: ${esc(m.subject)}</b><span class="muted">${esc(m.to)} · ${esc(m.error || '')}</span></div><button class="btn" data-go="mejl">Visa</button></div>`);
+  $('todo').innerHTML = todo.join('') || '<p class="muted">Inget just nu.</p>';
+
+  $('upcoming').innerHTML = kon.upcoming.map((u) => `<div class="row"><div class="who"><span class="when">${esc(when(u.at))}</span><b>${esc(AUTO[u.kind])}</b><span class="muted">till ${esc(u.name)} · ${esc(u.code)}</span></div><button class="btn" data-stop="${esc(u.kind)}|${esc(u.code)}">Stoppa</button></div>`).join('') || '<p class="muted">Inga mejl planerade det närmaste dygnet.</p>';
+
+  $('signups').innerHTML = inv.signups.map((s) => {
+    const meta = `${s.phone === 'iphone' ? 'iPhone' : 'Android'} · ${s.where === 'plats' ? 'kan ses i Skåne' : 'distans'} · anmäld ${when(s.at)}`;
+    const btns = s.kind === 'egen'
+      ? `<button class="btn main" data-invite="${esc(s.id)}|egen">Bjud in</button>`
+      : `<button class="btn main" data-invite="${esc(s.id)}|1">Omgång 1</button><button class="btn" data-invite="${esc(s.id)}|2">Omgång 2</button><button class="btn" data-invite="${esc(s.id)}|pilot">Piloten</button>`;
+    return `<div class="row"><div class="who"><b>${esc(s.name)} ${s.kind === 'egen' ? '<span class="pill p-sea">egen start</span>' : ''}</b><span class="muted">${esc(s.email)} · ${esc(meta)}</span>${s.note ? `<span class="muted">"${esc(s.note)}"</span>` : ''}</div><div class="btns">${btns}<button class="btn danger" data-dropsignup="${esc(s.id)}">Ta bort</button></div></div>`;
+  }).join('') || '<p class="muted">Inga nya anmälningar.</p>';
+
+  const order = { pilot: 0, 1: 1, 2: 2, egen: 3, jonas: 4 };
+  $('testers').innerHTML = inv.invites.slice().sort((a, b) => order[a.round] - order[b.round] || a.createdAt - b.createdAt).map((i) => {
+    const [st, cls] = statusOf(i);
+    const seen = i.lastSeen ? `senast ${when(i.lastSeen)}` : 'inte sedd';
+    return `<div class="row"><div class="who"><b>${esc(i.name || '(namn raderat)')} · ${esc(i.code)}</b><span class="muted">${esc(ROUND[i.round])} · ${esc(i.email || 'ingen e-post')} · ${i.phones} telefon${i.phones === 1 ? '' : 'er'} · ${esc(seen)}</span></div>
+      <span class="pill ${cls}">${esc(st)}</span>
+      <div class="btns" style="flex-basis:100%"><button class="btn" data-copy="${esc(i.code)}">Kopiera länken</button>${i.email ? `<button class="btn" data-resend="${esc(i.code)}">Skicka inbjudan igen</button>` : ''}<button class="btn" data-write="${esc(i.code)}">Skriv</button><button class="btn" data-topup="${esc(i.code)}">Ge 100 kr</button><button class="btn danger" data-revoke="${esc(i.code)}">Ta tillbaka</button></div></div>`;
+  }).join('') || '<p class="muted">Ingen är inbjuden än.</p>';
+
+  $('rounds').innerHTML = inv.rounds.filter((r) => ['pilot', '1', '2'].includes(r.round)).map((r) => `<div class="row"><div class="who"><b>${esc(ROUND[r.round])}</b><span class="muted">${r.invited} inbjudna · ${r.opensAt ? (r.open ? 'öppen sedan ' : 'börjar ') + esc(dayOnly(r.opensAt)) : 'ingen dag än'}</span></div>
+    <div class="btns"><input type="date" id="d-${esc(r.round)}" value="${toInput(r.opensAt)}" aria-label="Startdag för ${esc(ROUND[r.round])}" style="width:auto"><button class="btn main" data-day="${esc(r.round)}">Spara dag</button></div></div>`).join('')
+    + '<p class="muted">Egen start och Jonas själv är alltid öppna.</p>';
+
+  for (const id of ['tcode', 'mcode', 'wcode']) testerOptions($(id), id === 'mcode');
+  $('topups').innerHTML = reach.topups.map((t) => `<div class="row"><div class="who"><b>${esc(t.code)}</b><span class="muted">till ${esc(t.testCode)} · ${esc(when(t.madeAt))} · ${t.usedAt ? 'använd ' + esc(when(t.usedAt)) : 'inte använd än'}</span></div></div>`).join('') || '<p class="muted">Inga koder än.</p>';
+
+  $('autos').innerHTML = Object.keys(AUTO).map((k) => {
+    const t = kon.templates[k];
+    return `<details class="auto ${kon.autos[k] ? '' : 'off'}"><summary class="check"><input type="checkbox" data-auto="${k}" ${kon.autos[k] ? 'checked' : ''} aria-label="Skicka: ${esc(AUTO[k])}"> <span>${esc(AUTO[k])}</span></summary>
+      <label class="f" for="s-${k}">Ämne <input id="s-${k}" value="${esc(t.subject)}" maxlength="120"></label>
+      <label class="f" for="t-${k}">Text <textarea id="t-${k}">${esc(t.text)}</textarea></label>
+      <div class="btns"><button class="btn main" data-savetpl="${k}">Spara texten</button><button class="btn" data-resettpl="${k}">Tillbaka till min ursprungliga text</button></div></details>`;
+  }).join('');
+
+  const statusWord = { sent: ['Skickat', 'p-ok'], failed: ['Gick inte fram', 'p-red'], off: ['Inte skickat', 'p-wait'], stopped: ['Stoppat', 'p-sea'] };
+  $('outbox').innerHTML = kon.outbox.slice(0, 60).map((m) => {
+    const [w, c] = statusWord[m.status];
+    return `<details class="row"><summary class="who" style="cursor:pointer"><b>${esc(m.subject || KIND[m.kind])}</b><span class="muted">${esc(when(m.at))} · ${esc(KIND[m.kind] || m.kind)} · ${esc(m.to || m.code)} <span class="pill ${c}">${w}</span></span></summary>${m.error ? `<p class="muted">${esc(m.error)}</p>` : ''}${m.text ? `<pre class="mail">${esc(m.text)}</pre>` : ''}</details>`;
+  }).join('') || '<p class="muted">Inga mejl än.</p>';
+}
+
+// ---- actions ----
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('button, [data-go]');
+  if (!b) return;
+  const d = b.dataset;
+  if (d.go) return show(d.go);
+  if (d.stop) { const [kind, code] = d.stop.split('|'); const j = await call('/api/admin/kontor/stop', { kind, code }); if (j) { kon = j; render(); toast('Det mejlet går inte.'); } return; }
+  if (d.invite) {
+    const [signupId, round] = d.invite.split('|');
+    b.disabled = true;
+    const j = await call('/api/admin/invites/create', { signupId, round });
+    b.disabled = false;
+    if (j) { toast(j.mail?.mailed ? `Inbjudan skickad (${ROUND[round]}).` : `Inbjuden till ${ROUND[round]}, men mejlet gick inte: ${j.mail?.error || 'ingen adress'}. Kopiera länken under Testare.`); await refresh(); }
+    return;
+  }
+  if (d.dropsignup) { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Säker? Tryck igen'; return; } if (await call('/api/admin/invites/remove', { signupId: d.dropsignup })) { toast('Anmälan borttagen.'); await refresh(); } return; }
+  if (d.revoke) { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Säker? Tryck igen'; return; } if (await call('/api/admin/invites/remove', { code: d.revoke })) { toast('Inbjudan tillbakatagen. Spelet låser sig för den testaren.'); await refresh(); } return; }
+  if (d.copy) { const l = linkFor(d.copy); try { await navigator.clipboard.writeText(l); toast('Länken är kopierad.'); } catch { toast(l); } return; }
+  if (d.resend) { b.disabled = true; const j = await call('/api/admin/kontor/resend', { kind: 'invite', code: d.resend }); b.disabled = false; if (j) { kon = j; render(); toast(j.sent.status === 'sent' ? 'Inbjudan skickad igen.' : `Gick inte: ${j.sent.error}`); } return; }
+  if (d.write) { show('mejl'); $('mcode').value = d.write; $('msubject').focus(); return; }
+  if (d.topup) { show('pafyllning'); $('tcode').value = d.topup; return; }
+  if (d.day) { const j = await call('/api/admin/invites/round', { round: d.day, opensAt: fromInput($(`d-${d.day}`).value) }); if (j) { toast('Dagen är sparad.'); await refresh(); } return; }
+  if (d.savetpl) { const j = await call('/api/admin/kontor/template', { kind: d.savetpl, subject: $(`s-${d.savetpl}`).value, text: $(`t-${d.savetpl}`).value }); if (j) { kon = j; render(); toast('Texten är sparad.'); } return; }
+  if (d.resettpl) { const j = await call('/api/admin/kontor/template', { kind: d.resettpl, reset: true }); if (j) { kon = j; render(); toast('Den ursprungliga texten är tillbaka.'); } return; }
+  if (d.report) { const j = await call('/api/admin/kontor/report', { table: d.report }); if (j) showTable(j.rows, j.total); return; }
+  if (d.csv) {
+    b.disabled = true;
+    const j = await call('/api/admin/kontor/report', { table: d.csv, csv: true });
+    b.disabled = false;
+    if (!j) return;
+    // The byte order mark makes Excel read the Swedish letters.
+    const url = URL.createObjectURL(new Blob(['﻿' + j.csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `${d.csv}-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+});
+document.addEventListener('change', async (e) => {
+  const k = e.target.dataset?.auto;
+  if (!k) return;
+  const j = await call('/api/admin/kontor/autos', { autos: { [k]: e.target.checked } });
+  if (j) { kon = j; render(); toast(e.target.checked ? 'Mejlet är på.' : 'Mejlet är avstängt.'); }
+});
+function showTable(rows, total) {
+  if (!rows.length) { $('report').innerHTML = '<p class="muted">Inga rader än.</p>'; return; }
+  const cols = Object.keys(rows[0]);
+  $('report').innerHTML = `<p class="muted">${total} rader${total > rows.length ? `, de första ${rows.length} visas` : ''}.</p><table><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${cols.map((c) => `<td>${esc(Array.isArray(r[c]) ? r[c].join(', ') : r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+$('freeform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const j = await call('/api/admin/invites/create', { name: $('fname').value, email: $('femail').value, round: $('fround').value });
+  if (!j) return;
+  toast(j.mail?.mailed ? 'Inbjudan skickad.' : `Inbjuden. Kod ${j.code}. ${$('femail').value ? 'Mejlet gick inte: ' + (j.mail?.error || '') : 'Kopiera länken under Testare.'}`);
+  $('fname').value = ''; $('femail').value = '';
+  await refresh();
+});
+$('topupform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const j = await call('/api/admin/kontor/topup', { code: $('tcode').value });
+  if (!j) return;
+  const out = $('topupout');
+  out.hidden = false;
+  out.textContent = j.sent?.status === 'sent' ? `Koden ${j.topup} är mejlad till testaren.` : `Koden är ${j.topup}. ${j.sent ? 'Mejlet gick inte: ' + j.sent.error : 'Testaren har ingen e-post här, så skicka koden själv.'}`;
+  await refresh();
+});
+$('manualform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const j = await call('/api/admin/kontor/mail', { code: $('mcode').value, subject: $('msubject').value, text: $('mtext').value });
+  if (!j) return;
+  kon = j; render();
+  toast(j.sent.status === 'sent' ? 'Mejlet är skickat.' : `Gick inte: ${j.sent.error}`);
+  if (j.sent.status === 'sent') { $('msubject').value = ''; $('mtext').value = 'Hej {namn}!\n\n'; }
+});
+$('wipeform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const j = await call('/api/admin/kontor/wipe', { code: $('wcode').value, confirm: $('wconfirm').value.trim().toUpperCase() });
+  if (j) { toast(`${j.removed} rader raderade.`); $('wconfirm').value = ''; }
+});
+
+// ---- start ----
+(async () => {
+  if (!load()) return showLogin();
+  if (await refresh()) { $('tabs').hidden = false; $('main').hidden = false; show(location.hash.slice(1) || 'idag'); }
+  else if (!load()) showLogin('Nyckeln stämmer inte.');
+  setInterval(() => { if (!document.hidden && load() && !$('main').hidden) refresh(); }, 60_000);
+})();
+</script>
+</body>
+</html>

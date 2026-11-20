@@ -64,3 +64,13 @@ hook, and every event flat):
 node /opt/wormwood/app/tools/log-report.mjs /var/lib/wormwood/logs /var/lib/wormwood/report
 ```
 
+
+## Testarnas kontor and its mail
+
+Jonas's page for the testers is `/kontor` on the dev site (server/kontor.html,
+server/outreach.mjs). It takes the admin key. Its mails go through AgentMail:
+`AGENTMAIL_API_KEY` (or `AGENTMAIL`) in `/etc/wormwood/env`, sent from
+`AGENTMAIL_INBOX` (default `jonas-exjobb@agentmail.to`) with replies to
+hej@jonasolson.se. Without the key nothing is sent and the page says so. Every
+mail is kept in `/var/lib/wormwood/outbox.json`; the switches and Jonas's own
+texts are `autos.json` and `templates.json`.

@@ -11,6 +11,8 @@ const app = await createApp({
   webpush,
   contact: process.env.VAPID_CONTACT,
   adminKey: process.env.ADMIN_KEY,
+  // Testarnas kontor sends mail through AgentMail (server/outreach.mjs).
+  mail: { apiKey: process.env.AGENTMAIL_API_KEY ?? process.env.AGENTMAIL, inbox: process.env.AGENTMAIL_INBOX ?? 'jonas-exjobb@agentmail.to' },
 });
 
 setInterval(() => { app.flushDue().catch((e) => console.error('flushDue', e)); }, 10_000);
