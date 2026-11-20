@@ -94,3 +94,27 @@ describe('the smith', () => {
     expect(s.frame).toBe(3);
   });
 });
+
+describe('the fencers', () => {
+  it('fence for about eight seconds now and then, and stand with lowered blades in between', async () => {
+    const { newFencing, stepFencing, BOUT, FENCE, FENCE_FIRST, FENCE_IDLE } = await import('../src/lib/villageLife');
+    const f = newFencing(() => 0);
+    expect([f.a, f.b]).toEqual([FENCE.low, FENCE.low]);
+    const busy: number[] = [];
+    for (let t = 0; t < 120; t += 0.01) { stepFencing(f, 0.01, () => 0); if (f.i >= 0) busy.push(t); }
+    const long = BOUT.reduce((n, b) => n + b[2], 0);
+    expect(long).toBeGreaterThan(6);
+    expect(long).toBeLessThan(9);
+    const first = busy.filter((t) => t < FENCE_FIRST[0] + long + 1);
+    expect(first[0]).toBeGreaterThan(FENCE_FIRST[0] - 0.1);
+    const second = busy.filter((t) => t > FENCE_FIRST[0] + long + 1);
+    expect(second[0]).toBeGreaterThan(FENCE_FIRST[0] + long + FENCE_IDLE[0] - 1);
+  });
+  it('never lets a lunge go unparried', async () => {
+    const { BOUT, FENCE } = await import('../src/lib/villageLife');
+    for (const [a, b] of BOUT) {
+      if (a === FENCE.lunge) expect(b).toBe(FENCE.parry);
+      if (b === FENCE.lunge) expect(a).toBe(FENCE.parry);
+    }
+  });
+});

@@ -223,3 +223,42 @@ export function stepSmith(s: Smith, dt: number, rnd: () => number = Math.random)
   if (s.frame === 3 && ++s.blows >= SMITH_BLOWS) { s.resting = true; s.t = SMITH_REST; }
   return s.frame === 2;
 }
+
+/**
+ * The fencers (Jonas approved them on 2026-11-20): two soldiers practise with
+ * rapiers in the yard of Kasernen. They fence for about eight seconds and then
+ * stand with lowered blades for a good while, like the smith. Their feet by
+ * Kasernen's stage: a on the left facing right, b on the right facing left.
+ */
+export const FENCERS_AT: Record<'1' | '2' | '3', { a: [number, number]; b: [number, number] }> = {
+  '1': { a: [322, 978], b: [354, 978] },
+  '2': { a: [411, 978], b: [443, 978] },
+  '3': { a: [409, 992], b: [441, 992] },
+};
+/** The pictures: on guard, lunge, parry, blade lowered. */
+export const FENCE = { guard: 0, lunge: 1, parry: 2, low: 3 } as const;
+/** How far the one who parries steps back, so that the point stops at the blade and nobody looks hit. */
+export const FENCE_BACK = 2.5;
+/** One bout: picture of a, picture of b, seconds. A lunge always meets a parry. */
+export const BOUT: [number, number, number][] = [
+  [0, 0, 0.55], [1, 2, 0.34], [0, 0, 0.42], [2, 1, 0.34], [0, 0, 0.38], [1, 2, 0.3], [2, 1, 0.32], [0, 0, 0.5], [3, 0, 0.4], [2, 1, 0.34],
+  [1, 2, 0.32], [0, 0, 0.48], [1, 2, 0.34], [0, 3, 0.4], [2, 1, 0.34], [0, 0, 0.45], [1, 2, 0.3], [2, 1, 0.3], [0, 0, 0.5],
+];
+export const FENCE_IDLE: [number, number] = [45, 120];
+export const FENCE_FIRST: [number, number] = [8, 25];
+export interface Fencing { a: number; b: number; i: number; t: number }
+export function newFencing(rnd: () => number = Math.random): Fencing {
+  return { a: FENCE.low, b: FENCE.low, i: -1, t: FENCE_FIRST[0] + rnd() * (FENCE_FIRST[1] - FENCE_FIRST[0]) };
+}
+/** Moves the fencers on by dt seconds. */
+export function stepFencing(f: Fencing, dt: number, rnd: () => number = Math.random): void {
+  f.t -= dt;
+  if (f.t > 0) return;
+  f.i++;
+  if (f.i >= BOUT.length) {
+    f.i = -1; f.a = f.b = FENCE.low;
+    f.t = FENCE_IDLE[0] + rnd() * (FENCE_IDLE[1] - FENCE_IDLE[0]);
+    return;
+  }
+  [f.a, f.b, f.t] = BOUT[f.i];
+}
