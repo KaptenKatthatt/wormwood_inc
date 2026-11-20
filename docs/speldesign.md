@@ -296,6 +296,8 @@ Ljudbilden är "Rödfärg och skärgård": svensk folkton, varm och trygg, utan 
 | Anfall / avvärjt | Trumvirvel och stråkar / horn och fiol | |
 | Brev / knappar | Klockspel / mjukt klick | |
 
+**Ljudnivåer (Jonas 2026-11-20).** Standardvolymen är 75 % på reglaget och låter som 10 % gjorde i 0.26.12. Förstärkningen och kompressorn från 2026-11-19 är borttagna. Havsljudet i byn ligger på ungefär halva musikens nivå. Kartan spelar låten för den värld den visar, inte alltid byns låt. Byggt som 0.26.13.
+
 Musik, havsljud och effekter har var sitt reglage i Inställningar. Ljudet startar först efter spelarens första tryckning och pausas när appen är dold. Licenserna står i `public/audio/CREDITS.md`: eget (FluidR3_GM, MIT), CC0 eller CC-BY (Gem Waltz).
 
 ## Introduktion
