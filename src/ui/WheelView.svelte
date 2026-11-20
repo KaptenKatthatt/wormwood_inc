@@ -249,8 +249,8 @@
         {@const a = (k / BULBS) * Math.PI * 2}
         <span class="bulb" class:lit={(k + lit) % 4 === 0} style:left={`${50 + 54.5 * Math.sin(a)}%`} style:top={`${50 - 54.5 * Math.cos(a)}%`}></span>
       {/each}
-      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-      <div class="wheel" bind:this={wheelEl} onclick={doSpin}>
+      <!-- A tap on the wheel does not start it (Jonas, 2026-11-20): nobody should pay for a spin by mistake. -->
+      <div class="wheel" bind:this={wheelEl}>
         <img src="/art/wheel/disc.webp" alt="" />
         {#each WHEEL as s, i}
           <div class="prize" class:red={discField(i) % 2 === 1 && !s.jackpot} class:jack={s.jackpot} style:transform={`rotate(${discField(i) * FIELD_DEG + FIELD_DEG / 2}deg)`}>
@@ -302,7 +302,7 @@
   .sign { position: absolute; left: 16%; right: 16%; top: 18.6%; height: 4%; display: grid; place-items: center; color: #fbf1d8; font-weight: 800; letter-spacing: .14em; font-size: clamp(14px, 5.2cqw, 26px); text-shadow: 0 2px 0 #0e1d3d; }
   .box { position: absolute; left: 15%; width: 70%; top: 28.1%; aspect-ratio: 1; container-type: inline-size; }
   .shadow { position: absolute; inset: 1.5% -2% -3% 2%; border-radius: 50%; background: rgb(60 40 10 / .32); filter: blur(6px); }
-  .wheel { position: absolute; inset: 0; border-radius: 50%; will-change: transform; cursor: pointer; }
+  .wheel { position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
   .wheel > img { width: 100%; height: 100%; display: block; clip-path: circle(49.7%); pointer-events: none; }
   .prize { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
   .prize > div { position: absolute; left: 0; bottom: 0; transform: translate(-50%, 0); padding-bottom: 20cqw; display: grid; justify-items: center; }
