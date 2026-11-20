@@ -58,7 +58,7 @@ export async function createApp(opts) {
   const now = opts.now ?? Date.now;
   await mkdir(join(dataDir, 'logs'), { recursive: true });
   // Files written before 0.27.1 were readable by every user on the machine.
-  for (const f of ['admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
+  for (const f of ['admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json', 'topups.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
 
   // ---- persisted JSON ------------------------------------------------------
   /** @param {string} name @param {any} fallback */
@@ -297,7 +297,7 @@ self.addEventListener('activate', (event) => event.waitUntil((async () => {
       return json(res, 200, { ok: true, stored: lines.length });
     }
 
-    if (path.startsWith('/api/messages/') || path.startsWith('/api/contact/') || path.startsWith('/api/admin/')) {
+    if (path.startsWith('/api/messages/') || path.startsWith('/api/contact/') || path.startsWith('/api/admin/') || path === '/api/wallet/redeem') {
       const out = await reach.handle(path, body, isTestHost(String(req.headers.host ?? '')) ? 'test' : 'dev');
       if (out) return json(res, out.status, out.body);
     }

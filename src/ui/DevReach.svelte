@@ -12,7 +12,8 @@
 
   interface Sent { id: string; title: string; body: string; sentAt: number; to: string; push: boolean; recipients: number; shown: number; read: number }
   interface Contact { code: string; email: string; site: 'test' | 'dev'; savedAt: number }
-  interface Overview { players: { test: number; dev: number }; messages: Sent[]; contacts: Contact[] }
+  interface Topup { code: string; testCode: string; madeAt: number; usedAt: number | null }
+  interface Overview { players: { test: number; dev: number }; messages: Sent[]; contacts: Contact[]; topups?: Topup[] }
 
   let key = $state(load('adminKey', ''));
   let data = $state<Overview | null>(null);
@@ -26,6 +27,24 @@
   let copyStatus = $state('');
   let wipeAsk = $state(false);
   let addresses: HTMLElement | undefined = $state();
+  // Top-ups of the test wallet: Jonas types the tester's test code and copies the answer.
+  let topupFor = $state('');
+  let topupCode = $state('');
+  let topupStatus = $state('');
+  async function makeTopup(e: SubmitEvent) {
+    e.preventDefault();
+    topupCode = '';
+    topupStatus = 'Tar fram …';
+    const r = await call('topup', { testCode: topupFor });
+    if (r.status === 400) { topupStatus = 'En testkod har sex tecken.'; return; }
+    if (r.status !== 200) { topupStatus = failure(r.status); return; }
+    data = r.json;
+    topupCode = r.json.code;
+    topupStatus = '';
+  }
+  async function copyTopup() {
+    try { await navigator.clipboard.writeText(topupCode); topupStatus = 'Koden är kopierad.'; } catch { topupStatus = 'Markera koden och kopiera den.'; }
+  }
 
   async function call(path: string, extra: Record<string, unknown> = {}): Promise<{ status: number; json: any }> {
     try {
@@ -172,6 +191,29 @@
     {/if}
     {#if copyStatus}<p class="fine" role="status">{copyStatus}</p>{/if}
     <p class="fine">Adresserna ligger i en egen fil på servern, inte i loggen, och raderas av sig själva efter {CONTACTS_END_TEXT}.</p>
+    <h3>Påfyllning av testplånboken</h3>
+    <p class="fine">Skriv testkoden från testarens mejl. Koden du får ger 100 kr, bara för den testkoden och bara en gång.</p>
+    <form class="stack" onsubmit={makeTopup}>
+      <label class="field">Testkod<input bind:value={topupFor} autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234" /></label>
+      <div class="buttons"><button class="primary" type="submit">Ta fram kod</button></div>
+    </form>
+    {#if topupCode}
+      <p class="all">{topupCode}</p>
+      <div class="buttons"><button class="primary" onclick={copyTopup}>Kopiera koden</button></div>
+    {/if}
+    {#if topupStatus}<p class="fine" role="status">{topupStatus}</p>{/if}
+    {#if data.topups?.length}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Kod</th><th>Testkod</th><th>Inlöst</th></tr></thead>
+          <tbody>
+            {#each data.topups as t (t.code)}
+              <tr><td class="code">{t.code}</td><td class="code">{t.testCode}</td><td>{t.usedAt ? dayText(t.usedAt) : 'Nej'}</td></tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
     <div class="buttons"><button class="ghost" onclick={() => open()}>Uppdatera</button></div>
   {/if}
 </fieldset>
@@ -179,6 +221,7 @@
 <style>
   fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
   legend { font-weight: 700; margin-bottom: 4px; }
+  h3 { margin: 12px 0 0; font-size: 1rem; }
   p { margin: 0; }
   .fine { color: var(--muted); font-size: .9rem; }
   .stack { display: grid; gap: 8px; }
