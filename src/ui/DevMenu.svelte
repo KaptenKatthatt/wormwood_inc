@@ -8,8 +8,8 @@
   import { challengeNo } from '../lib/state/game';
   import { TOTAL_CHALLENGES, WORLDS, worldOf } from '../lib/match3/levels';
   import { WEEK_STEPS, type WeekStep } from '../lib/expansion/week';
-  import { adGroupChoice, devWeekStep, exp, testDay } from '../lib/state/expansion';
-  import { adGroupFor } from '../lib/expansion/social';
+  import { adGroupChoice, devLeagueHoursLeft, devWeekStep, exp, testDay, weekOn } from '../lib/state/expansion';
+  import { LEAGUES, adGroupFor } from '../lib/expansion/social';
   import { EXPANSION_HOOKS } from '../lib/hooks';
   const tday = $derived.by(() => { void $now; void $daily; return testDay(); });
   /** Dev only (Jonas, 2026-11-18): switch freely between the worlds without moving the week staircase. */
@@ -153,6 +153,13 @@
           <button class="ghost" disabled={$exp.step >= d.step} onclick={() => devWeekStep(d.step as WeekStep)}>Till steg {d.step}</button>
         {/each}
       </div>
+      {#if $exp.league && weekOn('league')}
+        <p>Veckoligan: {LEAGUES[$exp.league.tier ?? 0]}, vecka {$exp.league.week ?? 1}.</p>
+        <div class="buttons">
+          <button class="ghost" onclick={() => devLeagueHoursLeft(20)}>Liga: sista dygnet</button>
+          <button class="ghost" onclick={() => devLeagueHoursLeft(0)}>Liga: avsluta veckan</button>
+        </div>
+      {/if}
     </fieldset>
   {/if}
 

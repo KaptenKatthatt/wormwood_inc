@@ -18,8 +18,8 @@ import { tutorialActive } from '../tutorial';
 import { ON_HOLD, type HookId } from '../hooks';
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor, type WeekStep } from '../expansion/week';
 import {
-  ADS_PER_DAY, adGroupFor, nextAd, type AdFilm, type AdGroup, ALBUM_REWARD, ALBUM_SIZE, GOLD_PASS_GEMS, HELP_COOLDOWN, HELP_DELAY, LEAGUE_DAYS, LEAGUE_PRIZES, PASS_DAYS,
-  MISSIONS, PASS_XP_PER_TIER, PASS_TIERS, SET_REWARD, drawSticker, helpLives, leagueRank, leagueTable, missionProgress, missionReady, missionsOn, passReward, passTier, passXp, setComplete, stickerName,
+  ADS_PER_DAY, adGroupFor, nextAd, type AdFilm, type AdGroup, ALBUM_REWARD, ALBUM_SIZE, GOLD_PASS_GEMS, HELP_COOLDOWN, HELP_DELAY, LEAGUES, PASS_DAYS,
+  MISSIONS, PASS_XP_PER_TIER, PASS_TIERS, SET_REWARD, drawSticker, helpLives, freshLeague, leagueEndsAt, leagueRank, leagueResult, leagueTable, stepLeague, type LeagueState, missionProgress, missionReady, missionsOn, passReward, passTier, passXp, setComplete, stickerName,
   type Mission, type MissionEvent, type MissionState, type PassReward,
 } from '../expansion/social';
 import {
@@ -45,7 +45,7 @@ export interface ExpState {
   reached: Partial<Record<WeekStep, number>>;
   maxWorld: number;
   stars: Record<number, number>;
-  league: { seed: number; startedAt: number; points: number; done: boolean; lastRank: number } | null;
+  league: LeagueState | null;
   album: number[];
   dupes: number;
   setsRewarded: number[];
@@ -140,7 +140,7 @@ function setStep(step: WeekStep, event: string): void {
 
 function onStepStarted(step: WeekStep): void {
   const s = get(exp);
-  if (step >= 6 && !s.league) exp.update((x) => ({ ...x, league: { seed: Math.floor(rng() * 2 ** 31), startedAt: now(), points: 0, done: false, lastRank: 10 } }));
+  if (step >= 6 && !s.league) exp.update((x) => ({ ...x, league: newLeague(0, 1) }));
   if (step >= 6 && !s.pass) exp.update((x) => ({ ...x, pass: { startedAt: now(), xp: 0, gold: false, claimedFree: [], claimedGold: [] } }));
   if (step >= 7 && s.chests.length === 0 && hookOn('chests')) {
     // a first chest as a taste
@@ -203,30 +203,72 @@ export function computeStars(movesLeft: number, movesGiven: number): number {
 
 // ------------------------------------------------------------------ step 6: league, album, pass, help, ads
 
-export function leagueRows() {
+function newLeague(tier: number, week: number): LeagueState {
+  return freshLeague(Math.floor(rng() * 2 ** 31), tier, week, now());
+}
+
+/** The league the player is in now, or null before step 6 (or with a save from before the leagues). */
+function leagueNow(): LeagueState | null {
   const l = get(exp).league;
-  return l ? leagueTable(l.seed, l.startedAt, now(), l.points) : [];
+  return l && typeof l.tier === 'number' && Array.isArray(l.rig) ? l : null;
+}
+
+export function leagueRows() {
+  const l = leagueNow();
+  return l ? leagueTable(l, now()) : [];
+}
+
+/** True when a finished week's prize waits to be collected. */
+export function leaguePrizeWaiting(): boolean {
+  return Boolean(leagueNow()?.result);
 }
 
 function settleLeague(): void {
-  const l = get(exp).league;
-  if (!l || l.done) return;
-  const rows = leagueTable(l.seed, l.startedAt, now(), l.points);
-  const rank = leagueRank(rows);
-  if (rank > l.lastRank && weekOn('league')) {
-    const passer = rows[rank - 2];
-    toast(`${passer.name} gick förbi dig i veckoligan!`, 5000);
-    logHook('league', { event: 'overtaken', rank, by: passer.name }, 'shown');
-  }
-  if (now() - l.startedAt >= LEAGUE_DAYS * 24 * HOUR) {
-    const prize = LEAGUE_PRIZES[rank - 1] ?? 0;
-    if (prize) purse.update((p) => ({ ...p, gems: p.gems + prize }));
-    toast(prize ? `Veckoligan är slut: plats ${rank}, +${prize} ädelstenar!` : `Veckoligan är slut: plats ${rank}. ${rank >= 8 ? 'Byn flyttas ner.' : ''}`, 7000);
-    logHook('league', { event: 'end', rank, prize }, 'shown');
-    exp.update((x) => ({ ...x, league: x.league && { ...x.league, done: true, lastRank: rank } }));
+  const s = get(exp);
+  if (s.step < 6 || !weekOn('league')) return;
+  let l = leagueNow();
+  // a league from before the five leagues (or none yet): start in the lowest one
+  if (!l) { exp.update((x) => ({ ...x, league: newLeague(0, 1) })); return; }
+  if (now() >= leagueEndsAt(l)) {
+    // The week is over. Its prize waits until the last one has been collected.
+    if (l.result) return;
+    const result = leagueResult(l);
+    const tier = l.tier + result.move;
+    logHook('league', { event: 'end', league: LEAGUES[l.tier], week: l.week, rank: result.rank, points: l.points, move: result.move, ...result.prize }, 'shown');
+    exp.update((x) => ({ ...x, league: { ...newLeague(tier, l!.week + 1), result } }));
+    toast(`Veckoligan är slut: plats ${result.rank}. Hämta ditt pris!`, 7000);
     return;
   }
-  if (rank !== l.lastRank) exp.update((x) => ({ ...x, league: x.league && { ...x.league, lastRank: rank } }));
+  const wasLastDay = l.lastDay;
+  l = stepLeague(l, now());
+  const rows = leagueTable(l, now());
+  const rank = leagueRank(rows);
+  if (rank > l.lastRank) {
+    const passer = rows[rank - 2];
+    toast(l.lastDay && !wasLastDay ? `Sista dygnet i veckoligan! ${passer.name} gick förbi dig.` : `${passer.name} gick förbi dig i veckoligan!`, 5000);
+    logHook('league', { event: 'overtaken', league: LEAGUES[l.tier], rank, by: passer.name, rigged: passer.rigged, lastDay: l.lastDay }, 'shown');
+  }
+  if (rank !== l.lastRank) l = { ...l, lastRank: rank };
+  if (l !== get(exp).league) exp.update((x) => ({ ...x, league: l }));
+}
+
+/** Pays the finished week's prize. Returns what was paid, or null when nothing waited. */
+export function claimLeaguePrize(): { gems?: number; gold?: number } | null {
+  const l = leagueNow();
+  if (!l?.result) return null;
+  const { prize, rank, tier, move } = l.result;
+  purse.update((p) => ({ ...p, gems: p.gems + (prize.gems ?? 0), gold: p.gold + (prize.gold ?? 0) }));
+  exp.update((x) => ({ ...x, league: x.league && { ...x.league, result: null } }));
+  logHook('league', { event: 'claim', league: LEAGUES[tier], rank, move, ...prize }, 'yes');
+  return prize;
+}
+
+/** Dev menu: move the league's week so that this many hours are left. */
+export function devLeagueHoursLeft(hours: number): void {
+  const l = leagueNow();
+  if (!l) return;
+  exp.update((x) => ({ ...x, league: { ...l, startedAt: now() + hours * HOUR - (leagueEndsAt(l) - l.startedAt) } }));
+  settleLeague();
 }
 
 function giveSticker(i: number): void {
@@ -679,7 +721,7 @@ function goldBonus(): number {
 function onWin(info: { level: number; stars: number }): void {
   const s = get(exp);
   if (hookOn('stars')) exp.update((x) => ({ ...x, stars: { ...x.stars, [info.level]: Math.max(x.stars[info.level] ?? 0, info.stars) } }));
-  if (weekOn('league') && s.league && !s.league.done) exp.update((x) => ({ ...x, league: x.league && { ...x.league, points: x.league.points + info.stars } }));
+  if (weekOn('league') && leagueNow() && now() < leagueEndsAt(leagueNow()!)) exp.update((x) => ({ ...x, league: x.league && { ...x.league, points: x.league.points + info.stars, lastRank: x.league.lastRank } }));
   renewPass();
   if (weekOn('pass') && passActive()) {
     missionEvent('win');

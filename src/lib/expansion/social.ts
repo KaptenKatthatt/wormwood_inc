@@ -9,42 +9,161 @@ import { makeRng, pick, type Rng } from '../match3/rng';
 
 // ------------------------------------------------------------------ the league
 
+/**
+ * The weekly league (Jonas, 2026-11-20). Ten villages race for stars for a
+ * week, and then a new week starts, for as long as the player keeps playing.
+ * There are five leagues on top of each other: places 1-3 move up, places
+ * 8-10 move down, the rest stay. A higher league has bigger prizes and faster
+ * villages. Seven villages keep their own pace; two are rigged to stay next to
+ * the player, which the debriefing explains.
+ */
 export const LEAGUE_DAYS = 7;
-export const LEAGUE_PRIZES = [100, 60, 30]; // gems for places 1-3
 export const LEAGUE_SIZE = 10;
+/** Working names, lowest first. */
+export const LEAGUES = ['Bäcken', 'Viken', 'Fjärden', 'Skärgården', 'Havet'];
+/** The pennant of each league. */
+export const LEAGUE_COLOURS = ['#6fb7a8', '#4aa3c2', '#2f7fb5', '#24588f', '#152f5e'];
+/** Gems for places 1-3, gold for places 4-7 and a small comfort in gold for places 8-10, by league. */
+export const LEAGUE_GEMS = [[30, 20, 10], [50, 30, 15], [70, 45, 25], [100, 60, 30], [150, 100, 50]];
+export const LEAGUE_MID_GOLD = [100, 150, 200, 300, 400];
+export const LEAGUE_LOW_GOLD = [25, 40, 50, 75, 100];
+/** The last day of the week, when one rigged village goes past the player. */
+export const LEAGUE_LAST_DAY = 24 * HOUR;
 
-/** Made-up neighbouring villages (names of villages and their elders). */
+/** Made-up neighbouring villages (names of villages and their elders). Nine are picked each week. */
 export const RIVALS = [
   'Ekbacka (Lisa)', 'Norrby (Erik)', 'Sjövik (Karin)', 'Lillåsen (Per)', 'Västerby (Anna)',
-  'Hagalund (Lars)', 'Björkö (Maja)', 'Tallmo (Nils)', 'Ängsby (Sara)',
+  'Hagalund (Lars)', 'Björkö (Maja)', 'Tallmo (Nils)', 'Ängsby (Sara)', 'Stenvik (Olle)',
+  'Granudden (Elsa)', 'Åsbacka (Hugo)', 'Fågelsund (Ida)', 'Lindholmen (Axel)', 'Mossby (Tove)',
+  'Vassviken (Emil)', 'Kvarnåsen (Stina)', 'Rönnskär (Gustav)', 'Alvik (Britt)', 'Hällesand (Sven)',
+  'Dalby (Moa)', 'Näset (Arvid)', 'Storängen (Linnea)', 'Tjärnö (Folke)', 'Bokelund (Signe)',
+  'Skogsbo (Ture)', 'Grundsund (Alma)',
 ];
 
-export interface LeagueRow { name: string; points: number; me: boolean }
+export interface LeagueRow { name: string; points: number; me: boolean; rigged: boolean }
+export interface LeaguePrize { gems?: number; gold?: number }
+/** How a finished week went: shown to the player, who then collects the prize. */
+export interface LeagueResult { tier: number; rank: number; prize: LeaguePrize; move: -1 | 0 | 1 }
+
+export interface LeagueState {
+  seed: number;
+  /** Which league, 0 (lowest) to 4. */
+  tier: number;
+  /** The player's week in the league, from 1. */
+  week: number;
+  startedAt: number;
+  points: number;
+  /** The two rigged villages: the points they hold now. */
+  rig: [number, number];
+  /** When each rigged village makes its next move past the player (0 = not waiting). */
+  rigNext: [number, number];
+  /** True once the last day's overtaking has happened. */
+  lastDay: boolean;
+  lastRank: number;
+  /** A finished week whose prize has not been collected. */
+  result: LeagueResult | null;
+}
+
+export function freshLeague(seed: number, tier: number, week: number, t: number): LeagueState {
+  return { seed, tier, week, startedAt: t, points: 0, rig: [0, 0], rigNext: [0, 0], lastDay: false, lastRank: LEAGUE_SIZE, result: null };
+}
 
 /**
- * The table at time t. Seven rivals earn stars at their own steady pace; two
- * keep just ahead of or just behind the player, so the player is overtaken
- * and can overtake (the pull of a close race).
+ * Stars in a week that put a village at the line for moving up: three won
+ * challenges a day in the lowest league and two more for each league above,
+ * at two stars a win ("fairly easy-going, not super hard", Jonas).
  */
-export function leagueTable(seed: number, startedAt: number, t: number, myPoints: number): LeagueRow[] {
+export function leagueTarget(tier: number): number {
+  return (3 + 2 * tier) * 2 * LEAGUE_DAYS;
+}
+/** The seven ordinary villages' share of the target at the end of the week. */
+const PACES = [1.25, 0.97, 0.85, 0.7, 0.55, 0.4, 0.25];
+
+export function leaguePrize(tier: number, rank: number): LeaguePrize {
+  if (rank <= 3) return { gems: LEAGUE_GEMS[tier][rank - 1] };
+  return { gold: rank <= 7 ? LEAGUE_MID_GOLD[tier] : LEAGUE_LOW_GOLD[tier] };
+}
+
+/** Up from places 1-3, down from places 8-10; nobody leaves the ladder at either end. */
+export function leagueMove(tier: number, rank: number): -1 | 0 | 1 {
+  if (rank <= 3 && tier < LEAGUES.length - 1) return 1;
+  if (rank >= 8 && tier > 0) return -1;
+  return 0;
+}
+
+export function leagueEndsAt(l: LeagueState): number {
+  return l.startedAt + LEAGUE_DAYS * 24 * HOUR;
+}
+
+/** The week's nine villages; the first two are the rigged ones. */
+function leagueNames(seed: number): string[] {
   const rng = makeRng(seed);
-  const hours = Math.max(0, Math.min(LEAGUE_DAYS * 24, (t - startedAt) / HOUR));
-  const rows: LeagueRow[] = RIVALS.map((name, i) => {
-    const rate = 0.4 + rng() * 1.6; // stars an hour
-    if (i < 2) {
-      // the two close rivals swing around the player's score
-      const swing = Math.round(Math.sin(hours / (3 + i * 2) + i) * (3 + i * 2));
-      return { name, points: Math.max(0, myPoints + swing + (i === 0 ? 2 : -1)), me: false };
-    }
-    const wobble = 0.85 + 0.3 * Math.abs(Math.sin(hours / 7 + i));
-    return { name, points: Math.round(rate * hours * wobble), me: false };
+  const pool = [...RIVALS];
+  const out: string[] = [];
+  while (out.length < LEAGUE_SIZE - 1) out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+  return out;
+}
+
+/** The table at time t, best first. The player wins a tie. */
+export function leagueTable(l: LeagueState, t: number): LeagueRow[] {
+  const names = leagueNames(l.seed);
+  const rng = makeRng(l.seed + 1);
+  const hours = Math.max(0, Math.min(LEAGUE_DAYS * 24, (t - l.startedAt) / HOUR));
+  const target = leagueTarget(l.tier);
+  const rows: LeagueRow[] = names.map((name, i) => {
+    if (i < 2) return { name, points: l.rig[i], me: false, rigged: true };
+    const pace = PACES[i - 2] * (0.94 + rng() * 0.12);
+    // never falls: the wave is gentler than the climb
+    const done = (hours + 4 * Math.sin(hours / 5 + i)) / (LEAGUE_DAYS * 24);
+    return { name, points: Math.max(0, Math.round(target * pace * Math.min(1, done))), me: false, rigged: false };
   });
-  rows.push({ name: 'Din by', points: myPoints, me: true });
-  return rows.sort((a, b) => b.points - a.points || (a.me ? -1 : 1));
+  rows.push({ name: 'Din by', points: l.points, me: true, rigged: false });
+  return rows.sort((a, b) => b.points - a.points || (a.me ? -1 : b.me ? 1 : 0));
 }
 
 export function leagueRank(rows: LeagueRow[]): number {
   return rows.findIndex((r) => r.me) + 1;
+}
+
+/**
+ * Moves the two rigged villages to time t. The first goes two stars past the
+ * player a few hours after being passed, so the player comes back to find
+ * the village overtaken; on the last day it goes four stars ahead once and
+ * then stands still, so two or three won challenges always take the place
+ * back. The second trails just behind, and creeps past a player who stays
+ * away for long.
+ */
+export function stepLeague(l: LeagueState, t: number): LeagueState {
+  if (t >= leagueEndsAt(l)) return l;
+  const rng = makeRng((l.seed ^ Math.floor(t / 1000)) >>> 0);
+  const rig: [number, number] = [...l.rig];
+  const next: [number, number] = [...l.rigNext];
+  let lastDay = l.lastDay;
+  if (!lastDay && t >= leagueEndsAt(l) - LEAGUE_LAST_DAY) {
+    lastDay = true;
+    rig[0] = Math.max(rig[0], l.points + 4);
+    next[0] = 0;
+    next[1] = 0;
+  }
+  if (!lastDay) {
+    // waits [from, from + spread) hours after being passed, then goes ahead by `ahead`
+    const waits = [{ from: 2, spread: 3, ahead: 2 }, { from: 10, spread: 6, ahead: 1 }];
+    for (const i of [0, 1] as const) {
+      if (l.points < rig[i]) { next[i] = 0; continue; }
+      if (!next[i]) next[i] = t + (waits[i].from + rng() * waits[i].spread) * HOUR;
+      else if (t >= next[i]) { rig[i] = l.points + waits[i].ahead; next[i] = 0; }
+    }
+  }
+  // the second one never drops far behind
+  rig[1] = Math.max(rig[1], l.points - 3);
+  if (rig[0] === l.rig[0] && rig[1] === l.rig[1] && next[0] === l.rigNext[0] && next[1] === l.rigNext[1] && lastDay === l.lastDay) return l;
+  return { ...l, rig, rigNext: next, lastDay };
+}
+
+/** The week's outcome, read at its last moment. */
+export function leagueResult(l: LeagueState): LeagueResult {
+  const rank = leagueRank(leagueTable(l, leagueEndsAt(l)));
+  return { tier: l.tier, rank, prize: leaguePrize(l.tier, rank), move: leagueMove(l.tier, rank) };
 }
 
 // ------------------------------------------------------------------ the album

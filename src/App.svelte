@@ -27,6 +27,7 @@
   import WheelView from './ui/WheelView.svelte';
   import ChestView from './ui/ChestView.svelte';
   import PassView from './ui/PassView.svelte';
+  import LeagueView from './ui/LeagueView.svelte';
   import AdOverlay from './ui/AdOverlay.svelte';
   import PersonalOffer from './ui/PersonalOffer.svelte';
   import FriendNote from './ui/FriendNote.svelte';
@@ -154,7 +155,7 @@
   {#if $settings.logging === null}<Consent />{:else if askContact}<ContactAsk />{/if}
   {#if messageUp && $pendingMessage}{#key $pendingMessage.id}<JonasMessage message={$pendingMessage} />{/key}{/if}
   {#if EXPANSION && !tutStep}
-    {#if $hubOpen === 'hjul'}<WheelView />{:else if $hubOpen === 'kistor'}<ChestView />{:else if $hubOpen === 'pass'}<PassView />{:else if $hubOpen}<WeekHub />{/if}
+    {#if $hubOpen === 'hjul'}<WheelView />{:else if $hubOpen === 'kistor'}<ChestView />{:else if $hubOpen === 'pass'}<PassView />{:else if $hubOpen === 'liga'}<LeagueView />{:else if $hubOpen}<WeekHub />{/if}
     {#if $offerShown && !$offerOpen}<PersonalOffer />{/if}
     {#if $friendNote && !$hubOpen}<FriendNote />{/if}
     {#if $adOpen}<AdOverlay />{/if}
