@@ -19,6 +19,7 @@
   import { adOpen, adReward, exp, friendNote, hubOpen, offerShown } from './lib/state/expansion';
   import RewardBurst from './ui/RewardBurst.svelte';
   import { hookOn } from './lib/state/game';
+  import { ON_HOLD } from './lib/hooks';
   import NeighboursView from './ui/NeighboursView.svelte';
   import WeekHub from './ui/WeekHub.svelte';
   import AdOverlay from './ui/AdOverlay.svelte';
@@ -43,7 +44,7 @@
     { id: 'installningar', label: 'Inställningar' },
   ];
   // The neighbours tab comes with step 8 of the week staircase (the expansion).
-  const showNeighbours = $derived(EXPANSION && $exp.step >= 8 && hookOn('conquest'));
+  const showNeighbours = $derived(EXPANSION && $exp.step >= 8 && hookOn('conquest') && !ON_HOLD.includes('conquest'));
   const TABS = $derived(ALL_TABS.filter((t) => t.id !== 'grannar' || showNeighbours));
   const fromHash = (): Tab => (ALL_TABS.find((t) => `#${t.id}` === location.hash)?.id ?? 'pussel');
   let tab = $state<Tab>(fromHash());

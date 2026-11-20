@@ -22,7 +22,12 @@ export type HookId =
  * one by one, and wants to do that before they come back. Empty this list to
  * bring them back.
  */
-export const ON_HOLD: readonly string[] = ['league', 'pass', 'album', 'chests', 'wheel', 'heroes'];
+export const ON_HOLD: readonly string[] = [
+  'league', 'pass', 'album', 'chests', 'wheel', 'heroes',
+  // The Neighbours tab went the same way the same day: the army, the villages to
+  // take over, the loyalty tiers and the neighbours who help and want gifts.
+  'askHelp', 'conquest', 'troops', 'powerCreep', 'vip', 'neighboursNeeded', 'fakeGifts',
+];
 
 export const HOOKS: { id: HookId; step: number; name: string; what: string }[] = [
   { id: 'starterHelp', step: 1, name: 'Starthjälp', what: 'Startbidrag i guld och ädelstenar, de två första byggena gratis och klara på sekunder. Gäller från nästa nollställning.' },

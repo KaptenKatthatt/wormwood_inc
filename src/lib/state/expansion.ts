@@ -126,8 +126,9 @@ function setStep(step: WeekStep, event: string): void {
   for (const d of WEEK_STEPS) if (d.step <= step && reached[d.step] === undefined) reached[d.step] = now();
   exp.set({ ...s, step, reached });
   log('week_step', { step, from: s.step, event, testDay: testDay(), world: s.maxWorld });
-  // Step 7's letter is about the chests, so it waits with them while they are on hold.
-  if (hookOn('figures') && get(settings).letters && !(step === 7 && ON_HOLD.includes('chests'))) {
+  // A step's letter is about one of its hooks, so it waits with that hook while it is on hold.
+  const about: Record<WeekStep, HookId> = { 6: 'askHelp', 7: 'chests', 8: 'conquest', 9: 'neighboursNeeded' };
+  if (hookOn('figures') && get(settings).letters && !ON_HOLD.includes(about[step])) {
     letter.set({ text: STEP_LETTERS[step], key: `week${step}` });
     logHook('figures', { letter: `week${step}` }, 'shown');
   }

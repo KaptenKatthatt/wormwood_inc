@@ -199,7 +199,9 @@ export interface Reached {
 }
 
 /** False while the row of games is on hold, so nobody is asked about what they never saw. */
-const GAMES = ON_HOLD.length === 0;
+const GAMES = !ON_HOLD.includes('league');
+/** The same for the Neighbours tab and the neighbours who help. */
+const NEIGHBOURS = !ON_HOLD.includes('conquest');
 
 const PARTS: { id: string; label: string; when: (r: Reached) => boolean }[] = [
   { id: 's1', label: 'Gåvorna och de snabba byggena i början', when: (r) => r.steps.includes(1) },
@@ -208,10 +210,10 @@ const PARTS: { id: string; label: string; when: (r: Reached) => boolean }[] = [
   { id: 's4', label: 'Startpaketet som bara fanns kvar en kort stund', when: (r) => r.steps.includes(4) },
   { id: 's5', label: 'Anfallet mot byn och byborna som ville att du skulle stanna', when: (r) => r.steps.includes(5) },
   { id: 'day', label: 'Dagens gåva, sviten och notiserna', when: (r) => r.secondDay },
-  { id: 's6', label: GAMES ? 'Ligan, säsongspasset, albumet och reklamen' : 'Reklamfilmerna och att be grannarna om liv', when: (r) => r.weekStep >= 6 },
+  { id: 's6', label: GAMES ? 'Ligan, säsongspasset, albumet och reklamen' : NEIGHBOURS ? 'Reklamfilmerna och att be grannarna om liv' : 'Reklamfilmerna', when: (r) => r.weekStep >= 6 },
   { id: 's7', label: 'Kistorna, lyckohjulet och mästardragningarna', when: (r) => GAMES && r.weekStep >= 7 },
-  { id: 's8', label: 'Anfallen på grannbyar, trupperna och erbjudandena', when: (r) => r.weekStep >= 8 },
-  { id: 's9', label: 'Grannarna som behövde hjälp och skickade gåvor', when: (r) => r.weekStep >= 9 },
+  { id: 's8', label: NEIGHBOURS ? 'Anfallen på grannbyar, trupperna och erbjudandena' : 'Erbjudandet som var bara för dig', when: (r) => r.weekStep >= 8 },
+  { id: 's9', label: 'Grannarna som behövde hjälp och skickade gåvor', when: (r) => NEIGHBOURS && r.weekStep >= 9 },
 ];
 
 /** The debriefing, as paragraphs. Follows part B of the interview guide. */
@@ -221,7 +223,7 @@ export function debrief(r: Reached): string[] {
     'Spelet är byggt för att undersöka manipulativ design: knep som många mobilspel använder för att få folk att spela längre och betala mer. Knepen kom i en trappa där pressen ökade steg för steg, och spelet sparade vid vilket steg man slutade.',
     'När du var nära att klara en bana var det ofta ingen slump. Spelet styrde vilka brickor som föll ner, så att banorna slutade precis vid målet eller strax under.',
   ];
-  if (r.weekStep >= 6) out.push(`${GAMES ? 'Rivalerna i ligan, grannbyarna' : 'Grannbyarna'} och grannarna som skickade gåvor eller bad om hjälp var påhittade. Det fanns inga andra spelare där, och spelet skickade aldrig några riktiga inbjudningar.`);
+  if (NEIGHBOURS && r.weekStep >= 6) out.push(`${GAMES ? 'Rivalerna i ligan, grannbyarna' : 'Grannbyarna'} och grannarna som skickade gåvor eller bad om hjälp var påhittade. Det fanns inga andra spelare där, och spelet skickade aldrig några riktiga inbjudningar.`);
   if (GAMES && r.weekStep >= 7) out.push('Kistorna, lyckohjulet och mästardragningarna är byggda som hasardspel. De använde bara låtsasvaluta, så inga riktiga pengar kunde vinnas eller förloras.');
   out.push('Jag kunde inte berätta det här i förväg, för då hade du spelat annorlunda. Det är helt normalt att ha påverkats. Det är så designen fungerar, och det är inget du har gjort fel.');
   return out;
@@ -237,7 +239,7 @@ export function part2(r: Reached): Question[] {
     },
     { id: 'strongest', kind: 'multi', text: `Vad påverkade dig mest? ${MANY}`, options: [...parts, { id: 'none', label: 'Inget av det', alone: true }] },
   ];
-  if (r.weekStep >= 6) {
+  if (NEIGHBOURS && r.weekStep >= 6) {
     qs.push({
       id: 'realPlayers', kind: 'single', text: 'Trodde du att grannarna och rivalerna var riktiga spelare?',
       options: [{ id: 'yes', label: 'Ja' }, { id: 'no', label: 'Nej' }, { id: 'unsure', label: 'Osäker' }],

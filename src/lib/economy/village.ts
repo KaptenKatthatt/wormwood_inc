@@ -63,6 +63,12 @@ export const BUILDINGS: BuildingDef[] = [
 
 /** The buildings without the expansion's four (the pilot's village). */
 export const BASE_BUILDINGS: BuildingDef[] = BUILDINGS.filter((b) => !b.world);
+/**
+ * The four buildings of the later worlds (barn, school, harbour, inn) are out of
+ * the build list for now (Jonas, 2026-11-20): they have neither a plot nor a
+ * picture in the village. Each comes back when it has both and he has said yes.
+ */
+export const WORLD_BUILDINGS_ON_HOLD = true;
 
 /*
  * A more generous start (Jonas, 2026-11-18). With 150-250 gold a challenge,

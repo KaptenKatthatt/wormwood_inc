@@ -9,11 +9,11 @@
   import { countdownShown, forcedLook, villageLook, xmas, xmasDate, xmasDay, xmasOpen } from '../lib/state/christmas';
   import { countdownText, decorLayers } from '../lib/christmas';
   import { onMount } from 'svelte';
-  import { BASE_BUILDINGS, BUILDINGS as ALL_BUILDINGS, MAX_LEVEL, buildBlock, buildTime, cleared, priceFor, skipGems, topUpGems, type BuildingId } from '../lib/economy/village';
+  import { BASE_BUILDINGS, BUILDINGS as ALL_BUILDINGS, WORLD_BUILDINGS_ON_HOLD, MAX_LEVEL, buildBlock, buildTime, cleared, priceFor, skipGems, topUpGems, type BuildingId } from '../lib/economy/village';
   import { EXPANSION } from '../lib/config/flags';
   import { WORLDS } from '../lib/match3/levels';
   // The expansion's four buildings only exist with the expansion (the pilot has eight).
-  const BUILDINGS = EXPANSION ? ALL_BUILDINGS : BASE_BUILDINGS;
+  const BUILDINGS = EXPANSION && !WORLD_BUILDINGS_ON_HOLD ? ALL_BUILDINGS : BASE_BUILDINGS;
   import { formatDuration } from '../lib/time/clock';
   import { progress, remaining } from '../lib/time/timers';
 
