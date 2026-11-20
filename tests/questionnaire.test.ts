@@ -78,8 +78,9 @@ describe('questionnaire', () => {
     if (chests) expect(debrief(far).join(' ')).toMatch(/kistorna/i);
     else if (!games) expect(debrief(far).join(' ')).not.toMatch(/kistorna/i);
     const ids = (r: Reached) => part2(r).map((q) => q.id);
-    expect(ids(early)).toEqual(['noticed', 'strongest', 'after']);
-    expect(ids(far)).toEqual(neighbours ? ['noticed', 'strongest', 'realPlayers', 'after'] : ['noticed', 'strongest', 'after']);
+    expect(ids(early)).toEqual(['noticed', 'strongest', 'after', 'pressure_s1', 'pressure_s2']);
+    const pressure = [1, 2, 3, 4, 5].map((n) => `pressure_s${n}`);
+    expect(ids(far)).toEqual(neighbours ? ['noticed', 'strongest', 'realPlayers', 'after', ...pressure] : ['noticed', 'strongest', 'after', ...pressure]);
     const strongest = (r: Reached) => { const q = part2(r)[1]; return q.kind === 'multi' ? q.options.map((o) => o.id) : []; };
     expect(strongest(early)).toEqual(['s1', 's2', 'none']);
     expect(strongest(far)).toHaveLength(11 - (games || wheel || !ON_HOLD.includes('chests') ? 0 : 1) - (neighbours ? 0 : 1));

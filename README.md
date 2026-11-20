@@ -4,7 +4,7 @@ Ett match-3-spel med en by, byggt som PWA för ett examensarbete om
 engagemangsdriven design ("Kära spelare – En studie i manipulation och
 underhållning"). Spelet är bara på svenska.
 
-**Status:** spelbar första version enligt speldesignen (`docs/speldesign.md` på grenen claude/project-thread-poksrp): tre match-3-banor, liv, extra drag, byn med fem byggnader och kostnadskurva, butik med testplånbok. Hela kroktrappan i fem steg finns: rådgivarens brev, bybornas pratbubblor och trivselmätare, nästa bana som startar av sig själv, startpaketet med nedräkning, anfallet med sköld och soldater, Avsluta med tjat och enkäten. Grafiken är platshållare. Tonen är varm och trygg på ytan (beslut 2026-11-17); temat syns bara i titel och analys.
+**Status:** spelbar första version enligt speldesignen (`docs/speldesign.md` på grenen claude/project-thread-poksrp): tre match-3-banor, liv, extra drag, byn med fem byggnader och kostnadskurva, butik med testplånbok. Hela kroktrappan i fem steg finns: rådgivarens brev, bybornas pratbubblor och trivselmätare, nästa bana som startar av sig själv, startpaketet med nedräkning, anfallet med sköld och soldater, Avsluta med tjat och ett tack (frågorna om press per steg ligger sist i frågeformuläret). Grafiken är platshållare. Tonen är varm och trygg på ytan (beslut 2026-11-17); temat syns bara i titel och analys.
 
 ## Stack
 

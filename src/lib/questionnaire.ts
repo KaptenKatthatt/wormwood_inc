@@ -272,8 +272,16 @@ export function part2(r: Reached): Question[] {
       OTHER,
     ],
   });
+  // Last, how much pressure each step of the first pass put on the player
+  // (moved here from the Avsluta button, where it gave the study away).
+  for (const p of PARTS.filter((x) => PRESSURE.includes(x.id) && x.when(r))) {
+    qs.push({ id: `pressure_${p.id}`, kind: 'scale', text: `${p.label}: hur pressad kände du dig att fortsätta eller betala?`, low: 'Inte alls', high: 'Mycket' });
+  }
   return qs;
 }
+
+/** The steps of the first pass, which get a pressure question each. */
+const PRESSURE = ['s1', 's2', 's3', 's4', 's5'];
 
 /** Picks or drops an option of a question with several answers, keeping the "alone" options alone. */
 export function pick(options: Option[], chosen: string[], id: string, on: boolean): string[] {

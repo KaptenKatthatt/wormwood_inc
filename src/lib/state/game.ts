@@ -869,7 +869,7 @@ export function cancelAwayPushes(): void {
 
 // ------------------------------------------------------------------ quitting and the survey
 
-export const quitFlow = writable<null | 'nag' | 'survey' | 'thanks'>(null);
+export const quitFlow = writable<null | 'nag' | 'thanks'>(null);
 
 export function pressQuit(): void {
   stairEvent('quit');
@@ -880,20 +880,23 @@ export function pressQuit(): void {
     logHook('guilt', { minutesIn: minutesIn() }, 'shown');
     quitFlow.set('nag');
   } else {
-    quitFlow.set('survey');
+    quit();
   }
 }
 
 export function answerNag(stay: boolean): void {
   logHook('guilt', { minutesIn: minutesIn() }, stay ? 'yes' : 'no');
-  quitFlow.set(stay ? null : 'survey');
-  if (stay) changeMood(5);
+  if (stay) { quitFlow.set(null); changeMood(5); } else quit();
 }
 
-export interface SurveyAnswer { step: Step; pressure: number | null; wouldQuit: boolean | null }
-
-export function submitSurvey(answers: SurveyAnswer[]): void {
-  log('survey', { answers, minutesIn: minutesIn(), stepReached: get(stairs).step, purse: get(purse) });
+/**
+ * Pressing Avsluta only logs that the player wanted to stop and says thanks
+ * (Jonas, 2026-11-20). The questions about each step that used to follow here
+ * gave the study away, and came every time; they are now last in the
+ * questionnaire, after the debriefing.
+ */
+function quit(): void {
+  log('quit', { minutesIn: minutesIn(), stepReached: get(stairs).step, purse: get(purse) });
   quitFlow.set('thanks');
 }
 
