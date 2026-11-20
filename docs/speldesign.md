@@ -27,6 +27,18 @@ Avsnitten längre ner som beskriver det här gäller alltså som förslag, inte 
 
 **Veckopasset (Jonas 2026-11-20, godkänt med uppdrag, byggs som 0.27.3).** 20 nivåer om 10 poäng, med ett gratisspår och ett guldpass för 120 ädelstenar. Passet varar sju dagar, och sedan börjar ett nytt. Poäng kommer från vinster (2 plus stjärnorna) och från uppdrag. Tre uppdrag om dagen: Vinn 3 utmaningar (10 p), Få 3 stjärnor på en utmaning (5 p) och Snurra lyckohjulet (5 p). Två uppdrag i veckan: Vinn 20 utmaningar (30 p) och Öppna 3 kistor (20 p). Var femte guldnivå ger 40 ädelstenar i stället för en dragning av kämpe. Passet nås från en knapp i raden under kartan från veckosteg 6.
 
+**Mellanreklam (Jonas 2026-11-20, godkänd: "din föreslagna ordning är bra, bygg in detta").** Ny krok i veckotrappan: reklamfilmer som visas av sig själva, utöver de frivilliga filmerna med belöning. Mockup: https://claude.ai/artifact/AxdueW863TxuscC6Ai6g2W.
+
+| Steg | När filmen kommer | Minst mellan filmerna | Krysset |
+|---|---|---|---|
+| Före 6 | Ingen mellanreklam (första passet och dag 1) | – | – |
+| 6 | Efter var tredje avslutade utmaning (vinst eller förlust) | 3 min | Efter 5 s |
+| 7 | Efter varannan utmaning och efter varje förlust | 2 min | Efter 5 s |
+| 8 | Som steg 7, och när appen öppnas igen efter minst 10 min borta eller spelaren går från byn till kartan. Ta bort reklam erbjuds. | 2 min | Efter 5 s |
+| 9 | Som steg 8 | 1 min | Efter 8 s, var tredje gång litet och blekt i hörnet |
+
+Stegen följer veckotrappan (dag eller värld, det som kommer först). Filmerna är de åtta som finns, och spelaren behåller sin reklamgrupp (lugn eller skrikig). Ingen mellanreklam mitt i en utmaning eller under introduktionen. En frivillig film med belöning nollställer spärren. Den som stänger i förtid går miste om ingenting. **Ta bort reklam** erbjuds från steg 8 efter tredje mellanreklamen samma dag: 39 kr en gång i testplånboken. Det tar bort mellanreklamen men inte de frivilliga filmerna. Loggas: varje film med grupp, steg och orsak (vinst, förlust, återkomst, till kartan), sedda sekunder, om krysset var litet, och om Ta bort reklam visades och köptes.
+
 **Veckopass, veckoliga och album (Jonas 2026-11-20).** Veckopasset ska med, men designas först med mockups på passet och på utmaningarna i det. Veckoligan ska med efter en mockup. Albumet ska designas, och bilderna tas fram och gås igenom med Jonas. Det är borta ur spelet tills det är färdigbyggt. Veckoligan (Jonas 2026-11-20, tråden "Designa veckoligan") pågår längre än en vecka: när en ligavecka är slut delas priserna ut och en ny startar direkt från noll, så länge spelaren fortsätter. Det finns fem ligor ovanpå varandra, och alla börjar i den lägsta. Arbetsnamnen Bäcken, Viken, Fjärden, Skärgården och Havet är inte beslutade. Plats 1–3 flyttas upp, plats 8–10 flyttas ner och plats 4–7 stannar. En högre liga ger större priser och snabbare motståndare. De sju vanliga byarnas takt styrs av ligan och ska vara lättsam: ungefär 3 vunna utmaningar om dagen räcker för att gå upp ur Bäcken, ungefär 2 till per liga, och Havet kräver ungefär 11 om dagen. Siffrorna finjusteras i mockupen. Den som slutar spela ett par dagar åker ner. Två riggade byar finns i varje liga och vecka, med nya namn varje gång. De placeras runt strecket för uppflyttning om spelaren ligger nära plats 3, och runt strecket för nedflyttning om spelaren ligger nära plats 8. Sista dygnet går en av dem om spelaren, och 2–3 vunna utmaningar räcker alltid för att ta tillbaka platsen. Det förklaras i genomgången efter testet.
 
 | Liga | Plats 1 / 2 / 3 (ädelstenar) | Plats 4–7 (guld) | Plats 8–10 (guld) |
