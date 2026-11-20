@@ -66,10 +66,11 @@ export function flyReward(f: Flight): void {
     const my = y1 + (sy - y1) * 0.35;
     const anim = el.animate(
       [
-        { transform: at(x0, y0, 0.2), opacity: 0 },
-        { transform: at(sx, sy, 1.15), opacity: 1, offset: 0.22 },
-        { transform: at(sx, sy + 4, 1), opacity: 1, offset: 0.4 },
-        { transform: at(mx, my, 0.95), opacity: 1, offset: 0.72 },
+        // The pieces are there at once, at the place that was tapped, and leave at once
+        // (Jonas, 2026-11-20: no wait between the tap and the flight).
+        { transform: at(x0, y0, 0.7), opacity: 1 },
+        { transform: at(sx, sy, 1.1), opacity: 1, offset: 0.14 },
+        { transform: at(mx, my, 0.95), opacity: 1, offset: 0.62 },
         { transform: at(x1, y1, 0.55), opacity: 1 },
       ],
       { duration: FLIGHT_MS, delay: i * STAGGER_MS, easing: 'cubic-bezier(.45, 0, .55, 1)', fill: 'both' },

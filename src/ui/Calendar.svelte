@@ -89,8 +89,8 @@
   <div class="veil" class:out={phase === 'collected'}></div>
   <button class="prize" class:two={!!gift.gold && !!gift.gems} class:out={phase === 'collected'} onclick={collect} disabled={phase === 'collected'} data-no-click-sound>
     <span class="things">
-      {#if gift.gold}<span class="thing"><img src="/art/wheel/coin.webp" alt="" bind:this={goldEl} /><b>{gift.gold}</b></span>{/if}
-      {#if gift.gems}<span class="thing"><img src="/art/wheel/gem.webp" alt="" bind:this={gemsEl} /><b>{gift.gems}</b></span>{/if}
+      {#if gift.gold}<span class="thing flies"><img src="/art/wheel/coin.webp" alt="" bind:this={goldEl} /><b>{gift.gold}</b></span>{/if}
+      {#if gift.gems}<span class="thing flies"><img src="/art/wheel/gem.webp" alt="" bind:this={gemsEl} /><b>{gift.gems}</b></span>{/if}
       {#if gift.shieldHours}<span class="thing"><img src="/art/ui/shield.webp" alt="" /></span>{/if}
     </span>
     <span class="say" aria-live="polite">{giftSign(gift)}</span>
@@ -118,6 +118,8 @@
   .veil.out { opacity: 0; }
   .prize { position: fixed; left: 50%; top: 42%; z-index: 10; width: min(86vw, 380px); transform: translate(-50%, -50%); background: none; border: 0; padding: 0; min-height: 0; display: grid; justify-items: center; gap: 10px; color: #fffaf2; font: inherit; cursor: pointer; animation: prize .5s cubic-bezier(.2, 1.5, .4, 1) both; transition: opacity .35s; }
   .prize.out { opacity: 0; }
+  /* The picture becomes the flying pieces the moment it is tapped. */
+  .prize.out .flies img { visibility: hidden; }
   .prize:disabled { cursor: default; }
   @keyframes prize { from { transform: translate(-50%, -50%) scale(.3); opacity: 0; } }
   .things { display: flex; gap: 14px; justify-content: center; align-items: flex-end; }
