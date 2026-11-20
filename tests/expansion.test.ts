@@ -3,7 +3,7 @@ import { ALL_LEVELS, CHALLENGE_COUNT, LEVELS, TOTAL_CHALLENGES, WORLDS, levelAt,
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor } from '../src/lib/expansion/week';
 import { ADS, adGroupFor, adsFor, nextAd } from '../src/lib/expansion/social';
 import { ALBUM_SIZE, drawSticker, leagueRank, leagueTable, passReward, passTier, setComplete } from '../src/lib/expansion/social';
-import { FIELD_DEG, FLAP_GRIP, PITY_HARD, WHEEL, WHEEL_FREE_START, discField, drawChampion, landingAngle, legendaryChance, nearJackpot, openChest, segmentAtAngle, spinWheel } from '../src/lib/expansion/luck';
+import { FIELD_DEG, FLAP_GRIP, PITY_HARD, WHEEL, WHEEL_FREE_START, chestSkipGems, discField, drawChampion, landingAngle, legendaryChance, nearJackpot, openChest, segmentAtAngle, spinWheel } from '../src/lib/expansion/luck';
 import { ERA_FACTOR, NEIGHBOURS, activeHelpers, battle, neighbourDefence, personalOffer, storehouse, vipTier } from '../src/lib/expansion/conquest';
 import { BUILDINGS, START_VILLAGE, cleared } from '../src/lib/economy/village';
 import { HOOKS, EXPANSION_HOOKS } from '../src/lib/hooks';
@@ -131,6 +131,14 @@ describe('step 7', () => {
     const l = openChest('royal', makeRng(2));
     expect(l.gold).toBeGreaterThanOrEqual(300);
     expect(l.stickers).toHaveLength(3);
+  });
+});
+
+describe('opening a chest early', () => {
+  it('costs one gem for every ten minutes left, and less than a royal chest', () => {
+    expect(chestSkipGems(3 * 3600_000)).toBe(18);
+    expect(chestSkipGems(134 * 60_000)).toBe(14);
+    expect(chestSkipGems(1000)).toBe(1);
   });
 });
 

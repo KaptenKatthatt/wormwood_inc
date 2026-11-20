@@ -23,7 +23,8 @@ export type HookId =
  * bring them back.
  */
 export const ON_HOLD: readonly string[] = [
-  'league', 'pass', 'album', 'chests', 'heroes',
+  // The chests came back on 2026-11-20, when Jonas had approved their screen and their opening.
+  'league', 'pass', 'album', 'heroes',
   // The Neighbours tab went the same way the same day: the army, the villages to
   // take over, the loyalty tiers and the neighbours who help and want gifts.
   'askHelp', 'conquest', 'troops', 'powerCreep', 'vip', 'neighboursNeeded', 'fakeGifts',

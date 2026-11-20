@@ -22,7 +22,7 @@
     if (weekOn('album')) out.push({ id: 'album', icon: '📔', label: `${$exp.album.length}/${ALBUM_SIZE}` });
     if (weekOn('chests')) {
       const ready = $exp.chests.filter((c) => c.readyAt <= $now).length;
-      out.push({ id: 'kistor', icon: '🧰', label: `Kistor ${$exp.chests.length}`, badge: ready ? String(ready) : undefined });
+      out.push({ id: 'kistor', icon: '🧰', art: '/art/chests/wood-closed.webp', label: `Kistor ${$exp.chests.length}`, badge: ready ? String(ready) : undefined });
     }
     if (weekOn('wheel')) out.push({ id: 'hjul', icon: '🎡', art: '/art/wheel/disc.webp', label: 'Hjulet', badge: freeSpinReady() ? 'Gratis' : undefined });
     if (weekOn('heroes')) out.push({ id: 'kampar', icon: '⚔️', label: 'Kämpar', badge: $exp.freeDraws ? String($exp.freeDraws) : undefined });

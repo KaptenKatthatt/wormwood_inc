@@ -71,13 +71,16 @@ describe('questionnaire', () => {
     // The row of games is on hold (hooks.ts ON_HOLD), so nobody is told or asked about it.
     if (games || wheel) expect(debrief(far).join(' ')).toMatch(/lyckohjulet/i);
     else expect(debrief(far).join(' ')).not.toMatch(/lyckohjul/i);
-    if (!games) expect(debrief(far).join(' ')).not.toMatch(/ligan|kistorna/i);
+    const chests = !ON_HOLD.includes('chests');
+    if (!games) expect(debrief(far).join(' ')).not.toMatch(/ligan/i);
+    if (chests) expect(debrief(far).join(' ')).toMatch(/kistorna/i);
+    else if (!games) expect(debrief(far).join(' ')).not.toMatch(/kistorna/i);
     const ids = (r: Reached) => part2(r).map((q) => q.id);
     expect(ids(early)).toEqual(['noticed', 'strongest', 'after']);
     expect(ids(far)).toEqual(neighbours ? ['noticed', 'strongest', 'realPlayers', 'after'] : ['noticed', 'strongest', 'after']);
     const strongest = (r: Reached) => { const q = part2(r)[1]; return q.kind === 'multi' ? q.options.map((o) => o.id) : []; };
     expect(strongest(early)).toEqual(['s1', 's2', 'none']);
-    expect(strongest(far)).toHaveLength(11 - (games || wheel ? 0 : 1) - (neighbours ? 0 : 1));
+    expect(strongest(far)).toHaveLength(11 - (games || wheel || !ON_HOLD.includes('chests') ? 0 : 1) - (neighbours ? 0 : 1));
   });
 
   it('requires every question but never the text boxes', () => {

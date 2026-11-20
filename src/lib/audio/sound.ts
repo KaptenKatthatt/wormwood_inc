@@ -419,6 +419,12 @@ export function play(name: Sfx): void {
   void playFile(`sfx/${SFX_FILES[name]}`);
 }
 
+/** An effect at another pitch (the knocks on a chest rise with every tap). Not held back by play()'s pause between repeats. */
+export function playAt(name: Sfx, rate: number): void {
+  if (!ctx || !get(audioSettings).sfx) return;
+  void playFile(`sfx/${SFX_FILES[name]}`, rate);
+}
+
 /** One line cleared. step counts the cascade (0 = the player's own move); each step is a note higher. */
 export function playMatch(step: number): void {
   const i = Math.max(0, Math.min(MATCH_STEPS - 1, step));

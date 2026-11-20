@@ -9,9 +9,8 @@
   } from '../lib/state/expansion';
   import { now, purse } from '../lib/state/game';
   import { ALBUM_SETS, ALBUM_SIZE, GOLD_PASS_GEMS, LEAGUE_DAYS, PASS_DAYS, PASS_TIERS, PASS_XP_PER_TIER, passReward, passTier, rewardText } from '../lib/expansion/social';
-  import { CHAMPIONS, CHEST_SLOTS, DRAW_GEMS, PITY_HARD, ROYAL_CHEST_GEMS, TEN_DRAW_GEMS, championPower, type Champion, type ChestLoot } from '../lib/expansion/luck';
+  import { CHAMPIONS, CHEST_SLOTS, chestSkipGems, DRAW_GEMS, PITY_HARD, ROYAL_CHEST_GEMS, TEN_DRAW_GEMS, championPower, type Champion, type ChestLoot } from '../lib/expansion/luck';
   import { formatDuration, HOUR } from '../lib/time/clock';
-  import { skipGems } from '../lib/economy/village';
   import { stickerName } from '../lib/expansion/social';
 
   /** Long countdowns in days, short ones as usual. */
@@ -89,7 +88,7 @@
         {@const left = c.readyAt - $now}
         <li>
           <span>{c.kind === 'royal' ? '👑 Kunglig kista' : '🧰 Träkista'}{left > 0 ? `: ${formatDuration(left)}` : ': klar!'}</span>
-          <button class="primary small" onclick={() => openC(c.id)}>{left > 0 ? `Öppna nu 💎 ${skipGems(left)}` : 'Öppna'}</button>
+          <button class="primary small" onclick={() => openC(c.id)}>{left > 0 ? `Öppna nu 💎 ${chestSkipGems(left)}` : 'Öppna'}</button>
         </li>
       {:else}
         <li class="fine">Inga kistor just nu.</li>

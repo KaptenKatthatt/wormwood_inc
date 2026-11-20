@@ -203,6 +203,8 @@ const GAMES = !ON_HOLD.includes('league');
 /** The wheel of fortune came back on its own (2026-11-20), ahead of the rest of the row. */
 const WHEEL = !ON_HOLD.includes('wheel');
 /** The same for the Neighbours tab and the neighbours who help. */
+/** The chests came back the same day, with the opening Jonas approved. */
+const CHESTS = !ON_HOLD.includes('chests');
 const NEIGHBOURS = !ON_HOLD.includes('conquest');
 
 const PARTS: { id: string; label: string; when: (r: Reached) => boolean }[] = [
@@ -213,7 +215,7 @@ const PARTS: { id: string; label: string; when: (r: Reached) => boolean }[] = [
   { id: 's5', label: 'Anfallet mot byn och byborna som ville att du skulle stanna', when: (r) => r.steps.includes(5) },
   { id: 'day', label: 'Dagens gåva, sviten och notiserna', when: (r) => r.secondDay },
   { id: 's6', label: GAMES ? 'Ligan, säsongspasset, albumet och reklamen' : NEIGHBOURS ? 'Reklamfilmerna och att be grannarna om liv' : 'Reklamfilmerna', when: (r) => r.weekStep >= 6 },
-  { id: 's7', label: GAMES ? 'Kistorna, lyckohjulet och mästardragningarna' : 'Lyckohjulet', when: (r) => (GAMES || WHEEL) && r.weekStep >= 7 },
+  { id: 's7', label: GAMES ? 'Kistorna, lyckohjulet och mästardragningarna' : CHESTS && WHEEL ? 'Kistorna och lyckohjulet' : CHESTS ? 'Kistorna' : 'Lyckohjulet', when: (r) => (GAMES || WHEEL || CHESTS) && r.weekStep >= 7 },
   { id: 's8', label: NEIGHBOURS ? 'Anfallen på grannbyar, trupperna och erbjudandena' : 'Erbjudandet som var bara för dig', when: (r) => r.weekStep >= 8 },
   { id: 's9', label: 'Grannarna som behövde hjälp och skickade gåvor', when: (r) => NEIGHBOURS && r.weekStep >= 9 },
 ];
@@ -227,6 +229,7 @@ export function debrief(r: Reached): string[] {
   ];
   if (NEIGHBOURS && r.weekStep >= 6) out.push(`${GAMES ? 'Rivalerna i ligan, grannbyarna' : 'Grannbyarna'} och grannarna som skickade gåvor eller bad om hjälp var påhittade. Det fanns inga andra spelare där, och spelet skickade aldrig några riktiga inbjudningar.`);
   if (GAMES && r.weekStep >= 7) out.push('Kistorna, lyckohjulet och mästardragningarna är byggda som hasardspel. De använde bara låtsasvaluta, så inga riktiga pengar kunde vinnas eller förloras.');
+  else if (CHESTS && r.weekStep >= 7) out.push(`Kistorna${WHEEL ? ' och lyckohjulet' : ''} är byggda som hasardspel: du visste inte vad en kista innehöll förrän den var öppnad, och väntetiden gick att köpa bort.${WHEEL ? ' Hjulet stannade oftare precis bredvid storvinsten än slumpen skulle ha gett, för att det skulle kännas som att du nästan vann.' : ''} Allt använde bara låtsasvaluta, så inga riktiga pengar kunde vinnas eller förloras.`);
   else if (WHEEL && r.weekStep >= 7) out.push('Lyckohjulet är byggt som ett hasardspel. Det stannade oftare precis bredvid storvinsten än slumpen skulle ha gett, för att det skulle kännas som att du nästan vann. Det använde bara låtsasvaluta, så inga riktiga pengar kunde vinnas eller förloras.');
   out.push('Jag kunde inte berätta det här i förväg, för då hade du spelat annorlunda. Det är helt normalt att ha påverkats. Det är så designen fungerar, och det är inget du har gjort fel.');
   return out;

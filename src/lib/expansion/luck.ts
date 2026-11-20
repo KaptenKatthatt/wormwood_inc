@@ -15,6 +15,16 @@ export const WOOD_CHEST_CHANCE = 0.3;
 export const WOOD_CHEST_TIME = 3 * HOUR;
 export const ROYAL_CHEST_GEMS = 50;
 
+/**
+ * Gems to open a chest before its wait is over: one for every ten minutes left,
+ * 18 for the whole wait. The same count as in the mockup Jonas approved
+ * (2026-11-20); a building's price per minute made a wooden chest dearer to
+ * hurry than a royal chest is to buy.
+ */
+export function chestSkipGems(leftMs: number): number {
+  return Math.max(1, Math.ceil(leftMs / (10 * 60_000)));
+}
+
 export interface ChestLoot { gold: number; gems: number; stickers: number[]; draws: number }
 
 export function openChest(kind: ChestKind, rng: Rng): ChestLoot {

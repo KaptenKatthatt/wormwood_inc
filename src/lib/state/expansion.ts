@@ -23,7 +23,7 @@ import {
 } from '../expansion/social';
 import {
   CHEST_SLOTS, DRAW_GEMS, ROYAL_CHEST_GEMS, SPIN_GEMS, TEN_DRAW_GEMS, WHEEL, WHEEL_FREE_START, WOOD_CHEST_CHANCE, WOOD_CHEST_TIME,
-  championPower, drawChampion, nearJackpot, openChest, spinWheel, type Champion, type ChestKind, type ChestLoot,
+  championPower, chestSkipGems, drawChampion, nearJackpot, openChest, spinWheel, type Champion, type ChestKind, type ChestLoot,
 } from '../expansion/luck';
 import {
   GATE_AT, GATE_SKIP_GEMS, winterOpenAt, HELPERS, HELPERS_NEEDED, HELPER_ARRIVES, HELPER_GOLD_BONUS, HELPER_MAX, HELPER_PATIENCE, KEEP_HOURS, MERCENARIES,
@@ -373,8 +373,11 @@ export function openChestNow(id: string): ChestLoot | null {
   const c = get(exp).chests.find((x) => x.id === id);
   if (!c) return null;
   const left = c.readyAt - now();
-  if (left > 0 && !payGems(skipGems(left), 'chests', { item: 'openNow', leftMs: left })) return null;
+  if (left > 0 && !payGems(chestSkipGems(left), 'chests', { item: 'openNow', leftMs: left })) return null;
   const loot = openChest(c.kind, makeRng(Math.floor(rng() * 2 ** 31)));
+  // A chest holds nothing the game cannot show: no album pictures and no champion draws while those are on hold.
+  if (!hookOn('album')) loot.stickers = [];
+  if (!hookOn('heroes')) loot.draws = 0;
   exp.update((x) => ({ ...x, chests: x.chests.filter((y) => y.id !== id) }));
   giveLoot(loot);
   logHook('chests', { kind: c.kind, loot, paid: left > 0 }, 'shown');
