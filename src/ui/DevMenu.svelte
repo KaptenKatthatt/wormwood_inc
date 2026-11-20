@@ -19,8 +19,6 @@
     toast(`Hoppade till utmaning ${n} (${worldOf(n).name})`);
   }
   let pick = $state(1);
-  import DevReach from './DevReach.svelte';
-  import DevInvites from './DevInvites.svelte';
   import { CHRISTMAS } from '../lib/config/flags';
   import { devAskQuestionnaire, devResetQuestionnaire, devStudyEnd, qState } from '../lib/state/questionnaire';
   import { DUE_DAY, STUDY_END } from '../lib/questionnaire';
@@ -38,10 +36,6 @@
 <section class="dev" aria-labelledby="dev-title">
   <h2 id="dev-title">Utvecklarmeny</h2>
   <p class="fine">Syns inte i versionen som testpersonerna får.</p>
-
-  <DevReach />
-
-  <DevInvites />
 
   {#if EXPANSION}
     <fieldset>

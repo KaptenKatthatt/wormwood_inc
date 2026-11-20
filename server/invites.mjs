@@ -58,10 +58,11 @@ export const cleanCode = (/** @type {unknown} */ v) => (typeof v === 'string' ? 
  *   writeJson: (name: string, value: any) => Promise<void>,
  *   now: () => number,
  *   appendEvent: (site: 'test' | 'dev', playerId: string, name: string, data: object) => Promise<void>,
+ *   sendPush?: (playerId: string, payload: object) => Promise<boolean>,
  * }} deps
  */
 export async function createInvites(deps) {
-  const { readJson, writeJson, now, appendEvent } = deps;
+  const { readJson, writeJson, now, appendEvent, sendPush } = deps;
   /** @type {Signup[]} */
   let signups = await readJson('signups.json', []);
   /** @type {Record<string, Invite>} */
@@ -69,6 +70,17 @@ export async function createInvites(deps) {
   /** @type {Record<Round, { opensAt: number | null }>} */
   const rounds = { pilot: { opensAt: null }, 1: { opensAt: null }, 2: { opensAt: null }, egen: { opensAt: 0 }, jonas: { opensAt: 0 }, ...(await readJson('rounds.json', {})) };
   for (const r of ALWAYS_OPEN) rounds[/** @type {Round} */ (r)] = { opensAt: 0 };
+  /** Jonas's own phones (dev player ids) that get a notification when someone signs up. */
+  /** @type {string[]} */
+  let watchers = await readJson('signup-watchers.json', []);
+
+  /** Tells Jonas's phones about a new signup; never holds up or fails the signup. */
+  async function announce(/** @type {Signup} */ s) {
+    if (!sendPush || !watchers.length) return;
+    const what = s.kind === 'egen' ? 'egen start' : 'omgång 1 eller 2';
+    const body = `${s.name} vill testa (${what}), ${s.phone === 'iphone' ? 'iPhone' : 'Android'}, ${s.where === 'plats' ? 'kan ses i Skåne' : 'på distans'}.`;
+    await Promise.all(watchers.map((id) => sendPush(id, { title: 'Ny anmälan', body, tag: `signup-${s.id}` }).catch(() => false)));
+  }
 
   /** The names and addresses go when the promised day has passed; the codes and rounds stay for the analysis. */
   async function expire() {
@@ -98,7 +110,7 @@ export async function createInvites(deps) {
     return typeof at === 'number' && at <= now();
   };
 
-  function overview() {
+  function overview(/** @type {string} */ playerId = '') {
     const t = now();
     const byId = new Map(signups.map((s) => [s.id, s]));
     const invited = new Set(Object.values(invites).map((i) => i.signupId).filter(Boolean));
@@ -116,6 +128,7 @@ export async function createInvites(deps) {
         })
         .sort((a, b) => a.createdAt - b.createdAt),
       signupsEnd: CONTACTS_END,
+      notifyHere: Boolean(playerId) && watchers.includes(playerId),
     };
   }
 
@@ -137,8 +150,10 @@ export async function createInvites(deps) {
     if (signups.length >= 500) return { status: 429, body: { error: 'för många anmälningar' } };
     // Signing up twice with the same address replaces the first.
     signups = signups.filter((s) => s.email.toLowerCase() !== email.toLowerCase());
-    signups.push({ id: `s${now().toString(36)}${randomBytes(3).toString('hex')}`, at: now(), name, email, phone, where, note, kind });
+    const added = { id: `s${now().toString(36)}${randomBytes(3).toString('hex')}`, at: now(), name, email, phone, where, note, kind: /** @type {'omgang' | 'egen'} */ (kind) };
+    signups.push(added);
     await writeJson('signups.json', signups);
+    void announce(added);
     return { status: 200, body: { ok: true } };
   }
 
@@ -180,7 +195,18 @@ export async function createInvites(deps) {
   async function admin(path, body) {
     await expire();
     const round = /** @type {Round} */ (ROUNDS.includes(body?.round) ? body.round : '');
-    if (path === '/api/admin/invites/overview') return { status: 200, body: overview() };
+    const me = typeof body?.playerId === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(body.playerId) ? body.playerId : '';
+    const view = () => overview(me);
+    if (path === '/api/admin/invites/overview') return { status: 200, body: view() };
+
+    if (path === '/api/admin/invites/notify') {
+      // { playerId, on }: this phone gets (or stops getting) a notification for each new signup.
+      if (!me || typeof body.on !== 'boolean') return { status: 400, body: { error: 'fel format' } };
+      watchers = watchers.filter((id) => id !== me);
+      if (body.on) watchers = [...watchers, me].slice(-5);
+      await writeJson('signup-watchers.json', watchers);
+      return { status: 200, body: { ok: true, ...view() } };
+    }
 
     if (path === '/api/admin/invites/create') {
       // { signupId } or { name } for someone who did not sign up (the pilot friend), and a round.
@@ -194,7 +220,7 @@ export async function createInvites(deps) {
       while (invites[code]) code = newCode();
       invites[code] = { round, name, signupId: s?.id ?? null, createdAt: now(), players: [], firstSeen: null, lastSeen: null };
       await writeJson('invites.json', invites);
-      return { status: 200, body: { ok: true, code, ...overview() } };
+      return { status: 200, body: { ok: true, code, ...view() } };
     }
 
     if (path === '/api/admin/invites/round') {
@@ -205,7 +231,7 @@ export async function createInvites(deps) {
       rounds[round] = { opensAt: at };
       const { jonas, egen, ...stored } = rounds;
       await writeJson('rounds.json', stored);
-      return { status: 200, body: { ok: true, ...overview() } };
+      return { status: 200, body: { ok: true, ...view() } };
     }
 
     if (path === '/api/admin/invites/remove') {
@@ -214,12 +240,12 @@ export async function createInvites(deps) {
       if (code && invites[code]) {
         delete invites[code];
         await writeJson('invites.json', invites);
-        return { status: 200, body: { ok: true, ...overview() } };
+        return { status: 200, body: { ok: true, ...view() } };
       }
       if (typeof body.signupId === 'string' && signups.some((s) => s.id === body.signupId)) {
         signups = signups.filter((s) => s.id !== body.signupId);
         await writeJson('signups.json', signups);
-        return { status: 200, body: { ok: true, ...overview() } };
+        return { status: 200, body: { ok: true, ...view() } };
       }
       return { status: 404, body: { error: 'finns inte' } };
     }

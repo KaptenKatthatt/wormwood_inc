@@ -61,7 +61,7 @@ export async function createApp(opts) {
   const now = opts.now ?? Date.now;
   await mkdir(join(dataDir, 'logs'), { recursive: true });
   // Files written before 0.27.1 were readable by every user on the machine.
-  for (const f of ['signups.json', 'invites.json', 'rounds.json', 'admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json', 'topups.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
+  for (const f of ['signups.json', 'invites.json', 'rounds.json', 'signup-watchers.json', 'admin-key.json', 'contacts.json', 'vapid.json', 'subscriptions.json', 'messages.json', 'players.json', 'scheduled.json', 'topups.json']) await chmod(join(dataDir, f), 0o600).catch(() => {});
 
   // ---- persisted JSON ------------------------------------------------------
   /** @param {string} name @param {any} fallback */
@@ -125,7 +125,7 @@ export async function createApp(opts) {
     const line = JSON.stringify({ received, site, playerId, session: 'server', seq: null, v: null, t: received, gameT: null, name, ctx: null, data });
     await appendFile(join(logDir, `${new Date(received).toISOString().slice(0, 10)}.ndjson`), line + '\n');
   }
-  const invites = await createInvites({ readJson, writeJson, now, appendEvent });
+  const invites = await createInvites({ readJson, writeJson, now, appendEvent, sendPush });
   const reach = await createReach({ readJson, writeJson, now, sendPush, appendEvent, adminKey: opts.adminKey, codeOf: invites.codeOf, playersOf: invites.playersOf });
 
   async function flushDue() {

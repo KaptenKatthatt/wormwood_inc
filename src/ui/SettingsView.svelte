@@ -2,6 +2,7 @@
   import { playerId, rescheduleAll, settings, toast } from '../lib/state/game';
   import { DEV_MENU } from '../lib/config/flags';
   import DevMenu from './DevMenu.svelte';
+  import DevTesters from './DevTesters.svelte';
   import { startTutorial } from '../lib/tutorial';
   import { myCode } from '../lib/invite';
   import { enablePush, lastPushError, permissionNow, testPush } from '../lib/push/push';
@@ -52,6 +53,7 @@
 </script>
 
 <section class="settings">
+  {#if DEV_MENU}<DevTesters />{/if}
   {#if messages.length}
     <h2>Meddelanden från Jonas</h2>
     {#each messages as m (m.id)}

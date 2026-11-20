@@ -6,12 +6,14 @@
    * Uses the same admin key as the messages (DevReach).
    */
   import { load } from '../lib/state/storage';
+  import { playerId } from '../lib/state/game';
+  import { enablePush } from '../lib/push/push';
   import { ROUND_NAMES, openDayText, type Round } from '../lib/invite';
 
   interface Signup { id: string; at: number; name: string; email: string; phone: 'android' | 'iphone'; where: 'plats' | 'distans'; note: string; kind: 'omgang' | 'egen' }
   interface Inv { code: string; round: Round; name: string; createdAt: number; phones: number; firstSeen: number | null; lastSeen: number | null; day: number | null; email: string }
   interface RoundRow { round: Round; opensAt: number | null; open: boolean; invited: number }
-  interface Overview { rounds: RoundRow[]; signups: Signup[]; invites: Inv[] }
+  interface Overview { rounds: RoundRow[]; signups: Signup[]; invites: Inv[]; notifyHere?: boolean }
 
   const TEST_SITE = `${location.protocol}//${location.host.replace(/^dev\./, '')}`;
   const linkFor = (code: string) => `${TEST_SITE}/?kod=${code}`;
@@ -34,7 +36,7 @@
     const key = load('adminKey', '');
     if (!key) { status = 'Fyll först i nyckeln under Testarna ovanför.'; return null; }
     try {
-      const r = await fetch(`/api/admin/invites/${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, ...extra }) });
+      const r = await fetch(`/api/admin/invites/${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, playerId, ...extra }) });
       const j = await r.json().catch(() => ({}));
       if (r.status === 403) { status = 'Fel nyckel.'; return null; }
       if (!r.ok) { status = j.error ? `Det gick inte: ${j.error}.` : `Det gick inte (${r.status}).`; return null; }
@@ -68,6 +70,22 @@
     askRemove = '';
     take(await call('remove', extra));
     if (shown && extra.code === shown.code) shown = null;
+  }
+
+  let notifyStatus = $state('');
+  async function setNotify(on: boolean) {
+    notifyStatus = '';
+    if (on) {
+      const r = await enablePush(playerId);
+      if (r !== 'ok') {
+        notifyStatus = r === 'denied' ? 'Notiser är avstängda för sidan. Slå på dem i webbläsarens inställningar och försök igen.' : 'Telefonen kunde inte slå på notiser just nu. Försök igen.';
+        return;
+      }
+    }
+    const j = await call('notify', { on });
+    if (!j) return;
+    take(j);
+    notifyStatus = on ? 'Klart. Den här telefonen får en notis för varje ny anmälan.' : 'Avstängt på den här telefonen.';
   }
 
   const roundOf = (r: Round) => data?.rounds.find((x) => x.round === r);
@@ -107,6 +125,8 @@
     <div class="buttons"><button class="ghost" onclick={refresh}>Visa anmälningar och inbjudningar</button></div>
     {#if status}<p class="fine" role="status">{status}</p>{/if}
   {:else}
+    <label class="notify"><input type="checkbox" checked={data.notifyHere === true} onchange={(e) => setNotify(e.currentTarget.checked)} /> Notis till den här telefonen vid ny anmälan</label>
+    {#if notifyStatus}<p class="fine" role="status">{notifyStatus}</p>{/if}
     <strong>Omgångar</strong>
     <p class="fine">En omgång går att spela från sin dag. Utan dag ser de inbjudna bara att du hör av dig.</p>
     {#each data.rounds.filter((r) => r.round !== 'jonas' && r.round !== 'egen') as r (r.round)}
@@ -205,6 +225,8 @@
 <style>
   fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
   legend { font-weight: 700; margin-bottom: 4px; }
+  .notify { display: flex; gap: 10px; align-items: flex-start; min-height: 44px; font-weight: 600; }
+  .notify input { width: 24px; height: 24px; margin-top: 2px; accent-color: var(--falu); flex: none; }
   p { margin: 0; }
   .fine { color: var(--muted); font-size: .9rem; }
   .field { display: grid; gap: 4px; font-weight: 600; font-size: .95rem; }

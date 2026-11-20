@@ -234,3 +234,35 @@ describe('the invitation in the game', () => {
     for (let i = 0; i < 100; i++) expect(newCode()).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
   });
 });
+
+describe('a notification to Jonas for each signup', () => {
+  it('reaches the phones that asked for it, and stops when turned off', async () => {
+    const { createInvites } = await import('../server/invites.mjs');
+    const files: Record<string, unknown> = {};
+    const sent: { id: string; payload: any }[] = [];
+    const inv = await createInvites({
+      readJson: async (n: string, fb: unknown) => files[n] ?? fb,
+      writeJson: async (n: string, v: unknown) => { files[n] = JSON.parse(JSON.stringify(v)); },
+      now: () => Date.parse('2026-11-21T09:00:00Z'),
+      appendEvent: async () => {},
+      sendPush: async (id: string, payload: object) => { sent.push({ id, payload }); return true; },
+    });
+    const form = { name: 'Eva', email: 'eva@example.com', phone: 'iphone', where: 'distans', age: true, ok: true };
+    await inv.signup(form);
+    expect(sent).toHaveLength(0);
+    const on = await inv.admin('/api/admin/invites/notify', { playerId: 'jonasphone1', on: true });
+    expect(on?.body.notifyHere).toBe(true);
+    await inv.signup({ ...form, email: 'ada@example.com', name: 'Ada', kind: 'egen' });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(sent).toHaveLength(1);
+    expect(sent[0].id).toBe('jonasphone1');
+    expect(sent[0].payload.title).toBe('Ny anmälan');
+    expect(sent[0].payload.body).toContain('Ada');
+    expect(sent[0].payload.body).toContain('egen start');
+    const off = await inv.admin('/api/admin/invites/notify', { playerId: 'jonasphone1', on: false });
+    expect(off?.body.notifyHere).toBe(false);
+    await inv.signup({ ...form, email: 'bo@example.com', name: 'Bo' });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(sent).toHaveLength(1);
+  });
+});
