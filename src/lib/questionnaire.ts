@@ -46,16 +46,27 @@ export type Answer = number | string | string[];
 
 export const startQ = (): QState => ({ stage: 'part1', askedDay: 0, asks: 0, answers: {}, mayUse: null });
 
-export const studyOver = (today: string): boolean => today >= STUDY_END;
+export const studyOver = (today: string, end: string = STUDY_END): boolean => today >= end;
+
+/**
+ * The day a tester's study ends. Everyone's is STUDY_END, except a tester who
+ * starts on their own (round "egen", Jonas 2026-11-20): theirs is the day after
+ * their first week, test day 8, whether that is before or after STUDY_END.
+ */
+export function studyEndFor(round: string | null | undefined, firstDay: string): string {
+  if (round !== 'egen') return STUDY_END;
+  const d = new Date(Date.UTC(+firstDay.slice(0, 4), +firstDay.slice(5, 7) - 1, +firstDay.slice(8, 10) + DUE_DAY - 1));
+  return d.toISOString().slice(0, 10);
+}
 
 /**
  * Should the game ask by itself now? Once a day, a few times at most: for
  * part 1 from the due day, for the rest (a tester who plays on) from the day
  * the study ends.
  */
-export function shouldAsk(s: QState, testDay: number, today: string, logging: boolean): boolean {
+export function shouldAsk(s: QState, testDay: number, today: string, logging: boolean, end: string = STUDY_END): boolean {
   if (!logging || s.stage === 'done' || s.askedDay >= testDay || s.asks >= MAX_ASKS) return false;
-  return s.stage === 'waiting' ? studyOver(today) : testDay >= DUE_DAY || studyOver(today);
+  return s.stage === 'waiting' ? studyOver(today, end) : testDay >= DUE_DAY || studyOver(today, end);
 }
 
 /**
@@ -63,12 +74,12 @@ export function shouldAsk(s: QState, testDay: number, today: string, logging: bo
  * on (Jonas, 2026-11-19); after it the tester may play as long as they like.
  * Only for testers in the study, that is, who said yes to the logging.
  */
-export function mustAnswer(s: QState, today: string, logging: boolean): boolean {
-  return logging && s.stage !== 'done' && studyOver(today);
+export function mustAnswer(s: QState, today: string, logging: boolean, end: string = STUDY_END): boolean {
+  return logging && s.stage !== 'done' && studyOver(today, end);
 }
 
 /** After part 1: straight to the debriefing when the study is over, else the tester chooses. */
-export const afterPart1 = (today: string): Stage => (studyOver(today) ? 'debrief' : 'choice');
+export const afterPart1 = (today: string, end: string = STUDY_END): Stage => (studyOver(today, end) ? 'debrief' : 'choice');
 
 /** Real milliseconds from now until the reminder notification, or null when its time has passed. */
 export function pushDelay(firstDay: string, nowMs: number): number | null {
@@ -77,8 +88,8 @@ export function pushDelay(firstDay: string, nowMs: number): number | null {
 }
 
 /** The same for the day the study ends. The server keeps a notification 14 days at most, so not earlier than that. */
-export function endPushDelay(nowMs: number): number | null {
-  const at = new Date(+STUDY_END.slice(0, 4), +STUDY_END.slice(5, 7) - 1, +STUDY_END.slice(8, 10), PUSH_HOUR).getTime();
+export function endPushDelay(nowMs: number, end: string = STUDY_END): number | null {
+  const at = new Date(+end.slice(0, 4), +end.slice(5, 7) - 1, +end.slice(8, 10), PUSH_HOUR).getTime();
   const inMs = at - nowMs;
   return inMs > 0 && inMs <= 14 * 24 * 60 * 60 * 1000 ? inMs : null;
 }

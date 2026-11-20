@@ -9,7 +9,8 @@ import { dayKey } from '../daily';
 import { EXPANSION } from '../config/flags';
 import { flush, log } from '../log/logger';
 import { cancelPush, schedulePush } from '../push/push';
-import { MAX_ASKS, PART1, afterPart1, mustAnswer, endPushDelay, forLog, part2, pushDelay, shouldAsk, startQ, testDayOf, type Answer, type QState, type Reached } from '../questionnaire';
+import { storedInvite } from '../invite';
+import { MAX_ASKS, PART1, afterPart1, mustAnswer, endPushDelay, forLog, part2, pushDelay, shouldAsk, startQ, studyEndFor, testDayOf, type Answer, type QState, type Reached } from '../questionnaire';
 import { exp } from './expansion';
 import { clock, daily, playerId, resetListeners, settings, stairs } from './game';
 import { load, save } from './storage';
@@ -25,6 +26,8 @@ export const qOpen = writable<null | 'ask' | 'form'>(null);
 
 const today = (): string => dayKey(Date.now());
 const testDay = (): number => testDayOf(get(daily).firstDay, dayKey(clock.now()));
+/** This tester's last day: 19 December, or the end of their own week for a tester with their own start. */
+const endDay = (): string => studyEndFor(storedInvite()?.round, get(daily).firstDay);
 
 export function reached(): Reached {
   return {
@@ -35,7 +38,7 @@ export function reached(): Reached {
 }
 
 /** Must the form be answered now, before the game goes on? */
-export const mandatory = (): boolean => (devEnded ? get(qState).stage !== 'done' : mustAnswer(get(qState), today(), get(settings).logging === true));
+export const mandatory = (): boolean => (devEnded ? get(qState).stage !== 'done' : mustAnswer(get(qState), today(), get(settings).logging === true, endDay()));
 /** Dev menu: behave as if the study had ended. */
 let devEnded = false;
 
@@ -51,7 +54,7 @@ export function offerQuestionnaire(): void {
   if (get(qOpen)) return;
   const s = get(qState);
   const day = testDay();
-  if (!shouldAsk(s, day, today(), get(settings).logging === true)) return;
+  if (!shouldAsk(s, day, today(), get(settings).logging === true, endDay())) return;
   qState.set({ ...s, askedDay: day, asks: s.asks + 1 });
   qOpen.set('ask');
   log('questionnaire_asked', { testDay: day, ask: s.asks + 1, stage: s.stage });
@@ -86,7 +89,7 @@ export function finishPart1(): void {
   const s = get(qState);
   log('questionnaire_part1', { testDay: testDay(), answers: forLog(PART1, s.answers) });
   flush(false);
-  enter({ ...s, stage: mandatory() ? 'debrief' : afterPart1(today()) }, 'study_end');
+  enter({ ...s, stage: mandatory() ? 'debrief' : afterPart1(today(), endDay()) }, 'study_end');
 }
 
 /** The tester's own answer after part 1: play on, or done testing. */
@@ -147,7 +150,7 @@ export function scheduleQuestionnairePush(): void {
   const inMs = pushDelay(get(daily).firstDay, Date.now());
   if (stage === 'part1' && inMs !== null) void schedulePush(playerId, PUSH_ID, inMs, 'Tack för att du testar Skärgårdsbyn!', body);
   if (stage !== 'part1') void cancelPush(playerId, PUSH_ID);
-  const endMs = endPushDelay(Date.now());
+  const endMs = endPushDelay(Date.now(), endDay());
   if (endMs !== null) void schedulePush(playerId, END_PUSH_ID, endMs, 'Tack för att du testade Skärgårdsbyn!', 'Det finns några sista frågor i spelet. Det tar några minuter.');
 }
 

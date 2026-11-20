@@ -3,7 +3,7 @@
   import { DEV_MENU } from '../lib/config/flags';
   import DevMenu from './DevMenu.svelte';
   import { startTutorial } from '../lib/tutorial';
-  import { testCode } from '../lib/testCode';
+  import { myCode } from '../lib/invite';
   import { enablePush, lastPushError, permissionNow, testPush } from '../lib/push/push';
   import { log } from '../lib/log/logger';
   import { flush } from '../lib/log/logger';
@@ -88,7 +88,7 @@
     <input type="checkbox" checked={$settings.logging === true} onchange={(e) => setLogging(e.currentTarget.checked)} />
     <span><strong>Skicka testdata</strong>: vad du gör i spelet och när, till Jonas Olson. {$contact || contactsOpen() ? 'Inget namn.' : 'Inget namn, ingen e-post.'}</span>
   </label>
-  <p>Din testkod: <strong class="code">{testCode(playerId)}</strong>. Vill du att dina uppgifter raderas, säg koden till Jonas.</p>
+  <p>Din testkod: <strong class="code">{myCode(playerId)}</strong>. Vill du att dina uppgifter raderas, säg koden till Jonas.</p>
 
   {#if $contact}
     <h2>Mejladress</h2>

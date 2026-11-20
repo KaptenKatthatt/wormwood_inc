@@ -8,7 +8,7 @@
   import { playerId } from '../lib/state/game';
   import { fetchInbox } from '../lib/state/reach';
   import { load, save } from '../lib/state/storage';
-  import { testCode } from '../lib/testCode';
+  import { myCode } from '../lib/invite';
 
   interface Sent { id: string; title: string; body: string; sentAt: number; to: string; push: boolean; recipients: number; shown: number; read: number }
   interface Contact { code: string; email: string; site: 'test' | 'dev'; savedAt: number }
@@ -100,7 +100,7 @@
       {#if status}<p class="fine" role="status">{status}</p>{/if}
     </form>
   {:else}
-    <p class="fine">{data.players.test} testare och {data.players.dev} i dev-versionen har öppnat spelet sedan den här funktionen kom. Din egen testkod här: <strong class="code">{testCode(playerId)}</strong>.</p>
+    <p class="fine">{data.players.test} testare och {data.players.dev} i dev-versionen har öppnat spelet sedan den här funktionen kom. Din egen testkod här: <strong class="code">{myCode(playerId)}</strong>.</p>
 
     <form class="stack" novalidate onsubmit={send}>
       <strong>Skriv till testarna</strong>

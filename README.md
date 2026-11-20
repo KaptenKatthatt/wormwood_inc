@@ -63,6 +63,10 @@ Varje avslutad bana loggas (`level_won` eller `level_lost`) med tid i sekunder, 
 
 Testare som inte kan intervjuas svarar i spelet i stället (`src/lib/questionnaire.ts`, `src/ui/Questionnaire.svelte`). Alla frågor har färdiga alternativ, och fritext är en frivillig ruta. Spelet frågar själv från testdag 8, högst tre gånger, och formuläret finns alltid under Inställningar. Del 1 ställs utan att något avslöjas. Debriefingen och de sista frågorna visas först när testaren väljer "Jag har testat klart", eller från `STUDY_END` för alla, så att den som spelar vidare inte påverkas. Från `STUDY_END` (19 december) måste formuläret besvaras innan spelet går vidare; därefter får testaren spela så länge hen vill. Svaren loggas som `questionnaire_part1` och `questionnaire_part2`; ett nej till att uppgifterna används loggas som `data_withdrawn` och stänger av loggningen.
 
+## Insläppet
+
+Testversionen går inte att spela förrän Jonas har släppt in spelaren (Jonas, 2026-11-20). Folk anmäler sig på jonasolson.se/exjobb (`POST /api/signup`, den enda vägen som en annan sida får anropa). Under "Testarna" i utvecklarmenyn väljer Jonas omgång för varje anmäld (piloten, omgång 1 eller 2) och får en personlig länk, `https://skargardsbyn.84.247.143.6.sslip.io/?kod=K7M2QX`, och en färdig mejltext. Utan inbjudan visar spelet bara en skylt med en ruta för koden (iPhones hemskärmsapp delar inte lagring med Safari, så där skrivs koden in en gång). Före omgångens dag visar spelet bara dagen. Koden blir testarens testkod och fungerar på högst två telefoner. Testare med "egen start" anmäler sig på en egen sida som Jonas skickar själv; deras vecka börjar när de först öppnar spelet, och frågeformuläret blir obligatoriskt dag 8 i stället för 19 december. Dev-versionen har inget insläpp. Server: `server/invites.mjs`; spelet: `src/lib/invite.ts`, `src/ui/Gate.svelte`, `src/ui/DevInvites.svelte`. Namn och adresser ligger i `signups.json`, skilt från loggen, och raderas efter 31 januari 2027.
+
 ## Kommandon
 
 ```bash

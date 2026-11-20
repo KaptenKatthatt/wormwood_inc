@@ -41,6 +41,10 @@ Jonas pastes it into the dev menu once per device. The addresses live in
 file by itself after 31 January 2027.
 Keep that file: new keys make every existing push subscription invalid.
 
+The signups from jonasolson.se/exjobb and the invitations (dev menu, "Testarna")
+live in `/var/lib/wormwood/signups.json`, `invites.json` and `rounds.json`. Names and
+addresses are emptied by the server after 31 January 2027; the codes and rounds stay.
+
 ## Reading the playtest log
 
 One file per day, one JSON object per line:
