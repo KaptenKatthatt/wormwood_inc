@@ -180,7 +180,7 @@ export function recast(walkers: Walker[], want: FigureKind[], levels: Levels, rn
 
 /**
  * The smith (Jonas approved him on 2026-11-20): he stands at the anvil inside
- * Smedjan and hammers a glowing iron, four blows and then a rest. His feet by
+ * Smedjan and hammers a glowing iron, four blows and then a short rest. His feet by
  * Smedjan's stage, so that the iron lies on the face of that stage's anvil.
  */
 export const SMITH_AT: Record<'1' | '2' | '3', [number, number]> = { '1': [233, 984], '2': [233, 972], '3': [226, 976] };
@@ -190,14 +190,33 @@ export const SMITH_SPARK: [number, number] = [-7, -12];
 const BLOW: [number, number][] = [[0, 0.3], [1, 0.07], [2, 0.11], [3, 0.14]];
 export const SMITH_BLOWS = 4;
 export const SMITH_REST = 2.2;
-export interface Smith { frame: number; t: number; i: number; blows: number; resting: boolean }
-export function newSmith(): Smith {
-  return { frame: 3, t: 0, i: -1, blows: 0, resting: false };
+/**
+ * He hammers for eight seconds and then stands idle for a good while, so the
+ * hammering is an event that comes back now and then (Jonas, 2026-11-20).
+ */
+export const SMITH_WORK = 8;
+/** Seconds idle between two spells of hammering, and before the first one. */
+export const SMITH_IDLE: [number, number] = [45, 120];
+export const SMITH_FIRST: [number, number] = [4, 15];
+export interface Smith { frame: number; t: number; i: number; blows: number; resting: boolean; work: number; idle: number }
+export function newSmith(rnd: () => number = Math.random): Smith {
+  return { frame: 3, t: 0, i: -1, blows: 0, resting: false, work: 0, idle: SMITH_FIRST[0] + rnd() * (SMITH_FIRST[1] - SMITH_FIRST[0]) };
 }
 /** Moves the smith on by dt seconds; true at the moment the hammer lands. */
-export function stepSmith(s: Smith, dt: number): boolean {
+export function stepSmith(s: Smith, dt: number, rnd: () => number = Math.random): boolean {
+  if (s.idle > 0) {
+    s.idle -= dt;
+    if (s.idle > 0) return false;
+    s.work = SMITH_WORK; s.t = 0; s.i = -1; s.blows = 0; s.resting = false;
+  }
+  s.work -= dt;
   s.t -= dt;
   if (s.t > 0) return false;
+  // A blow is finished (the hammer is up again): stop here when the eight seconds are over.
+  if (s.work <= 0 && s.frame === 3) {
+    s.idle = SMITH_IDLE[0] + rnd() * (SMITH_IDLE[1] - SMITH_IDLE[0]);
+    return false;
+  }
   if (s.resting) { s.resting = false; s.i = -1; s.blows = 0; }
   s.i = (s.i + 1) % BLOW.length;
   [s.frame, s.t] = BLOW[s.i];

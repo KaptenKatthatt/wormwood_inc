@@ -70,19 +70,27 @@ describe('the roads', () => {
 });
 
 describe('the smith', () => {
-  it('strikes four times and then rests', async () => {
-    const { newSmith, stepSmith, SMITH_REST } = await import('../src/lib/villageLife');
-    const s = newSmith();
-    let hits = 0;
-    let t = 0;
-    while (!s.resting && t < 10) { if (stepSmith(s, 0.01)) hits++; t += 0.01; }
-    expect(hits).toBe(4);
+  it('hammers for eight seconds now and then, and stands idle in between', async () => {
+    const { newSmith, stepSmith, SMITH_WORK, SMITH_IDLE, SMITH_FIRST } = await import('../src/lib/villageLife');
+    const s = newSmith(() => 0);
+    expect(s.idle).toBe(SMITH_FIRST[0]);
+    const hits: number[] = [];
+    for (let t = 0; t < 200; t += 0.01) if (stepSmith(s, 0.01, () => 0)) hits.push(t);
+    const first = hits.filter((t) => t < 40);
+    // the first spell starts after the first wait and lasts about eight seconds
+    expect(first[0]).toBeGreaterThan(SMITH_FIRST[0]);
+    expect(first[first.length - 1]).toBeLessThan(SMITH_FIRST[0] + SMITH_WORK + 1);
+    expect(first.length).toBeGreaterThanOrEqual(8);
+    // then nothing for the idle time, with the hammer up, and then a second spell
+    const second = hits.filter((t) => t >= 40);
+    expect(second[0]).toBeGreaterThan(SMITH_FIRST[0] + SMITH_WORK + SMITH_IDLE[0] - 1);
+    expect(second.length).toBeGreaterThanOrEqual(8);
+  });
+  it('stands with the hammer up while idle', async () => {
+    const { newSmith, stepSmith } = await import('../src/lib/villageLife');
+    const s = newSmith(() => 0);
+    for (let t = 0; t < 20; t += 0.01) stepSmith(s, 0.01, () => 0);
+    expect(s.idle).toBeGreaterThan(0);
     expect(s.frame).toBe(3);
-    expect(s.t).toBeCloseTo(SMITH_REST, 5);
-    // nothing lands during the rest, and then he starts again
-    for (let n = 0; n < 200; n++) expect(stepSmith(s, 0.01)).toBe(false);
-    let again = false;
-    for (let n = 0; n < 100; n++) again = stepSmith(s, 0.01) || again;
-    expect(again).toBe(true);
   });
 });
