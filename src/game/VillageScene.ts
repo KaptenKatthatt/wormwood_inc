@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import ART from './villageArt.json';
-import { cast, frameOf, newSmith, recast, SMITH_AT, SMITH_SPARK, step, stepSmith, type FigureKind, type Walker } from '../lib/villageLife';
+import { cast, FENCE, FENCE_BACK, FENCERS_AT, frameOf, newFencing, newSmith, recast, SMITH_AT, SMITH_SPARK, step, stepFencing, stepSmith, type FigureKind, type Walker } from '../lib/villageLife';
 import { play as playSound, playBell, warmBell } from '../lib/audio/sound';
 import { BELL, quarterOf, sinceQuarter, strikesAt, strokes } from '../lib/churchBell';
 import { sunIsDown } from '../lib/season';
@@ -32,6 +32,13 @@ type Look = 'summer' | 'a' | 'b' | 'c';
 /** The figures' pictures: four steps seen from the front, four from behind, at four times their size in the village. */
 const PEOPLE: FigureKind[] = ['villager', 'soldier', 'priest'];
 const CELL = { w: 160, h: 192, foot: 186, scale: 4 };
+/** The fencers' sheet has wider cells (the blade reaches far left); the body stands at x 140. */
+const FENCER = { w: 240, at: 140 };
+/**
+ * Kasernen's stage 2 has a yard wall in the south-east that the fencers stand right behind:
+ * these parts of the picture (background pixels: x0, x1, from y) are drawn again over their feet.
+ */
+const YARD_WALL: [number, number, number][] = [[414, 428, 991], [428, 446, 977.5], [446, 495, 974.5]];
 /** Drawing order: the background, then buildings and figures back to front, then signs and decorations. */
 const DEPTH = { ground: 1000, signs: 9000, decor: 9500 };
 const TOWER_IDS = ['vakttornet', 'tornet_o', 'tornet_s', 'tornet_v'];
@@ -74,6 +81,7 @@ export class VillageScene extends Phaser.Scene {
     this.load.image('v-bg', DIR + BG.file);
     for (const b of Object.values(BUILDINGS)) for (const s of Object.values(b.stages)) this.load.image(`v-${s.file}`, DIR + s.file);
     for (const k of ['hus', 'torn'] as const) this.load.image(`v-bygge-${k}`, DIR + ART.bygge[k].file);
+    this.load.spritesheet('v-people-fencer', `${DIR}people/fencer.webp`, { frameWidth: FENCER.w, frameHeight: CELL.h });
     this.load.spritesheet('v-people-smith', `${DIR}people/smith.webp`, { frameWidth: CELL.w, frameHeight: CELL.h });
     for (const k of PEOPLE) this.load.spritesheet(`v-people-${k}`, `${DIR}people/${k}.webp`, { frameWidth: CELL.w, frameHeight: CELL.h });
   }
@@ -90,6 +98,21 @@ export class VillageScene extends Phaser.Scene {
   private smithPic: Phaser.GameObjects.Image | null = null;
   private smithAt: [number, number] = [0, 0];
   private sparks: { dot: Phaser.GameObjects.Rectangle; x: number; y: number; vx: number; vy: number; life: number }[] = [];
+
+  // The fencers in Kasernen's yard (Jonas approved them 2026-11-20): there while Kasernen stands whole.
+  private fencing = newFencing();
+  private fencers: { pic: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Ellipse; at: [number, number]; left: boolean }[] = [];
+
+  private placeFencers(): void {
+    const { s, ox, oy } = this.place;
+    for (const f of this.fencers) {
+      const frame = f.left ? this.fencing.a : this.fencing.b;
+      const back = frame === FENCE.parry ? FENCE_BACK : 0;
+      const x = f.at[0] + (f.left ? -back : back);
+      f.pic.setFrame(frame).setPosition(ox + x * s, oy + f.at[1] * s);
+      f.shadow.setPosition(ox + (x + 2) * s, oy + (f.at[1] - 0.5) * s);
+    }
+  }
 
   private stepSparks(dt: number): void {
     const { s, ox, oy } = this.place;
@@ -187,6 +210,7 @@ export class VillageScene extends Phaser.Scene {
     const levels = this.levels();
     for (let n = 0; n < this.walkers.length; n++) { step(this.walkers[n], dt, levels); this.placeFigure(n); }
     this.stepSmithy(dt);
+    if (this.fencers.length) { stepFencing(this.fencing, dt); this.placeFencers(); }
   }
 
   /**
@@ -332,6 +356,7 @@ export class VillageScene extends Phaser.Scene {
     this.place = { s, ox, oy };
     this.aprons = [];
     this.smithPic = null;
+    this.fencers = [];
     this.sparks = []; // removeAll took the dots
 
     const plots: PlotView[] = this.registry.get('plots') ?? [];
@@ -363,6 +388,27 @@ export class VillageScene extends Phaser.Scene {
           this.smithAt = SMITH_AT[stage];
           this.smithPic = this.add.image(ox + this.smithAt[0] * s, oy + this.smithAt[1] * s, 'v-people-smith', this.smith.frame)
             .setOrigin(0.5, CELL.foot / CELL.h).setScale(s / CELL.scale).setDepth(front + 0.5);
+        }
+        if (id === 'kasernen' && !p.damaged && !p.building) {
+          // The fencers stand in the yard, over the picture; the left one is the same sheet mirrored.
+          const at = FENCERS_AT[stage];
+          for (const left of [true, false]) {
+            const shadow = this.add.ellipse(0, 0, 12 * s, 4.4 * s, 0x14190a, 0.3).setDepth(front + 0.4);
+            const fp = this.add.image(0, 0, 'v-people-fencer', FENCE.low).setFlipX(left)
+              .setOrigin((left ? FENCER.w - FENCER.at : FENCER.at) / FENCER.w, CELL.foot / CELL.h).setScale(s / CELL.scale).setDepth(front + 0.5);
+            this.fencers.push({ pic: fp, shadow, at: left ? at.a : at.b, left });
+          }
+          this.placeFencers();
+          if (stage === '2') {
+            // The yard wall in front of them covers their feet.
+            const kx = pic.width / (st.w + 2 * t.pad);
+            const ky = pic.height / (st.h + 2 * t.pad);
+            for (const [x0, x1, y0] of YARD_WALL) {
+              const cx = (x0 - st.x + t.pad) * kx;
+              const cy = (y0 - st.y + t.pad) * ky;
+              this.add.image(pic.x, pic.y, t.key).setOrigin(0).setScale(s).setCrop(cx, cy, (x1 - x0) * kx, pic.height - cy).setDepth(front + 0.6);
+            }
+          }
         }
         if (p.damaged) {
           // The damaged picture where there is one; otherwise the building darkened. A red sign over it.
