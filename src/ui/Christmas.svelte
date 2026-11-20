@@ -21,7 +21,7 @@
   }
 </script>
 
-<Modal title="Julen i Skärgårdsbyn">
+<Modal title="Julen i Skärgårdsbyn" onClose={() => xmasOpen.set(false)}>
   {#if today > 0}
     <p class="sign">⏳ {countdownText(today)}</p>
   {:else}

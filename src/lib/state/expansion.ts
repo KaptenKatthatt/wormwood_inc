@@ -15,7 +15,7 @@ import { load, randomId, save } from './storage';
 import { log } from '../log/logger';
 import { schedulePush } from '../push/push';
 import { tutorialActive } from '../tutorial';
-import type { HookId } from '../hooks';
+import { ON_HOLD, type HookId } from '../hooks';
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor, type WeekStep } from '../expansion/week';
 import {
   ADS_PER_DAY, adGroupFor, nextAd, type AdFilm, type AdGroup, ALBUM_REWARD, ALBUM_SIZE, GOLD_PASS_GEMS, HELP_COOLDOWN, HELP_DELAY, LEAGUE_DAYS, LEAGUE_PRIZES, PASS_DAYS,
@@ -107,7 +107,7 @@ export function testDay(): number {
 
 /** Is this expansion hook on now: built in, switched on, and its step reached? */
 export function weekOn(id: HookId): boolean {
-  if (!EXPANSION || !hookOn(id) || tutorialActive()) return false;
+  if (!EXPANSION || ON_HOLD.includes(id) || !hookOn(id) || tutorialActive()) return false;
   const step = stepOfHook(id);
   return step === 0 || get(exp).step >= step;
 }
@@ -126,7 +126,8 @@ function setStep(step: WeekStep, event: string): void {
   for (const d of WEEK_STEPS) if (d.step <= step && reached[d.step] === undefined) reached[d.step] = now();
   exp.set({ ...s, step, reached });
   log('week_step', { step, from: s.step, event, testDay: testDay(), world: s.maxWorld });
-  if (hookOn('figures') && get(settings).letters) {
+  // Step 7's letter is about the chests, so it waits with them while they are on hold.
+  if (hookOn('figures') && get(settings).letters && !(step === 7 && ON_HOLD.includes('chests'))) {
     letter.set({ text: STEP_LETTERS[step], key: `week${step}` });
     logHook('figures', { letter: `week${step}` }, 'shown');
   }

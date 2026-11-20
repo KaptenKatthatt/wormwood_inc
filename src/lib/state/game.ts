@@ -93,10 +93,12 @@ levelStats.subscribe((s) => save('levelStats', s));
 export const now = writable(clock.now());
 
 /** Short messages shown at the top. */
-export const toasts = writable<{ id: string; text: string }[]>([]);
-export function toast(text: string, ms = 3500): void {
+/** art: a small picture beside the text. 'angle' shows the two shapes that make fireworks. */
+export type ToastArt = 'angle';
+export const toasts = writable<{ id: string; text: string; art?: ToastArt }[]>([]);
+export function toast(text: string, ms = 3500, art?: ToastArt): void {
   const id = randomId();
-  toasts.update((t) => [...t, { id, text }]);
+  toasts.update((t) => [...t, { id, text, art }]);
   setTimeout(() => toasts.update((t) => t.filter((x) => x.id !== id)), ms);
 }
 
@@ -110,11 +112,11 @@ export function firstTime(id: string): boolean {
   return true;
 }
 
-export function tipOnce(id: string, text: string): void {
+export function tipOnce(id: string, text: string, art?: ToastArt): void {
   const seen = load<string[]>('tips', []);
   if (seen.includes(id)) return;
   save('tips', [...seen, id]);
-  toast(text, 6500);
+  toast(text, art ? 9000 : 6500, art);
   log('tip', { tip: id });
 }
 

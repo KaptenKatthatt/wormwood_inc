@@ -1,3 +1,4 @@
+import { ON_HOLD } from '../src/lib/hooks';
 import { describe, expect, it } from 'vitest';
 import { DUE_DAY, MAX_ASKS, MAX_TEXT, PART1, STUDY_END, afterPart1, mustAnswer, endPushDelay, answered, debrief, forLog, part2, pick, pushDelay, shouldAsk, startQ, testDayOf, type Reached } from '../src/lib/questionnaire';
 
@@ -63,13 +64,16 @@ describe('questionnaire', () => {
   it('only mentions what the player has met', () => {
     expect(debrief(early).join(' ')).not.toMatch(/grann|lyckohjul/i);
     expect(debrief(far).join(' ')).toMatch(/påhittade/);
-    expect(debrief(far).join(' ')).toMatch(/lyckohjulet/);
+    // The row of games is on hold (hooks.ts ON_HOLD), so nobody is told or asked about it.
+    const games = ON_HOLD.length === 0;
+    if (games) expect(debrief(far).join(' ')).toMatch(/lyckohjulet/);
+    else expect(debrief(far).join(' ')).not.toMatch(/lyckohjul|ligan/i);
     const ids = (r: Reached) => part2(r).map((q) => q.id);
     expect(ids(early)).toEqual(['noticed', 'strongest', 'after']);
     expect(ids(far)).toEqual(['noticed', 'strongest', 'realPlayers', 'after']);
     const strongest = (r: Reached) => { const q = part2(r)[1]; return q.kind === 'multi' ? q.options.map((o) => o.id) : []; };
     expect(strongest(early)).toEqual(['s1', 's2', 'none']);
-    expect(strongest(far)).toHaveLength(11);
+    expect(strongest(far)).toHaveLength(games ? 11 : 10);
   });
 
   it('requires every question but never the text boxes', () => {

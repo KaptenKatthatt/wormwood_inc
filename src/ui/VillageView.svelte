@@ -155,7 +155,7 @@
           {/if}
         {/each}
       </ul>
-      <button class="primary play" onclick={onPlay}>Spela för guld</button>
+      <button class="primary play" onclick={onPlay}>Till Kartan</button>
     </div>
   {/if}
 </section>

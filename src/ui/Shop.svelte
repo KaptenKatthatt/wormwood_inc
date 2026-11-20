@@ -12,7 +12,7 @@
   }
 </script>
 
-<Modal title="Butiken">
+<Modal title="Butiken" onClose={close}>
   <p>Du har <strong>{$purse.gems} ädelstenar</strong> och <strong>{formatKr($purse.kronor)}</strong> i testplånboken.</p>
   <ul class="packs">
     {#each GEM_PACKS as pack (pack.id)}

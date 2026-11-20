@@ -16,6 +16,14 @@ export type HookId =
   // Christmas in Skargardsbyn, 1-24 December (Jonas, 2026-11-19).
   | 'christmas';
 
+/**
+ * The row of games over the map (league, pass, album, chests, wheel, champions)
+ * is out of the game for now (Jonas, 2026-11-20): he had not gone through them
+ * one by one, and wants to do that before they come back. Empty this list to
+ * bring them back.
+ */
+export const ON_HOLD: readonly string[] = ['league', 'pass', 'album', 'chests', 'wheel', 'heroes'];
+
 export const HOOKS: { id: HookId; step: number; name: string; what: string }[] = [
   { id: 'starterHelp', step: 1, name: 'Starthjälp', what: 'Startbidrag i guld och ädelstenar, de två första byggena gratis och klara på sekunder. Gäller från nästa nollställning.' },
   { id: 'nearWin', step: 2, name: 'Riggad nära vinst', what: 'Nya brickor styrs så att banan slutar precis vid målet. Av: ärlig slump.' },

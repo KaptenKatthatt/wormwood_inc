@@ -6,7 +6,7 @@
   let { onClose }: { onClose: () => void } = $props();
 </script>
 
-<Modal title="Medverkande">
+<Modal title="Medverkande" {onClose}>
   <div class="credits">
     <h3>Spelet</h3>
     <p>Idé, design och ledning: Jonas Olson. Spelet är ett examensarbete från 2026.</p>

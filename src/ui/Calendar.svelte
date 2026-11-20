@@ -19,7 +19,7 @@
   }
 </script>
 
-<Modal title="Dagens gåva">
+<Modal title="Dagens gåva" onClose={close}>
   <ol class="days" aria-label="Sju dagars gåvor">
     {#each CALENDAR as g, i}
       {@const taken = i < $daily.claimed}

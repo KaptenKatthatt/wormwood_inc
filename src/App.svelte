@@ -105,7 +105,17 @@
   </nav>
   {/if}
   <div class="toasts" aria-live="polite">
-    {#each $toasts as t (t.id)}<div class="toast">{t.text}</div>{/each}
+    {#each $toasts as t (t.id)}
+      <div class="toast">
+        {#if t.art === 'angle'}
+          <!-- The two shapes that make fireworks: five tiles in a corner and in a T. -->
+          <svg class="shapes" viewBox="0 0 84 34" aria-hidden="true">
+            {#each [[0, 0], [0, 11], [0, 22], [11, 22], [22, 22], [50, 0], [61, 0], [72, 0], [61, 11], [61, 22]] as [x, y]}<rect {x} {y} width="10" height="10" rx="2" />{/each}
+          </svg>
+        {/if}
+        <span>{t.text}</span>
+      </div>
+    {/each}
   </div>
   {#if $offerOpen && !tutStep}<Offer />{/if}
   {#if $awayReport && !tutStep}<AwayReport />{:else if $streakRepair && !tutStep}<StreakRepair />{:else if $calendarOpen && !tutStep}<Calendar />{/if}
@@ -134,5 +144,6 @@
   .tab { background: none; border: 0; border-radius: 0; min-height: 56px; font-weight: 600; color: var(--muted); }
   .tab[aria-current='page'] { color: var(--falu); box-shadow: inset 0 3px 0 var(--falu); }
   .toasts { position: fixed; top: var(--note-top); left: 0; right: 0; display: grid; justify-items: center; gap: 6px; pointer-events: none; z-index: 5; }
-  .toast { background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: 6px; font-weight: 600; max-width: calc(100% - 32px); }
+  .toast { display: flex; align-items: center; gap: 12px; background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: 6px; font-weight: 600; max-width: calc(100% - 32px); }
+  .shapes { flex: none; width: 84px; height: 34px; fill: #f2c230; }
 </style>

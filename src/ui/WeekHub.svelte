@@ -54,7 +54,7 @@
 </script>
 
 {#if tab}
-<Modal title={TITLES[tab]}>
+<Modal title={TITLES[tab]} onClose={close}>
   {#if tab === 'liga'}
     <p>Tio byar tävlar om stjärnor i en vecka. Topp 3 får ädelstenar, de tre sista flyttas ner. {leagueLeft > 0 ? `${left(leagueLeft)} kvar.` : 'Ligan är slut.'}</p>
     <ol class="table">

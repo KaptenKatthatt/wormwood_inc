@@ -121,14 +121,14 @@
 
   /** The first time each special tile is made, a short tip says what it does. */
   const SPECIAL_TIPS: Record<string, string> = {
-    rocket: 'Fyra i rad gav en raket. Tryck på den eller byt den med en granne, så tar den allt åt det håll nosen pekar.',
-    area: 'Ett L eller T gav fyrverkerier. Tryck på dem eller byt dem med en granne, så smäller allt runt omkring.',
+    rocket: 'Fyra i rad gav en raket. Tryck på den, eller dra den till brickan bredvid, så rensar den hela raden åt det håll nosen pekar.',
+    area: 'Fem brickor i vinkel gav fyrverkerier. Tryck på dem, eller dra dem till brickan bredvid, så smäller allt runt omkring.',
     all: 'Fem i rad gav en lysande bricka. Tryck på den, så försvinner alla brickor av samma sort.',
   };
   function noteSpecials(r: SwapResult) {
     const made = r.steps.flatMap((s) => s.made.map((m) => m.special ?? 'bomb'));
     if (made.length) log('specials_made', { level: game?.level.id, made });
-    for (const m of new Set(made.map((m) => (isRocket(m) ? 'rocket' : m)))) if (SPECIAL_TIPS[m] && $tutorial.index === null) tipOnce(`special-${m}`, SPECIAL_TIPS[m]);
+    for (const m of new Set(made.map((m) => (isRocket(m) ? 'rocket' : m)))) if (SPECIAL_TIPS[m] && $tutorial.index === null) tipOnce(`special-${m}`, SPECIAL_TIPS[m], m === 'area' ? 'angle' : undefined);
   }
 
   function onMoved(r: SwapResult) {
@@ -418,7 +418,7 @@
 {/if}
 
 {#if $gateOpenDialog}
-  <Modal title="Vintermarknaden är stängd">
+  <Modal title="Vintermarknaden är stängd" onClose={() => gateOpenDialog.set(false)}>
     <p>Marknaden öppnar när du har {HELPERS_NEEDED} grannar som hjälper till. Nu har du {helpersNow().length}.</p>
     <div class="buttons">
       <button class="primary" onclick={() => { invite(); }}>Bjud in en granne</button>
