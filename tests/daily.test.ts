@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CALENDAR, canClaim, claim, dayHooksActive, dayKey, daysBetween, liveStreak, nextReminder, recordWin, startDaily, weekendEvent } from '../src/lib/daily';
+import { CALENDAR, canClaim, claim, giftSign, dayHooksActive, dayKey, daysBetween, liveStreak, nextReminder, recordWin, startDaily, weekendEvent } from '../src/lib/daily';
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).getTime();
 
@@ -50,5 +50,12 @@ describe('daily', () => {
     expect(weekendEvent(at(2026, 11, 18)).on).toBe(false);
     expect(new Date(weekendEvent(at(2026, 11, 22)).endsAt).getDate()).toBe(23);
     expect(new Date(nextReminder(at(2026, 11, 17, 9))).getHours()).toBe(18);
+  });
+
+  it('says what a taken gift was, in words', () => {
+    expect(giftSign(CALENDAR[0])).toBe('Du fick 100 guld!');
+    expect(giftSign(CALENDAR[1])).toBe('Du fick 10 ädelstenar!');
+    expect(giftSign(CALENDAR[3])).toBe('Du fick 8 timmars skydd mot attacker!');
+    expect(giftSign(CALENDAR[6])).toBe('Du fick 500 guld och 50 ädelstenar!');
   });
 });

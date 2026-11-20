@@ -17,6 +17,7 @@
   import { lives, purse } from '../lib/state/game';
   import { FIELD_DEG, FLAP_GRIP, SPIN_GEMS, WHEEL, discField, landingAngle, nearJackpot } from '../lib/expansion/luck';
   import { musicNow, play, playTick, setMusic } from '../lib/audio/sound';
+  import { silently } from '../lib/audio/director';
   import { countAt, flyReward, pieces, type RewardKind } from '../lib/ui/flyReward';
 
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -135,7 +136,8 @@
     if (spinning) return;
     collect(false);
     if (!canPay) return;
-    const i = spin();
+    // The purse is paid now, but the prize is not known until the wheel has stopped: no reward sound here.
+    const i = silently(() => spin());
     if (i === null) return;
     spinning = true; result = null; glow = false;
     if (cost > 0) { gems = get(purse).gems - (WHEEL[i].gems ?? 0); bump('gems'); }
@@ -250,7 +252,8 @@
     return (Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180) / Math.PI;
   }
   function grab(e: PointerEvent) {
-    if (spinning || held) return;
+    // The wheel stands still while the win sign is up (Jonas, 2026-11-20).
+    if (spinning || held || waiting) return;
     e.preventDefault();
     held = { id: e.pointerId, a: angle(e), moved: 0, last: Math.floor((R - FLAP_GRIP) / FIELD_DEG), track: [[performance.now(), R]] };
     wheelEl.setPointerCapture(e.pointerId);
@@ -378,7 +381,7 @@
   .x:disabled { opacity: .5; }
 
   .scene { position: relative; flex: none; margin-top: auto; width: min(100%, 520px, (100dvh - 150px) * 2 / 3); aspect-ratio: 2 / 3; background: url(/art/wheel/scene.webp) center / cover no-repeat; container-type: inline-size; }
-  .sign { position: absolute; left: 16%; right: 16%; top: 18.6%; height: 4%; display: grid; place-items: center; color: #fbf1d8; font-weight: 800; letter-spacing: .14em; font-size: clamp(14px, 5.2cqw, 26px); text-shadow: 0 2px 0 #0e1d3d; }
+  .sign { position: absolute; left: 16%; right: 16%; top: 18.67%; height: 2.92%; display: grid; place-items: center; line-height: 1; color: #fbf1d8; font-weight: 800; letter-spacing: .14em; font-size: clamp(14px, 5.2cqw, 26px); text-shadow: 0 2px 0 #0e1d3d; }
   .box { position: absolute; left: 15%; width: 70%; top: 28.1%; aspect-ratio: 1; container-type: inline-size; }
   .shadow { position: absolute; inset: 1.5% -2% -3% 2%; border-radius: 50%; background: rgb(60 40 10 / .32); filter: blur(6px); }
   .wheel { position: absolute; inset: 0; border-radius: 50%; will-change: transform; cursor: grab; touch-action: none; }

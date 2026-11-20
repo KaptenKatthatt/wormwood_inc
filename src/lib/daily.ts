@@ -41,6 +41,15 @@ export function giftText(g: Gift): string {
   return parts.join(' + ');
 }
 
+/** The sign under a gift that has just been taken: what the player got, in words. */
+export function giftSign(g: Gift): string {
+  if (g.shieldHours) return `Du fick ${g.shieldHours} timmars skydd mot attacker!`;
+  const parts: string[] = [];
+  if (g.gold) parts.push(`${g.gold} guld`);
+  if (g.gems) parts.push(`${g.gems} ädelstenar`);
+  return `Du fick ${parts.join(' och ')}!`;
+}
+
 export type DayMode = 'auto' | 'on' | 'off';
 
 export interface DailyState {

@@ -97,30 +97,34 @@ let flights = 0;
 
 /**
  * A dialog that has just paid gold or gems into the purse calls this in the
- * same tick: the menu bar keeps showing the old amount, is lifted above the
- * dialog's dark backdrop, and counts up as the pieces fly in from `from()`
- * (asked for on the next frame, when the dialog has drawn its "you got" line).
+ * same tick: the menu bar keeps showing the old amount. The function it
+ * returns starts the flight from `from` (when the player taps the reward, say):
+ * the menu bar is lifted above the dialog's dark backdrop and counts up as the
+ * pieces land. `done` is called when the last piece has landed.
  */
-export function rewardToMenuBar(kind: 'gold' | 'gems', amount: number, from: () => Element | null, delay = 0): void {
-  if (amount <= 0 || typeof document === 'undefined') return;
+export function holdReward(kind: 'gold' | 'gems', amount: number): (from: Element | null, done?: () => void) => void {
+  if (amount <= 0 || typeof document === 'undefined') return (_from, done) => done?.();
   inFlight.update((f) => ({ ...f, [kind]: f[kind] + amount }));
   let left = amount;
+  let started = false;
   const settle = (now: number) => {
     inFlight.update((f) => ({ ...f, [kind]: Math.max(0, f[kind] - (left - now)) }));
     left = now;
   };
-  const end = () => {
-    settle(0);
-    if (--flights <= 0) { flights = 0; document.body.classList.remove('reward-flying'); }
-  };
-  flights++;
-  document.body.classList.add('reward-flying');
-  setTimeout(() => requestAnimationFrame(() => {
-    const origin = from();
+  return (from, done) => {
+    if (started) return;
+    started = true;
+    const end = () => {
+      settle(0);
+      if (--flights <= 0) { flights = 0; document.body.classList.remove('reward-flying'); }
+      done?.();
+    };
+    flights++;
+    document.body.classList.add('reward-flying');
     const target = document.querySelector(`[data-counter="${kind}"]`);
-    if (!origin || !target) { end(); return; }
+    if (!from || !target) { end(); return; }
     flyReward({
-      src: ART[kind], n: pieces(kind, amount), from: origin, to: target,
+      src: ART[kind], n: pieces(kind, amount), from, to: target,
       onLand: (k, n) => {
         settle(amount - countAt(0, amount, k, n));
         target.classList.remove('landed');
@@ -129,5 +133,5 @@ export function rewardToMenuBar(kind: 'gold' | 'gems', amount: number, from: () 
       },
       onDone: end,
     });
-  }), delay);
+  };
 }

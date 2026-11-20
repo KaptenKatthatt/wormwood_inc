@@ -28,6 +28,17 @@ export function mapHidden(): void {
   onMap = false;
 }
 
+let quiet = false;
+/**
+ * Runs fn without the reward sounds for what it pays into the purse. For a
+ * prize that is paid before the player may know about it (the wheel pays when
+ * the spin starts) or that makes its own sound when it is shown (today's gift).
+ */
+export function silently<T>(fn: () => T): T {
+  quiet = true;
+  try { return fn(); } finally { quiet = false; }
+}
+
 export function initSoundDirector(startTab: string): void {
   initSound();
   // The game opens on the title screen (the boathouse) with its own tune, "Solsken"
@@ -71,8 +82,10 @@ export function initSoundDirector(startTab: string): void {
   // Gold and gems coming in are the reward sounds (counted, not spent).
   let last = get(purse);
   purse.subscribe((p) => {
-    if (p.gold > last.gold) play('coins');
-    if (p.gems > last.gems) play('gems');
+    if (!quiet) {
+      if (p.gold > last.gold) play('coins');
+      if (p.gems > last.gems) play('gems');
+    }
     last = p;
   });
 }
