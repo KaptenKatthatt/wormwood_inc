@@ -32,7 +32,11 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
 button:disabled { opacity: .45; cursor: not-allowed; }
 /* Every round close cross takes its shape from here, so that none ends up an oval: a
    component only adds its own colours. tests/closeCross.test.ts keeps them all on it. */
-button.close-x { flex: none; box-sizing: border-box; display: grid; place-items: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; aspect-ratio: 1; padding: 0; border-radius: 50%; font-size: 1.2rem; font-weight: 700; line-height: 1; }
+button.close-x { position: relative; flex: none; box-sizing: border-box; width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; aspect-ratio: 1; padding: 0; border-radius: 50%; font-size: 0; line-height: 0; }
+/* The cross is drawn as two bars, not set as a letter: a letter sits where its font puts
+   it, which is seldom the exact middle of the circle. */
+button.close-x::before, button.close-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 18px; height: 3px; margin: -1.5px 0 0 -9px; border-radius: 2px; background: currentColor; transform: rotate(45deg); }
+button.close-x::after { transform: rotate(-45deg); }
 .primary { background: var(--falu); color: #fff6ee; }
 .primary:hover:not(:disabled) { background: var(--falu-hi); }
 .ghost { background: transparent; color: var(--ink); border-color: var(--line); }

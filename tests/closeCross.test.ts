@@ -14,6 +14,9 @@ describe('close cross', () => {
     const rule = /button\.close-x \{([^}]*)\}/.exec(css)?.[1] ?? '';
     for (const part of ['width: 44px', 'height: 44px', 'min-width: 44px', 'min-height: 44px', 'border-radius: 50%'])
       expect(rule).toContain(part);
+    // Drawn bars, centred by the rule itself, instead of a letter placed by its font.
+    expect(rule).toContain('font-size: 0');
+    expect(css).toMatch(/button\.close-x::before, button\.close-x::after \{[^}]*left: 50%; top: 50%/);
   });
 
   it('is used by every button that shows a cross', () => {
