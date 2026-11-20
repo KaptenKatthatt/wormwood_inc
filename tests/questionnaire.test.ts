@@ -62,7 +62,8 @@ describe('questionnaire', () => {
   });
 
   it('only mentions what the player has met', () => {
-    const games = !ON_HOLD.includes('league');
+    const league = !ON_HOLD.includes('league');
+    const games = league && !ON_HOLD.includes('album') && !ON_HOLD.includes('heroes');
     const neighbours = !ON_HOLD.includes('conquest');
     const wheel = !ON_HOLD.includes('wheel');
     expect(debrief(early).join(' ')).not.toMatch(/grann|lyckohjul/i);
@@ -72,7 +73,8 @@ describe('questionnaire', () => {
     if (games || wheel) expect(debrief(far).join(' ')).toMatch(/lyckohjulet/i);
     else expect(debrief(far).join(' ')).not.toMatch(/lyckohjul/i);
     const chests = !ON_HOLD.includes('chests');
-    if (!games) expect(debrief(far).join(' ')).not.toMatch(/ligan/i);
+    if (league) expect(debrief(far).join(' ')).toMatch(/veckoligan var påhittade/);
+    else expect(debrief(far).join(' ')).not.toMatch(/ligan/i);
     if (chests) expect(debrief(far).join(' ')).toMatch(/kistorna/i);
     else if (!games) expect(debrief(far).join(' ')).not.toMatch(/kistorna/i);
     const ids = (r: Reached) => part2(r).map((q) => q.id);

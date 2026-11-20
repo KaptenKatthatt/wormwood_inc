@@ -25,7 +25,8 @@ export type HookId =
 export const ON_HOLD: readonly string[] = [
   // The chests came back on 2026-11-20, when Jonas had approved their screen and their opening.
   // The week pass came back the same day, with its missions.
-  'league', 'album', 'heroes',
+  // The weekly league came back the same day, with five leagues and the screen from its mockup.
+  'album', 'heroes',
   // The Neighbours tab went the same way the same day: the army, the villages to
   // take over, the loyalty tiers and the neighbours who help and want gifts.
   'askHelp', 'conquest', 'troops', 'powerCreep', 'vip', 'neighboursNeeded', 'fakeGifts',
@@ -54,7 +55,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'figures', step: 0, name: 'Figurer som pressar', what: 'Breven till spelaren, bybornas pratbubblor och trivselmätaren.' },
   // ---- The expansion: steps 6-9 come during the week at home (day or world, whichever is first).
   { id: 'stars', step: 1, name: 'Stjärnor per bana', what: '1-3 stjärnor efter hur många drag som var kvar. Lexikonet: Poäng, nivåer och märken.' },
-  { id: 'league', step: 6, name: 'Veckoliga', what: 'Byn tävlar mot nio påhittade grannbyar om stjärnor. Topp 3 får ädelstenar, de tre sista flyttas ner. Lexikonet: Topplistor.' },
+  { id: 'league', step: 6, name: 'Veckoliga', what: 'Byn tävlar en vecka i taget mot nio påhittade grannbyar om stjärnor, i fem ligor. Plats 1 till 3 får ädelstenar och flyttas upp, plats 8 till 10 flyttas ner. Två av byarna är styrda att ligga strax före eller efter spelaren, och en går om sista dygnet. Lexikonet: Topplistor.' },
   { id: 'askHelp', step: 6, name: 'Be grannarna om liv', what: 'Utan liv kan spelaren be grannarna om liv och skicka gåvor tillbaka. Lexikonet: Be om hjälp.' },
   { id: 'album', step: 6, name: 'Samlaralbum', what: 'Sex set med sex bilder; en bild per vinst, de sista är sällsynta. Lexikonet: Samla alla.' },
   { id: 'ads', step: 6, name: 'Belönad reklam', what: 'En påhittad reklamfilm på 10 sekunder ger ett liv eller dubbelt guld. Lexikonet: Belönad reklam.' },

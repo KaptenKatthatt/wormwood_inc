@@ -4,7 +4,7 @@
    * A button shows up when its hook's step is reached, with a badge when
    * something waits (a chest that is ready, today's free spin).
    */
-  import { exp, freeSpinReady, hubOpen, leagueRows, passWaiting, renewPass, weekOn } from '../lib/state/expansion';
+  import { exp, freeSpinReady, hubOpen, leaguePrizeWaiting, leagueRows, passWaiting, renewPass, weekOn } from '../lib/state/expansion';
   import { now } from '../lib/state/game';
   import { leagueRank, passTier, ALBUM_SIZE, PASS_TIERS } from '../lib/expansion/social';
   import { logHook } from '../lib/state/game';
@@ -16,7 +16,7 @@
   const items = $derived.by(() => {
     void $now; void $exp;
     const out: { id: Id; icon: string; art?: string; label: string; badge?: string }[] = [];
-    if (weekOn('league') && $exp.league) out.push({ id: 'liga', icon: '🏆', label: `Plats ${leagueRank(leagueRows())}` });
+    if (weekOn('league') && $exp.league) out.push({ id: 'liga', icon: '🏆', label: `Plats ${leagueRank(leagueRows())}`, badge: leaguePrizeWaiting() ? 'Pris' : undefined });
     if (weekOn('pass') && $exp.pass) {
       const waiting = passWaiting();
       out.push({ id: 'pass', icon: '🎟️', art: '/art/pass/ticket.webp', label: `Pass ${passTier($exp.pass.xp)}/${PASS_TIERS}`, badge: waiting ? String(waiting) : undefined });

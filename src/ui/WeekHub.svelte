@@ -1,14 +1,14 @@
 <script lang="ts">
   /**
-   * The week's hooks in one sheet: league, pass, album (step 6) and chests,
+   * The week's hooks in one sheet: pass, album (step 6) and chests,
    * wheel, champions (step 7). Opened from the strip over the map.
    */
   import Modal from './Modal.svelte';
   import {
-    buyGoldPass, buyRoyalChest, claimPass, draw, exp, hubOpen, leagueRows, openChestNow, passActive,
+    buyGoldPass, buyRoyalChest, claimPass, draw, exp, hubOpen, openChestNow, passActive,
   } from '../lib/state/expansion';
   import { now, purse } from '../lib/state/game';
-  import { ALBUM_SETS, ALBUM_SIZE, GOLD_PASS_GEMS, LEAGUE_DAYS, PASS_DAYS, PASS_TIERS, PASS_XP_PER_TIER, passReward, passTier, rewardText } from '../lib/expansion/social';
+  import { ALBUM_SETS, ALBUM_SIZE, GOLD_PASS_GEMS, PASS_DAYS, PASS_TIERS, PASS_XP_PER_TIER, passReward, passTier, rewardText } from '../lib/expansion/social';
   import { CHAMPIONS, CHEST_SLOTS, chestSkipGems, DRAW_GEMS, PITY_HARD, ROYAL_CHEST_GEMS, TEN_DRAW_GEMS, championPower, type Champion, type ChestLoot } from '../lib/expansion/luck';
   import { formatDuration, HOUR } from '../lib/time/clock';
   import { stickerName } from '../lib/expansion/social';
@@ -17,10 +17,6 @@
   const left = (ms: number) => (ms >= 48 * HOUR ? `${Math.floor(ms / (24 * HOUR))} dagar` : formatDuration(ms));
   const TITLES = { liga: 'Veckoligan', pass: 'Veckopasset', album: 'Albumet', kistor: 'Kistor', hjul: 'Lyckohjulet', kampar: 'Kämpar' } as const;
   const tab = $derived($hubOpen);
-
-  // league
-  const rows = $derived.by(() => { void $now; void $exp; return leagueRows(); });
-  const leagueLeft = $derived($exp.league ? $exp.league.startedAt + LEAGUE_DAYS * 24 * HOUR - $now : 0);
 
   // pass
   const tier = $derived($exp.pass ? passTier($exp.pass.xp) : 0);
@@ -39,14 +35,7 @@
 
 {#if tab}
 <Modal title={TITLES[tab]} onClose={close}>
-  {#if tab === 'liga'}
-    <p>Tio byar tävlar om stjärnor i en vecka. Topp 3 får ädelstenar, de tre sista flyttas ner. {leagueLeft > 0 ? `${left(leagueLeft)} kvar.` : 'Ligan är slut.'}</p>
-    <ol class="table">
-      {#each rows as r, i}
-        <li class:me={r.me} class:top={i < 3} class:bottom={i >= 7}><span>{i + 1}. {r.name}</span><strong>{r.points} ★</strong></li>
-      {/each}
-    </ol>
-  {:else if tab === 'pass' && $exp.pass}
+  {#if tab === 'pass' && $exp.pass}
     <p>Klara utmaningar för att gå upp i nivå. {passActive() ? `Passet tar slut om ${left(passLeft)}; det som inte hämtats försvinner.` : 'Passet är slut.'}</p>
     <div class="xp" role="progressbar" aria-valuemin="0" aria-valuemax={PASS_XP_PER_TIER} aria-valuenow={$exp.pass.xp % PASS_XP_PER_TIER} aria-label="Till nästa nivå"><span style:width={`${(($exp.pass.xp % PASS_XP_PER_TIER) / PASS_XP_PER_TIER) * 100}%`}></span></div>
     <p class="fine">Nivå {tier} av {PASS_TIERS}.</p>
@@ -115,11 +104,7 @@
 {/if}
 
 <style>
-  .table, .tiers, .album, .chests, .drawn, .owned { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-  .table li { display: flex; justify-content: space-between; padding: 4px 8px; border-radius: 6px; background: #fff8ec; }
-  .table li.top { border-left: 4px solid #e0b04a; }
-  .table li.bottom { border-left: 4px solid #b8382a; }
-  .table li.me { background: #f2c230; font-weight: 800; }
+  .tiers, .album, .chests, .drawn, .owned { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
   .xp { height: 10px; background: #e6d8c2; border-radius: 5px; overflow: hidden; }
   .xp span { display: block; height: 100%; background: #3f8f3a; }
   .tiers li { display: grid; grid-template-columns: 28px 1fr 1fr; gap: 6px; align-items: center; opacity: .6; }

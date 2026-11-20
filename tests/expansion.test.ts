@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ALL_LEVELS, CHALLENGE_COUNT, LEVELS, TOTAL_CHALLENGES, WORLDS, levelAt, makeChallenge, worldOf } from '../src/lib/match3/levels';
 import { WEEK_STEPS, starsFor, stepOfHook, weekStepFor } from '../src/lib/expansion/week';
 import { ADS, adGroupFor, adsFor, nextAd } from '../src/lib/expansion/social';
-import { ALBUM_SIZE, MISSIONS, drawSticker, freshMissions, leagueRank, leagueTable, missionProgress, missionReady, missionsOn, passReward, passTier, setComplete } from '../src/lib/expansion/social';
+import { ALBUM_SIZE, LEAGUES, LEAGUE_DAYS, MISSIONS, drawSticker, freshLeague, freshMissions, leagueEndsAt, leagueMove, leaguePrize, leagueRank, leagueResult, leagueTable, leagueTarget, stepLeague, missionProgress, missionReady, missionsOn, passReward, passTier, setComplete } from '../src/lib/expansion/social';
 import { FIELD_DEG, FLAP_GRIP, PITY_HARD, WHEEL, WHEEL_FREE_START, chestSkipGems, discField, drawChampion, landingAngle, legendaryChance, nearJackpot, openChest, segmentAtAngle, spinWheel } from '../src/lib/expansion/luck';
 import { ERA_FACTOR, NEIGHBOURS, activeHelpers, battle, neighbourDefence, personalOffer, storehouse, vipTier } from '../src/lib/expansion/conquest';
 import { BUILDINGS, START_VILLAGE, cleared } from '../src/lib/economy/village';
@@ -57,12 +57,98 @@ describe('the week staircase', () => {
 
 describe('step 6', () => {
   it('ranks the player among nine made-up villages', () => {
-    const rows = leagueTable(7, 0, 24 * HOUR, 20);
+    const rows = leagueTable({ ...freshLeague(7, 0, 1, 0), points: 20 }, 24 * HOUR);
     expect(rows).toHaveLength(10);
     expect(rows.filter((r) => r.me)).toHaveLength(1);
+    expect(rows.filter((r) => r.rigged)).toHaveLength(2);
+    expect(new Set(rows.map((r) => r.name)).size).toBe(10);
     const rank = leagueRank(rows);
     expect(rank).toBeGreaterThanOrEqual(1);
     expect(rank).toBeLessThanOrEqual(10);
+  });
+
+  it('has five leagues: up from places 1-3, down from 8-10, and nobody leaves the ladder', () => {
+    expect(LEAGUES).toHaveLength(5);
+    expect([1, 3, 4, 7, 8, 10].map((r) => leagueMove(2, r))).toEqual([1, 1, 0, 0, -1, -1]);
+    expect(leagueMove(0, 10)).toBe(0);
+    expect(leagueMove(4, 1)).toBe(0);
+  });
+
+  it('pays every place, more in a higher league', () => {
+    expect(leaguePrize(0, 1)).toEqual({ gems: 30 });
+    expect(leaguePrize(0, 3)).toEqual({ gems: 10 });
+    expect(leaguePrize(0, 5)).toEqual({ gold: 100 });
+    expect(leaguePrize(0, 9)).toEqual({ gold: 25 });
+    expect(leaguePrize(4, 1)).toEqual({ gems: 150 });
+    expect(leaguePrize(4, 10)).toEqual({ gold: 100 });
+  });
+
+  it('never lets an ordinary village lose stars', () => {
+    const l = freshLeague(11, 3, 1, 0);
+    const before: Record<string, number> = {};
+    for (let h = 0; h <= LEAGUE_DAYS * 24; h++) {
+      for (const r of leagueTable(l, h * HOUR)) {
+        if (r.me || r.rigged) continue;
+        expect(r.points).toBeGreaterThanOrEqual(before[r.name] ?? 0);
+        before[r.name] = r.points;
+      }
+    }
+  });
+
+  /** Plays a week: `wins(day)` two-star wins spread over each day, the rigged villages moved every half hour. */
+  function playWeek(tier: number, wins: (day: number) => number, seed = 3) {
+    let l = freshLeague(seed, tier, 1, 0);
+    for (let half = 0; half < LEAGUE_DAYS * 48; half++) {
+      const t = half * HOUR / 2;
+      const day = Math.floor(half / 48);
+      const n = wins(day);
+      // the day's wins come one an hour from noon
+      const slot = half % 48 - 24;
+      if (slot >= 0 && slot % 2 === 0 && slot / 2 < n) l = { ...l, points: l.points + 2 };
+      l = stepLeague(l, t);
+    }
+    return { l, result: leagueResult(l) };
+  }
+
+  it('moves a player up who wins about three challenges a day in the lowest league', () => {
+    for (const seed of [1, 2, 3, 4, 5]) expect(playWeek(0, () => 4, seed).result.move).toBe(1);
+    expect(leagueTarget(0)).toBe(42);
+    expect(leagueTarget(4)).toBe(154);
+  });
+
+  it('moves a player down who stops playing', () => {
+    for (const seed of [1, 2, 3]) expect(playWeek(2, (day) => (day < 1 ? 3 : 0), seed).result.move).toBe(-1);
+    // nobody is moved down from the lowest league
+    expect(playWeek(0, () => 0).result.move).toBe(0);
+  });
+
+  it('keeps the two rigged villages next to the player', () => {
+    let l = { ...freshLeague(5, 1, 1, 0), points: 40 };
+    l = stepLeague(l, 10 * HOUR);
+    // one waits to go past, the other trails within three stars
+    expect(l.rig[1]).toBeGreaterThanOrEqual(37);
+    for (let h = 10; h < 40; h++) l = stepLeague(l, h * HOUR);
+    expect(l.rig[0]).toBe(42);
+    expect(l.rig[1]).toBe(41);
+    // the player passes them, and they wait before going past again
+    l = { ...l, points: 46 };
+    l = stepLeague(l, 40 * HOUR);
+    l = stepLeague(l, 41 * HOUR);
+    expect(l.rig[0]).toBe(42);
+  });
+
+  it('lets one rigged village go past on the last day, and stand still after that', () => {
+    let l = { ...freshLeague(5, 1, 1, 0), points: 60, rig: [55, 58] as [number, number] };
+    const last = leagueEndsAt(l) - 20 * HOUR;
+    l = stepLeague(l, last);
+    expect(l.lastDay).toBe(true);
+    expect(l.rig[0]).toBe(64);
+    // two two-star wins tie it, and the player wins a tie
+    l = stepLeague({ ...l, points: 64 }, last + 10 * HOUR);
+    l = stepLeague(l, last + 19 * HOUR);
+    expect(l.rig[0]).toBe(64);
+    const rows = leagueTable(l, last + 19 * HOUR);
+    expect(rows.findIndex((r) => r.me)).toBeLessThan(rows.findIndex((r) => r.rigged && r.points === 64));
   });
 
   it('makes the last sticker of a set rare', () => {
