@@ -19,3 +19,11 @@ export const EXPANSION: boolean = import.meta.env.VITE_EXPANSION !== 'false';
  * approved the numbers and the pictures.
  */
 export const CHRISTMAS: boolean = DEV_MENU || import.meta.env.VITE_CHRISTMAS === 'true';
+
+/**
+ * The voluntary question about an e-mail address after the consent (Jonas,
+ * 2026-11-20). In the dev build so Jonas can look at it first; the tester
+ * build gets it with VITE_CONTACT_ASK=true once he has said yes. Without it
+ * the consent keeps its old promise of "no e-mail".
+ */
+export const CONTACT_ASK: boolean = DEV_MENU || import.meta.env.VITE_CONTACT_ASK === 'true';

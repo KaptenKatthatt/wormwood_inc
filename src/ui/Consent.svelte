@@ -17,7 +17,7 @@
     <h2 id="consent-title">Hej och välkommen!</h2>
     <p>Det här spelet är en del av ett examensarbete om mobilspel. Får spelet spara vad du gör i det, till exempel vilka banor du spelar, vad du köper för låtsaspengar och när du spelar, och skicka det till Jonas Olson?</p>
     <ul class="fine">
-      <li>Inget namn. Du får en testkod som bara Jonas kan koppla till dig.</li>
+      <li>{contactsOpen() ? 'Inget namn.' : 'Inget namn, ingen e-post.'} Du får en testkod som bara Jonas kan koppla till dig.</li>
       <li>Uppgifterna används bara i examensarbetet och raderas senast 1 mars 2027.</li>
       <li>Du kan sluta när du vill och be Jonas radera allt, utan att säga varför.</li>
     </ul>

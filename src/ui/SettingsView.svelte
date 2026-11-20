@@ -86,7 +86,7 @@
   <h2>Speltest</h2>
   <label class="row">
     <input type="checkbox" checked={$settings.logging === true} onchange={(e) => setLogging(e.currentTarget.checked)} />
-    <span><strong>Skicka testdata</strong>: vad du gör i spelet och när, till Jonas Olson. Inget namn.</span>
+    <span><strong>Skicka testdata</strong>: vad du gör i spelet och när, till Jonas Olson. {$contact || contactsOpen() ? 'Inget namn.' : 'Inget namn, ingen e-post.'}</span>
   </label>
   <p>Din testkod: <strong class="code">{testCode(playerId)}</strong>. Vill du att dina uppgifter raderas, säg koden till Jonas.</p>
 

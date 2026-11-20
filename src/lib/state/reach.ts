@@ -3,6 +3,7 @@
  * Jonas and the e-mail address the tester may have left. See src/lib/reach.ts.
  */
 import { derived, get, writable } from 'svelte/store';
+import { CONTACT_ASK } from '../config/flags';
 import { log } from '../log/logger';
 import { CONTACTS_END, emptyInbox, mergeInbox, nextUnread, type Inbox, type JonasMessage } from '../reach';
 import { playerId, settings } from './game';
@@ -65,7 +66,8 @@ contact.subscribe((c) => save('contactEmail', c));
 /** Opened from Settings to add an address later. */
 export const contactOpen = writable(false);
 
-export const contactsOpen = (): boolean => Date.now() < CONTACTS_END;
+/** False in a build without the question, and for everyone once the addresses have been deleted. */
+export const contactsOpen = (): boolean => CONTACT_ASK && Date.now() < CONTACTS_END;
 
 /** True while the question after the consent has not been answered. */
 export const contactDue = derived(settings, (s) => s.logging !== null && !s.contactAsked && contactsOpen());

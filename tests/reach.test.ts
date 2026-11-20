@@ -177,7 +177,12 @@ describe('what the game and the server share', () => {
     expect(dayText(Date.parse('2026-12-31T23:30:00Z'))).toBe('1 januari');
   });
 
-  it('no longer promises "no e-mail" anywhere in the game', () => {
-    for (const f of ['src/ui/Consent.svelte', 'src/ui/SettingsView.svelte']) expect(readFileSync(f, 'utf8')).not.toContain('ingen e-post');
+  it('promises "no e-mail" only where the game does not ask for one', () => {
+    for (const f of ['src/ui/Consent.svelte', 'src/ui/SettingsView.svelte']) {
+      const src = readFileSync(f, 'utf8');
+      expect(src.match(/ingen e-post/g)).toHaveLength(1);
+      expect(src).toContain("contactsOpen() ? 'Inget namn.' : 'Inget namn, ingen e-post.'");
+    }
+    expect(readFileSync('src/lib/state/reach.ts', 'utf8')).toContain('CONTACT_ASK && Date.now() < CONTACTS_END');
   });
 });
