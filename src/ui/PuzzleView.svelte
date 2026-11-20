@@ -8,7 +8,7 @@
   import { Match3, isRocket, type SwapResult } from '../lib/match3/engine';
   import { OBSTACLE_TIPS, goalText, introLevel, levelAt, regionOf, tileUrl, type Level, type Obstacle } from '../lib/match3/levels';
   import { EXPANSION } from '../lib/config/flags';
-  import { adReward, adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
+  import { adReward, adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, winterOpen, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
   import { GATE_SKIP_GEMS, HELPERS_NEEDED } from '../lib/expansion/conquest';
   import { makeRng } from '../lib/match3/rng';
   import { PRICE } from '../lib/economy/shop';
@@ -368,7 +368,7 @@
       <p class="fine tired">Byborna är trötta efter alla vinster i dag: {Math.round(reward.tired * 100)} % guld. Fullt igen i morgon.</p>
     {/if}
     {#if reward && (reward.finale || reward.starBonus)}
-      <p class="fine">{reward.base} för utmaningen{#if reward.finale}, {reward.finale} för dragen som blev över{/if}{#if reward.starBonus}, {reward.starBonus} för tre stjärnor{/if}.</p>
+      <p class="fine">{reward.base} för utmaningen{#if reward.finale}, {reward.finale} för dragen som blev över{/if}{#if reward.starBonus}, {reward.starBonus} för {reward.stars === 1 ? 'en stjärna' : reward.stars === 2 ? 'två stjärnor' : 'tre stjärnor'}{/if}.</p>
     {/if}
     {#if reward && weekOn('ads') && adsLeft() > 0 && !doubled}
       <button class="ghost" onclick={() => { doubled = true; offerAd('double', reward!.total); }}>▶ Titta på en kort film: dubbelt guld</button>
@@ -419,11 +419,15 @@
 
 {#if $gateOpenDialog}
   <Modal title="Vintermarknaden är stängd" onClose={() => gateOpenDialog.set(false)}>
+    {#if !winterOpen()}
+    <p>Vintermarknaden öppnar den 1 december.</p>
+    {:else}
     <p>Marknaden öppnar när du har {HELPERS_NEEDED} grannar som hjälper till. Nu har du {helpersNow().length}.</p>
     <div class="buttons">
       <button class="primary" onclick={() => { invite(); }}>Bjud in en granne</button>
       <button class="primary" onclick={() => { if (skipGate()) start(current); }}>Öppna nu för 💎 {GATE_SKIP_GEMS}</button>
     </div>
+    {/if}
     <div class="buttons"><button class="ghost" onclick={() => gateOpenDialog.set(false)}>Stäng</button></div>
   </Modal>
 {/if}

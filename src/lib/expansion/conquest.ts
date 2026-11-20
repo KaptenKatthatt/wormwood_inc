@@ -138,6 +138,14 @@ export const HELPER_GOLD_BONUS = 0.05;
 export const GATE_SKIP_GEMS = 100;
 /** The first challenge of the Winter market: it opens with three helpers (or gems). */
 export const GATE_AT = 161;
+/**
+ * The winter market, the fifth world, stays closed until 1 December (Jonas,
+ * 2026-11-20), whatever else would open it.
+ */
+export const WINTER_OPENS = { year: 2026, month: 12, day: 1 };
+export function winterOpenAt(ms: number): boolean {
+  return ms >= new Date(WINTER_OPENS.year, WINTER_OPENS.month - 1, WINTER_OPENS.day).getTime();
+}
 
 export interface Helper { name: string; arrivesAt: number; lastThanked: number }
 

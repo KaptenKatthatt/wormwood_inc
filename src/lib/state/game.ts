@@ -283,8 +283,8 @@ challengeNo.subscribe((n) => save('challengeNo', n));
 /** Best stars per challenge (Jonas, 2026-11-18); shown on the map. */
 export const bestStars = writable<Record<number, number>>(load('bestStars', {}));
 bestStars.subscribe((s) => save('bestStars', s));
-/** Extra gold for three stars. */
-export const THREE_STAR_GOLD = 30;
+/** Gold for each star of a win (Jonas, 2026-11-20: 10 per star, not 30 for three only). */
+export const STAR_GOLD = 10;
 
 /** What a win paid, for the dialog. */
 /** tired: the share of gold this win paid (1 = full; diminishing rewards). */
@@ -306,7 +306,7 @@ export function levelWon(levelId: number, extra: Record<string, unknown>, stars 
     finale = Math.round(finale * tired);
     logHook('diminishing', { win: w.n, share: tired }, 'shown');
   }
-  const starBonus = stars === 3 ? THREE_STAR_GOLD : 0;
+  const starBonus = Math.max(0, Math.min(3, stars)) * STAR_GOLD;
   const gold = base + finale + starBonus;
   addGold(gold);
   let streakBonus = 0;

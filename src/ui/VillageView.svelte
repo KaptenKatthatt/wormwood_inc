@@ -9,6 +9,7 @@
   import { countdownShown, forcedLook, villageLook, xmas, xmasDate, xmasDay, xmasOpen } from '../lib/state/christmas';
   import { countdownText, decorLayers } from '../lib/christmas';
   import { onMount } from 'svelte';
+  import { load, save } from '../lib/state/storage';
   import { BASE_BUILDINGS, BUILDINGS as ALL_BUILDINGS, WORLD_BUILDINGS_ON_HOLD, MAX_LEVEL, buildBlock, buildTime, cleared, priceFor, skipGems, topUpGems, type BuildingId } from '../lib/economy/village';
   import { EXPANSION } from '../lib/config/flags';
   import { WORLDS } from '../lib/match3/levels';
@@ -48,6 +49,24 @@
   const layers = $derived(CHRISTMAS ? decorLayers($xmas, look, starsFit) : []);
 
   onMount(() => { tutEvent('inVillage'); if (!tutorialActive()) firstLetter(); });
+
+  // The first three times the village opens, two fingers show that it can be
+  // pinched to zoom (Jonas, 2026-11-20). They go away at the first zoom.
+  const HINT_TIMES = 3;
+  let zoomHint = $state(false);
+  onMount(() => {
+    if (tutorialActive()) return;
+    const seen = load<number>('zoomHint', 0);
+    if (seen >= HINT_TIMES) return;
+    save('zoomHint', seen + 1);
+    zoomHint = true;
+    const t = setTimeout(() => (zoomHint = false), 6000);
+    return () => clearTimeout(t);
+  });
+  function zoomed() {
+    if (zoomHint) save('zoomHint', HINT_TIMES); // the player has it: no more hints
+    zoomHint = false;
+  }
   $effect(() => { if (constr) tutEvent('built'); });
   // Buildings damaged by a lost attack: half bonus and no upgrade until the player has them repaired.
   const damaged = $derived($stairs.damaged.map((d) => {
@@ -62,7 +81,13 @@
 
 <section class="view">
   <div class="canvas">
-    <GameCanvas scene={VillageScene} data={{ plots, look, layers }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
+    <GameCanvas scene={VillageScene} data={{ plots, look, layers }} on={{ 'village-zoomed': zoomed }} label={`Byn på udden. ${plots.filter((p) => !p.locked).length} av ${plots.length} tomter är röjda.`} />
+    {#if zoomHint && !sheet}
+      <div class="zoomhint" aria-hidden="true">
+        <span class="finger a"></span><span class="finger b"></span>
+        <span class="txt">Nyp för att zooma</span>
+      </div>
+    {/if}
     {#if figures}
       <div class="mood" role="meter" aria-label="Bybornas trivsel" aria-valuemin="0" aria-valuemax="100" aria-valuenow={$stairs.mood}>
         <span class="face" aria-hidden="true">{face}</span>
@@ -164,6 +189,14 @@
   .view { position: relative; height: 100%; overflow: hidden; }
   .canvas { position: absolute; inset: 0; }
   /* Everything that floats over the village sits in one column at the bottom. */
+  .zoomhint { position: absolute; left: 50%; top: 38%; width: 180px; height: 150px; margin-left: -90px; pointer-events: none; }
+  .zoomhint .finger { position: absolute; left: 50%; top: 45%; width: 34px; height: 34px; margin: -17px; border-radius: 50%; background: rgb(255 255 255 / .85); border: 3px solid var(--falu); box-shadow: 0 2px 6px rgb(0 0 0 / .4); }
+  .zoomhint .a { animation: pinch-a 1.8s ease-in-out infinite; }
+  .zoomhint .b { animation: pinch-b 1.8s ease-in-out infinite; }
+  .zoomhint .txt { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-weight: 700; color: #fff; text-shadow: 0 1px 4px #000, 0 0 8px #000; }
+  @keyframes pinch-a { 0%, 15% { transform: translate(-16px, 12px); } 60%, 100% { transform: translate(-62px, 46px); } }
+  @keyframes pinch-b { 0%, 15% { transform: translate(16px, -12px); } 60%, 100% { transform: translate(62px, -46px); } }
+  @media (prefers-reduced-motion: reduce) { .zoomhint .finger { animation: none; } .zoomhint .a { transform: translate(-62px, 46px); } .zoomhint .b { transform: translate(62px, -46px); } }
   .float { position: absolute; left: 10px; right: 10px; bottom: 12px; display: grid; gap: 8px; pointer-events: none; }
   .float > * { pointer-events: auto; }
   .building { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: rgb(255 248 236 / .96); border: 2px solid var(--frame); border-radius: 12px; padding: 8px 10px; box-shadow: 0 3px 0 var(--deep); }

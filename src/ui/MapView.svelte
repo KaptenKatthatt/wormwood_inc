@@ -12,7 +12,8 @@
   import NODES from '../lib/match3/mapNodes.json';
   import WORLD_NODES from '../lib/match3/worldNodes.json';
   import { DEV_MENU, EXPANSION } from '../lib/config/flags';
-  import { exp } from '../lib/state/expansion';
+  import { exp, winterOpen } from '../lib/state/expansion';
+  import { GATE_AT } from '../lib/expansion/conquest';
   import { bestStars } from '../lib/state/game';
   import WeekStrip from './WeekStrip.svelte';
 
@@ -73,7 +74,7 @@
   {#if EXPANSION}
     <div class="worldbar">
       <button class="ghost arrow" disabled={viewWorld <= 1} aria-label="Föregående värld" onclick={() => (viewWorld = Math.max(1, viewWorld - 1))}>‹</button>
-      <div class="wname"><strong>{world.name}</strong><span>Värld {viewWorld} av {WORLDS.length} · utmaning {world.from}–{world.to}</span></div>
+      <div class="wname"><strong>{world.name}</strong><span>{#if world.from >= GATE_AT && !winterOpen()}Öppnar 1 december{:else}Värld {viewWorld} av {WORLDS.length} · utmaning {world.from}–{world.to}{/if}</span></div>
       <button class="ghost arrow" disabled={viewWorld >= maxWorld} aria-label="Nästa värld" onclick={() => (viewWorld = Math.min(maxWorld, viewWorld + 1))}>›</button>
     </div>
     <WeekStrip />

@@ -13,6 +13,8 @@ const WINTER_PAD = 10;
 /** The damaged pictures (in damaged/, same file names) have this margin for the rubble at the foot. */
 const DAMAGED_PAD = 8;
 type Look = 'summer' | 'a' | 'b' | 'c';
+/** How far in the village zooms. */
+const MAX_ZOOM = 3;
 
 /** Which picture a building level uses (Jonas, 2026-11-18): 1-3, 4-7 and 8-10. */
 export function stageOf(level: number): '1' | '2' | '3' {
@@ -45,7 +47,79 @@ export class VillageScene extends Phaser.Scene {
     for (const k of ['hus', 'torn'] as const) this.load.image(`v-bygge-${k}`, DIR + ART.bygge[k].file);
   }
 
+  /**
+   * Pinch to zoom, one finger to move the zoomed picture, the mouse wheel on a
+   * computer (Jonas, 2026-11-20). The camera does the zooming, so everything
+   * drawn keeps its place. The scene says 'village-zoomed' the first time.
+   */
+  private zoomTo(z: number, px: number, py: number): void {
+    const cam = this.cameras.main;
+    const before = cam.zoom;
+    const next = Math.min(MAX_ZOOM, Math.max(1, z));
+    if (next === before) return;
+    // The point under the fingers stays under the fingers.
+    const wx = cam.scrollX + cam.width / 2 + (px - cam.width / 2) / before;
+    const wy = cam.scrollY + cam.height / 2 + (py - cam.height / 2) / before;
+    cam.setZoom(next);
+    cam.setScroll(wx - cam.width / 2 - (px - cam.width / 2) / next, wy - cam.height / 2 - (py - cam.height / 2) / next);
+    if (next > 1) this.game.events.emit('village-zoomed');
+  }
+
+  private wireZoom(): void {
+    const canvas = this.game.canvas;
+    const cam = this.cameras.main;
+    const k = (): number => canvas.width / Math.max(1, canvas.getBoundingClientRect().width); // CSS pixels to canvas pixels
+    const at = (e: { clientX: number; clientY: number }): [number, number] => {
+      const r = canvas.getBoundingClientRect();
+      return [(e.clientX - r.left) * k(), (e.clientY - r.top) * k()];
+    };
+    const fingers = new Map<number, [number, number]>();
+    let gap = 0;
+    let startZoom = 1;
+    const spread = (): number => { const [a, b] = [...fingers.values()]; return Math.hypot(a[0] - b[0], a[1] - b[1]); };
+    const down = (e: PointerEvent): void => {
+      fingers.set(e.pointerId, at(e));
+      if (fingers.size === 2) { gap = spread(); startZoom = cam.zoom; }
+    };
+    const move = (e: PointerEvent): void => {
+      const was = fingers.get(e.pointerId);
+      if (!was) return;
+      const now = at(e);
+      fingers.set(e.pointerId, now);
+      if (fingers.size === 2 && gap > 0) {
+        const [a, b] = [...fingers.values()];
+        this.zoomTo(startZoom * (spread() / gap), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+      } else if (fingers.size === 1 && cam.zoom > 1) {
+        cam.setScroll(cam.scrollX - (now[0] - was[0]) / cam.zoom, cam.scrollY - (now[1] - was[1]) / cam.zoom);
+      }
+    };
+    const up = (e: PointerEvent): void => { fingers.delete(e.pointerId); gap = 0; };
+    const wheel = (e: WheelEvent): void => {
+      e.preventDefault();
+      const [x, y] = at(e);
+      this.zoomTo(cam.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), x, y);
+    };
+    const touch = canvas.style.touchAction;
+    canvas.style.touchAction = 'none'; // the pinch is ours, not the browser's
+    canvas.addEventListener('pointerdown', down);
+    canvas.addEventListener('pointermove', move);
+    canvas.addEventListener('pointerup', up);
+    canvas.addEventListener('pointercancel', up);
+    canvas.addEventListener('pointerleave', up);
+    canvas.addEventListener('wheel', wheel, { passive: false });
+    this.events.once('shutdown', () => {
+      canvas.style.touchAction = touch;
+      canvas.removeEventListener('pointerdown', down);
+      canvas.removeEventListener('pointermove', move);
+      canvas.removeEventListener('pointerup', up);
+      canvas.removeEventListener('pointercancel', up);
+      canvas.removeEventListener('pointerleave', up);
+      canvas.removeEventListener('wheel', wheel);
+    });
+  }
+
   create(): void {
+    this.wireZoom();
     this.draw();
     this.scale.on('resize', this.draw, this);
     this.registry.events.on('changedata-plots', this.draw, this);
@@ -85,6 +159,8 @@ export class VillageScene extends Phaser.Scene {
   private draw(): void {
     const { width, height } = this.scale;
     this.children.removeAll(true);
+    // The zoomed camera never shows anything outside the picture.
+    this.cameras.main.setBounds(0, 0, width, height);
     // The whole width, so the towers at the edges show; vertically centred on
     // the village (it lies between y 380 and 1100) and always covering the canvas.
     const s = Math.max(width / BG.w, height / BG.h);

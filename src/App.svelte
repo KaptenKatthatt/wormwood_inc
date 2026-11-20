@@ -20,6 +20,8 @@
   import RewardBurst from './ui/RewardBurst.svelte';
   import { hookOn } from './lib/state/game';
   import { ON_HOLD } from './lib/hooks';
+  import { closeAsked, closeGame, stay } from './lib/pwa/backGuard';
+  import Modal from './ui/Modal.svelte';
   import NeighboursView from './ui/NeighboursView.svelte';
   import WeekHub from './ui/WeekHub.svelte';
   import AdOverlay from './ui/AdOverlay.svelte';
@@ -125,6 +127,14 @@
   <Coach />
   {#if !tutStep}<Letter />{/if}
   {#if $quitFlow}<QuitFlow />{/if}
+  {#if $closeAsked}
+    <Modal title="Vill du stänga spelet?">
+      <div class="buttons">
+        <button class="primary" onclick={stay}>Stanna kvar</button>
+        <button class="ghost" onclick={closeGame}>Stäng</button>
+      </div>
+    </Modal>
+  {/if}
   {#if $settings.logging === null}<Consent />{/if}
   {#if EXPANSION && !tutStep}
     {#if $hubOpen}<WeekHub />{/if}

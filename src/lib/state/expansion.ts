@@ -26,7 +26,7 @@ import {
   championPower, drawChampion, nearJackpot, openChest, spinWheel, type Champion, type ChestKind, type ChestLoot,
 } from '../expansion/luck';
 import {
-  GATE_AT, GATE_SKIP_GEMS, HELPERS, HELPERS_NEEDED, HELPER_ARRIVES, HELPER_GOLD_BONUS, HELPER_MAX, HELPER_PATIENCE, KEEP_HOURS, MERCENARIES,
+  GATE_AT, GATE_SKIP_GEMS, winterOpenAt, HELPERS, HELPERS_NEEDED, HELPER_ARRIVES, HELPER_GOLD_BONUS, HELPER_MAX, HELPER_PATIENCE, KEEP_HOURS, MERCENARIES,
   NEIGHBOURS, RETAKE_AFTER, RETAKE_CHANCE, RIDERS_AFTER, TROOPS, activeHelpers, battle, fakeFriendEvent, neighbourDefence, personalOffer,
   storehouse, vipBonus, type Army, type BattleResult, type Helper, type Owned, type TroopType,
 } from '../expansion/conquest';
@@ -571,7 +571,11 @@ export function invite(): boolean {
 }
 
 /** The gate before the Winter market. */
+export function winterOpen(): boolean {
+  return winterOpenAt(now());
+}
 export function gateBlocks(challenge: number): boolean {
+  if (EXPANSION && challenge >= GATE_AT && !winterOpen()) return true;
   if (!EXPANSION || challenge < GATE_AT || get(exp).gateOpen) return false;
   if (!weekOn('neighboursNeeded')) return false;
   if (helpersNow().length >= HELPERS_NEEDED) {
