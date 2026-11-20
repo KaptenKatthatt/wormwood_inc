@@ -104,9 +104,9 @@ const URL = process.argv[3] ?? 'https://dev.skargardsbyn.84.247.143.6.sslip.io/'
   await shot('20-efter-anfallet');
   await closeLetters();
   await shot('21-byn-efter-anfallet');
-  await p.getByRole('button', { name: 'Avsluta' }).click();
+  await p.getByRole('button', { name: 'Lämna testomgång' }).click();
   await shot('22-avsluta-tjat');
-  await p.getByRole('button', { name: 'Avsluta ändå' }).click();
+  await p.getByRole('button', { name: 'Lämna ändå' }).click();
   await shot('23-enkat');
   const n = await p.locator('fieldset').count();
   for (let i = 0; i < n; i++) {

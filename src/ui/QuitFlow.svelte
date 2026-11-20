@@ -16,13 +16,13 @@
       <p id="nag-text">{LETTERS.quit}</p>
       <div class="buttons">
         <button class="primary" onclick={() => answerNag(true)}>Stanna en stund till</button>
-        <button class="ghost" onclick={() => answerNag(false)}>Avsluta ändå</button>
+        <button class="ghost" onclick={() => answerNag(false)}>Lämna ändå</button>
       </div>
     </div>
   </div>
 {:else if $quitFlow === 'thanks'}
-  <Modal title="Tack för att du spelade!">
-    <p>Välkommen tillbaka när du vill.</p>
+  <Modal title="Tack för att du var med!">
+    <p>Testomgången är sparad. Du får gärna spela vidare när du vill.</p>
     <div class="buttons"><button class="primary" onclick={close}>Stäng</button></div>
   </Modal>
 {/if}

@@ -18,7 +18,7 @@ export type StairEvent =
   | 'loss'          // a level was lost, or the player ran out of moves
   | 'longBuild'     // a build of 5 minutes or more started
   | 'noLives'       // lives ran out
-  | 'quit';         // the player pressed Avsluta
+  | 'quit';         // the player pressed Lämna testomgång
 
 /** The step after `event` at `minutesIn`, given the current step. */
 export function nextStep(current: Step, minutesIn: number, event?: StairEvent): Step {

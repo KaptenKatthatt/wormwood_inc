@@ -138,7 +138,7 @@
         </div>
       {/each}
       <div class="fabs">
-        <button class="quit" data-tut="quit" onclick={pressQuit}>Avsluta</button>
+        <button class="quit" data-tut="quit" onclick={pressQuit}>Lämna testomgång</button>
         {#if !sheet}
           <button class="fab" data-tut="build-open" onclick={() => (sheet = true)} aria-haspopup="dialog">
             <svg viewBox="0 0 40 40" aria-hidden="true"><g transform="rotate(-35 20 20)"><rect x="17.5" y="12" width="5" height="25" rx="2" fill="#c98f4e" stroke="#5a1d14" stroke-width="2"/><rect x="8" y="4" width="24" height="11" rx="3" fill="#cfd6dd" stroke="#3a3f45" stroke-width="2"/></g></svg>
@@ -221,7 +221,7 @@
   .damaged { border-color: var(--falu); background: #fbe6e1; }
   .fabs { display: flex; align-items: flex-end; justify-content: space-between; pointer-events: none; min-height: 84px; }
   .fabs > * { pointer-events: auto; }
-  .quit { min-height: 44px; padding: 6px 14px; border-radius: 999px; background: rgb(255 248 236 / .92); border: 2px solid var(--frame); color: var(--deep); box-shadow: 0 2px 0 var(--deep); }
+  .quit { white-space: nowrap; min-height: 44px; padding: 6px 14px; border-radius: 999px; background: rgb(255 248 236 / .92); border: 2px solid var(--frame); color: var(--deep); box-shadow: 0 2px 0 var(--deep); }
   .fab { width: 84px; height: 84px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-content: center; justify-items: center; gap: 0; line-height: 1;
     background: radial-gradient(circle at 40% 35%, #c9473a, #8b2a1e); color: #fff; border: 4px solid #fff; box-shadow: 0 0 0 3px var(--deep), 0 5px 0 3px var(--deep); font-weight: 800; font-size: 1.05rem; }
   .fab svg { width: 38px; height: 38px; }

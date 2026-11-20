@@ -390,7 +390,7 @@ export function startBuild(id: BuildingId): boolean {
   purse.set({ ...p, gold: p.gold - cost });
   village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id }, last: { ...v.last, [id]: { gold: cost, ms: buildTime(n) } } });
   if (buildTime(n) >= 5 * MINUTE) stairEvent('longBuild');
-  if (n >= 2) tipOnce('quit', 'När du vill sluta spela: tryck Avsluta längst ner i byn.');
+  if (n >= 2) tipOnce('quit', 'När du vill sluta spela: tryck Lämna testomgång längst ner i byn.');
   log('build_start', { building: id, toLevel: v.levels[id] + 1, buildNo: n, gold: cost, timeMs: buildTime(n), minutesIn: minutesIn() });
   return true;
 }
@@ -890,7 +890,7 @@ export function answerNag(stay: boolean): void {
 }
 
 /**
- * Pressing Avsluta only logs that the player wanted to stop and says thanks
+ * Pressing Lämna testomgång (Avsluta until 2026-11-20) only logs that the player wanted to stop and says thanks
  * (Jonas, 2026-11-20). The questions about each step that used to follow here
  * gave the study away, and came every time; they are now last in the
  * questionnaire, after the debriefing.

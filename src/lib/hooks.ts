@@ -51,7 +51,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'weekend', step: 0, name: 'Dagskrok: helgmarknad', what: 'Fredag 18 till söndag midnatt: dubbelt guld för vunna banor, med nedräkning.' },
   { id: 'gemPacks', step: 0, name: 'Ädelstenspaket', what: 'Butiken med paket för kronor, märkta "Populärast" och "Bäst värde".' },
   { id: 'attack', step: 5, name: 'Anfall och sköld', what: 'Grannar anfaller byn; sköld för ädelstenar eller soldater för guld.' },
-  { id: 'guilt', step: 5, name: 'Skuld när man slutar', what: 'Ett brev och byborna ber spelaren stanna när hen trycker Avsluta.' },
+  { id: 'guilt', step: 5, name: 'Skuld när man slutar', what: 'Ett brev och byborna ber spelaren stanna när hen trycker Lämna testomgång.' },
   { id: 'figures', step: 0, name: 'Figurer som pressar', what: 'Breven till spelaren, bybornas pratbubblor och trivselmätaren.' },
   // ---- The expansion: steps 6-9 come during the week at home (day or world, whichever is first).
   { id: 'stars', step: 1, name: 'Stjärnor per bana', what: '1-3 stjärnor efter hur många drag som var kvar. Lexikonet: Poäng, nivåer och märken.' },

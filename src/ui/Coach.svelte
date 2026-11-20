@@ -80,7 +80,7 @@
   // so it never covers the tiles and does not jump about between moves.
   const practice = $derived(step?.repeat !== undefined);
   const practiceStyle = $derived(rect ? `bottom: ${window.innerHeight - rect.top + 6}px;` : 'top: 180px;');
-  // Bring the target into view when a step starts (Avsluta sits far down in the village).
+  // Bring the target into view when a step starts (Lämna testomgång sits far down in the village).
   $effect(() => {
     if (!step) return;
     void tick().then(() => {
