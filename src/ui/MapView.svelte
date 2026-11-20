@@ -8,7 +8,7 @@
    */
   import { onDestroy, tick } from 'svelte';
   import { mapHidden, mapShown } from '../lib/audio/director';
-  import { ALL_LEVELS, LEVELS, WORLDS, goalText, levelAt, worldOf } from '../lib/match3/levels';
+  import { ALL_LEVELS, LEVELS, WORLDS, levelAt, worldOf } from '../lib/match3/levels';
   import NODES from '../lib/match3/mapNodes.json';
   import WORLD_NODES from '../lib/match3/worldNodes.json';
   import { DEV_MENU, EXPANSION } from '../lib/config/flags';
@@ -77,7 +77,6 @@
       <div class="wname"><strong>{world.name}</strong><span>{#if world.from >= GATE_AT && !winterOpen()}Öppnar 1 december{:else}Värld {viewWorld} av {WORLDS.length} · utmaning {world.from}–{world.to}{/if}</span></div>
       <button class="ghost arrow" disabled={viewWorld >= maxWorld} aria-label="Nästa värld" onclick={() => (viewWorld = Math.min(maxWorld, viewWorld + 1))}>›</button>
     </div>
-    <WeekStrip />
   {/if}
   <div class="scroll" bind:this={scroller}>
     <div class="wrap">
@@ -108,14 +107,10 @@
       </svg>
     </div>
   </div>
-  <div class="next">
-    <div>
-      <strong>{level.name}</strong>
-      <span>{goalText(level.goal, level.id)} på {level.moves} drag</span>
-      {#if countdown > 0}<span class="cd" aria-live="polite">Startar om {countdown} …</span>{/if}
-    </div>
-    <button class="primary" data-tut="map-current" onclick={onPlay}>Spela</button>
-  </div>
+  <!-- The field with the challenge's name, its goal and the button Spela is gone (Jonas, 2026-11-20): the pulsing
+       circle on the map starts the challenge. The row of games took its place. -->
+  {#if countdown > 0}<p class="cd" aria-live="polite">{level.name} startar om {countdown} …</p>{/if}
+  {#if EXPANSION}<WeekStrip />{/if}
 </section>
 
 <style>
@@ -138,9 +133,6 @@
   .arrow { min-width: 44px; min-height: 44px; font-size: 1.6rem; padding: 0; }
   g.now { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
   @keyframes pulse { 50% { transform: scale(1.12); } }
-  .next { display: flex; align-items: center; gap: 12px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: #fff8ec; border-top: 3px solid #7a2418; color: var(--deep); }
-  .next div { flex: 1; display: grid; line-height: 1.25; }
-  .next strong { font-size: 1.1rem; }
-  .cd { color: var(--falu); font-weight: 700; }
-  .next button { min-width: 110px; }
+  .map { position: relative; }
+  .cd { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 3; margin: 0; padding: 4px 14px; white-space: nowrap; background: #fff8ec; border: 2px solid #7a2418; border-radius: 999px; color: var(--falu); font-weight: 700; }
 </style>

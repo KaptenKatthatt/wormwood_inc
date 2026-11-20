@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * The row of round buttons over the map for the week's hooks (steps 6 and 7).
+   * The row of buttons under the map (moved there by Jonas, 2026-11-20) for the week's hooks (steps 6 and 7).
    * A button shows up when its hook's step is reached, with a badge when
    * something waits (a chest that is ready, today's free spin).
    */
@@ -49,7 +49,7 @@
 {/if}
 
 <style>
-  .strip { display: flex; gap: 6px; overflow-x: auto; padding: 6px 8px; background: #f3e6cf; border-bottom: 2px solid #c9b48f; }
+  .strip { display: flex; gap: 6px; overflow-x: auto; padding: 8px 8px 6px; background: #fff8ec; border-top: 3px solid #7a2418; }
   .it { position: relative; flex: none; display: grid; justify-items: center; min-width: 64px; min-height: 56px; padding: 4px 6px; background: #fff8ec; border: 2px solid #7a2418; border-radius: 12px; box-shadow: 0 2px 0 var(--deep); color: var(--deep); }
   .ic { font-size: 1.3rem; line-height: 1.1; }
   .art { width: 30px; height: 30px; object-fit: contain; }
