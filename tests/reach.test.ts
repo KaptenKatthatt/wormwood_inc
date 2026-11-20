@@ -190,3 +190,38 @@ describe('what the game and the server share', () => {
     expect(readFileSync('src/lib/state/reach.ts', 'utf8')).toContain('CONTACT_ASK && Date.now() < CONTACTS_END');
   });
 });
+
+describe('top-ups of the test wallet', () => {
+  const PER = 'perperperper1';
+  it('needs the admin key and a six letter test code to make a code', async () => {
+    expect((await post(DEV, '/api/admin/topup', { key: 'wrong', testCode: serverCode(PER) })).status).toBe(403);
+    expect((await post(DEV, '/api/admin/topup', { key: KEY, testCode: 'AB' })).status).toBe(400);
+  });
+
+  it('gives 100 kr once, and only to the tester the code was made for', async () => {
+    const made = await post(DEV, '/api/admin/topup', { key: KEY, testCode: serverCode(PER).toLowerCase() });
+    expect(made.status).toBe(200);
+    const code: string = made.json.code;
+    expect(code).toMatch(/^FYLL-[A-Z2-9]{4}$/);
+    expect((await post(TEST, '/api/wallet/redeem', { playerId: ANNA, code })).status).toBe(404);
+    const ok = await post(TEST, '/api/wallet/redeem', { playerId: PER, code: ` ${code.toLowerCase().replace('-', ' ')} ` });
+    expect(ok).toEqual({ status: 200, json: { ok: true, kronor: 100 } });
+    expect((await post(TEST, '/api/wallet/redeem', { playerId: PER, code })).status).toBe(409);
+    expect((await post(TEST, '/api/wallet/redeem', { playerId: PER, code: 'FYLL-ZZZZ' })).status).toBe(404);
+    const list = (await post(DEV, '/api/admin/overview', { key: KEY })).json.topups;
+    expect(list[0]).toMatchObject({ code, testCode: serverCode(PER), usedAt: clock });
+    const day = new Date(clock).toISOString().slice(0, 10);
+    const lines = (await readFile(join(dataDir, 'logs', `${day}.ndjson`), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
+    expect(lines.some((l) => l.name === 'topup_redeemed' && l.playerId === PER && l.data.kronor === 100)).toBe(true);
+  });
+});
+
+describe('the e-mail asking for a top-up', () => {
+  it('goes to Jonas with the test code in it', async () => {
+    const { topupMailto, TOPUP_ADDRESS } = await import('../src/lib/state/topup');
+    const url = topupMailto('ABC234');
+    expect(TOPUP_ADDRESS).toBe('hej@jonasolson.se');
+    expect(url.startsWith('mailto:hej@jonasolson.se?subject=')).toBe(true);
+    expect(decodeURIComponent(url)).toContain('Min testkod: ABC234');
+  });
+});

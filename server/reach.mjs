@@ -7,6 +7,10 @@
  *    file (contacts.json) with the test code, apart from the playtest log,
  *    and deleted by itself after 31 January 2027
  *
+ *  - top-ups of the test wallet (Jonas, 2026-11-20): a tester asks by e-mail,
+ *    Jonas makes a code here for that tester's test code, and the tester
+ *    types it in the shop for 100 kr. A code works for one test code, once.
+ *
  * The player routes take the pseudonymous player id like the rest of the
  * server. The admin routes take the admin key: ADMIN_KEY from the
  * environment, or else a key made on first start and kept in admin-key.json.
@@ -34,6 +38,13 @@ export function testCode(/** @type {string} */ playerId) {
   return out;
 }
 
+/** Kronor a top-up code gives. */
+export const TOPUP_KRONOR = 100;
+/** The letters in a top-up code: no 0/O or 1/I, so it can be read out and typed. */
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+/** "FYLL-7K3Q" and the like; spaces, dashes and case do not matter. */
+export const normTopup = (/** @type {unknown} */ v) => (typeof v === 'string' ? v.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^FYLL/, '') : '');
+
 const EMAIL_RE = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;.]{2,}$/;
 export const validEmail = (/** @type {unknown} */ v) => typeof v === 'string' && v.length <= 254 && EMAIL_RE.test(v);
 
@@ -41,6 +52,7 @@ export const validEmail = (/** @type {unknown} */ v) => typeof v === 'string' &&
  * @typedef {{ id: string, title: string, body: string, sentAt: number, site: 'test' | 'dev', playerId?: string, to: string, push: boolean, recipients: number, shown: string[], read: string[] }} Message
  * @typedef {{ email: string, site: 'test' | 'dev', savedAt: number }} Contact
  * @typedef {{ site: 'test' | 'dev', first: number, last: number }} Player
+ * @typedef {{ code: string, testCode: string, madeAt: number, usedAt?: number, site?: 'test' | 'dev' }} Topup
  */
 
 /**
@@ -61,6 +73,8 @@ export async function createReach(deps) {
   let contacts = await readJson('contacts.json', {});
   /** @type {Record<string, Player>} */
   const players = await readJson('players.json', {});
+  /** @type {Topup[]} */
+  const topups = await readJson('topups.json', []);
 
   let adminKey = deps.adminKey ?? '';
   if (!adminKey) {
@@ -148,6 +162,20 @@ export async function createReach(deps) {
       return { status: 200, body: { ok: true } };
     }
 
+    if (path === '/api/wallet/redeem') {
+      // { playerId, code }: the code must be one Jonas made for this player's test code, and unused.
+      if (!validId) return bad;
+      const want = normTopup(body.code);
+      const t = want ? topups.find((x) => normTopup(x.code) === want) : undefined;
+      if (!t || t.testCode !== testCode(body.playerId)) return { status: 404, body: { error: 'okänd kod' } };
+      if (t.usedAt) return { status: 409, body: { error: 'redan använd' } };
+      t.usedAt = now();
+      t.site = site;
+      await writeJson('topups.json', topups);
+      await appendEvent(site, body.playerId, 'topup_redeemed', { code: t.code, testCode: t.testCode, kronor: TOPUP_KRONOR });
+      return { status: 200, body: { ok: true, kronor: TOPUP_KRONOR } };
+    }
+
     if (!path.startsWith('/api/admin/')) return null;
     if (!isAdmin(body?.key)) return { status: 403, body: { error: 'fel nyckel' } };
     await expireContacts();
@@ -159,6 +187,7 @@ export async function createReach(deps) {
         messages: messages.slice(-50).reverse().map((m) => ({ id: m.id, title: m.title, body: m.body, sentAt: m.sentAt, to: m.to, push: m.push, recipients: m.recipients, shown: m.shown.length, read: m.read.length })),
         contacts: Object.entries(contacts).map(([id, c]) => ({ code: testCode(id), email: c.email, site: c.site, savedAt: c.savedAt })).sort((a, b) => a.savedAt - b.savedAt),
         contactsEnd: CONTACTS_END,
+        topups: topups.slice(-50).reverse().map((t) => ({ code: t.code, testCode: t.testCode, madeAt: t.madeAt, usedAt: t.usedAt ?? null })),
       };
     };
 
@@ -196,6 +225,20 @@ export async function createReach(deps) {
         await appendEvent(players[id].site, id, 'message_sent', { id: m.id, to: m.to, push: ok });
       }
       return { status: 200, body: { ok: true, id: m.id, recipients: ids.length, pushed, ...overview() } };
+    }
+
+    if (path === '/api/admin/topup') {
+      // { key, testCode }: a new one-time code for that tester.
+      const code = typeof body.testCode === 'string' ? body.testCode.toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+      if (!/^[A-Z0-9]{6}$/.test(code)) return { status: 400, body: { error: 'fel testkod' } };
+      let made = '';
+      do {
+        const bytes = randomBytes(4);
+        made = 'FYLL-' + Array.from(bytes, (b) => CODE_ALPHABET[b & 31]).join('');
+      } while (topups.some((t) => t.code === made));
+      topups.push({ code: made, testCode: code, madeAt: now() });
+      await writeJson('topups.json', topups);
+      return { status: 200, body: { ok: true, code: made, ...overview() } };
     }
 
     if (path === '/api/admin/wipe-contacts') {
