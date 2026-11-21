@@ -6,12 +6,10 @@ describe('village', () => {
   it('follows the cost curve from the design', () => {
     expect([1, 2].map(buildCost)).toEqual([0, 0]);
     expect(buildCost(13)).toBeGreaterThan(buildCost(12));
-    expect([1, 2].map(buildTime)).toEqual([5000, 5000]);
-    for (const n of [3, 4, 5, 6, 7, 8]) expect(buildTime(n)).toBeLessThan(MINUTE);
-    expect([9, 10, 11, 12].map(buildTime)).toEqual([5 * MINUTE, 5 * MINUTE, 15 * MINUTE, 30 * MINUTE]);
-    expect(buildTime(13)).toBe(HOUR);
-    expect(buildTime(20)).toBe(2 * HOUR);
-    expect(buildTime(40)).toBe(2 * HOUR);
+    expect([buildTime(1, 1), buildTime(2, 1)]).toEqual([5000, 5000]);
+    // From build 3 the time follows the level built to (Jonas, 2026-11-21), whatever the build number.
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((l) => buildTime(13, l))).toEqual([10_000, MINUTE, 3 * MINUTE, 8 * MINUTE, 15 * MINUTE, 25 * MINUTE, 40 * MINUTE, HOUR, 90 * MINUTE, 2 * HOUR]);
+    expect(buildTime(40, 2)).toBe(MINUTE);
     // builds 1-10 cost about what ten challenges pay (150-250 each)
     const firstTen = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(buildCost).reduce((a, b) => a + b, 0);
     expect(firstTen).toBeGreaterThan(1500);

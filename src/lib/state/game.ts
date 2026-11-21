@@ -386,11 +386,12 @@ export function startBuild(id: BuildingId): boolean {
   if (block || isDamaged(id)) return false;
   const n = v.builds + 1;
   const cost = priceFor(n, v, id);
-  const t = addTimer('build', BUILDINGS.find((b) => b.id === id)!.name, buildTime(n));
+  const ms = buildTime(n, v.levels[id] + 1);
+  const t = addTimer('build', BUILDINGS.find((b) => b.id === id)!.name, ms);
   purse.set({ ...p, gold: p.gold - cost });
-  village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id }, last: { ...v.last, [id]: { gold: cost, ms: buildTime(n) } } });
-  if (buildTime(n) >= 5 * MINUTE) stairEvent('longBuild');
-  log('build_start', { building: id, toLevel: v.levels[id] + 1, buildNo: n, gold: cost, timeMs: buildTime(n), minutesIn: minutesIn() });
+  village.set({ ...v, builds: n, construction: { id, toLevel: v.levels[id] + 1, timerId: t.id }, last: { ...v.last, [id]: { gold: cost, ms } } });
+  if (ms >= 5 * MINUTE) stairEvent('longBuild');
+  log('build_start', { building: id, toLevel: v.levels[id] + 1, buildNo: n, gold: cost, timeMs: ms, minutesIn: minutesIn() });
   return true;
 }
 
@@ -540,7 +541,7 @@ export function isDamaged(id: BuildingId): boolean {
 /** What the repair of a building costs: from its last upgrade, or today's price for an older save. */
 export function repairPrice(id: BuildingId): { gold: number; ms: number } {
   const v = get(village);
-  const last = v.last?.[id] ?? { gold: priceFor(Math.max(1, v.builds), v, id), ms: buildTime(Math.max(1, v.builds)) };
+  const last = v.last?.[id] ?? { gold: priceFor(Math.max(1, v.builds), v, id), ms: buildTime(Math.max(1, v.builds), Math.max(1, v.levels[id])) };
   return { gold: repairGold(last.gold), ms: repairTime(last.ms) };
 }
 

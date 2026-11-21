@@ -72,11 +72,11 @@ export const WORLD_BUILDINGS_ON_HOLD = true;
 
 /*
  * A more generous start (Jonas, 2026-11-18). With 150-250 gold a challenge,
- * builds 1-10 cost about what ten challenges pay, so the first real wall
- * (build 11 takes 15 minutes and the lives run out) comes near minute 20.
+ * builds 1-10 cost about what ten challenges pay. Since 2026-11-21 the time
+ * of a build follows its level (LEVEL_TIMES), not the build number.
  */
 const COSTS = [0, 0, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600];
-const TIMES = [5_000, 5_000, 15_000, 20_000, 30_000, 40_000, 45_000, 50_000, 5 * MINUTE, 5 * MINUTE, 15 * MINUTE, 30 * MINUTE];
+const INTRO_TIME = 5_000;
 
 /** Gold for build number n (1-based). After the table it grows by 150 a build. */
 export function buildCost(n: number): number {
@@ -91,11 +91,17 @@ export function priceFor(n: number, v: VillageState, id?: BuildingId): number {
   return Math.round((buildCost(n) * factor * (1 - discount)) / 10) * 10;
 }
 
-/** Game time for build number n (1-based). From build 13 it grows about quadratically from 1 to 2 hours. */
-export function buildTime(n: number): number {
-  if (n <= TIMES.length) return TIMES[n - 1];
-  const k = Math.min(1, (n - 13) / 7);
-  return Math.round((1 + k * k) * HOUR / MINUTE) * MINUTE;
+/**
+ * Build time follows the level the building is built to, the same for every
+ * building (Jonas, 2026-11-21: a level 1 tower must go fast, an hour belongs
+ * to the high levels). The first two builds, in the introduction, take 5 s.
+ */
+export const LEVEL_TIMES = [10_000, MINUTE, 3 * MINUTE, 8 * MINUTE, 15 * MINUTE, 25 * MINUTE, 40 * MINUTE, HOUR, 90 * MINUTE, 2 * HOUR];
+
+/** Game time for build number n (1-based) that takes a building to level toLevel. */
+export function buildTime(n: number, toLevel: number): number {
+  if (n <= 2) return INTRO_TIME;
+  return LEVEL_TIMES[Math.min(LEVEL_TIMES.length, Math.max(1, toLevel)) - 1];
 }
 
 /** Gems to finish a build now: 1 per started game minute, at least 5. */

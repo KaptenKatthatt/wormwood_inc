@@ -25,6 +25,13 @@
   const left = $derived(timer ? remaining(timer, $now) : 0);
   const nextNo = $derived($village.builds + 1);
   const priceOf = (id: BuildingId) => priceFor(nextNo, $village, id);
+  /** A build time in round words: 10 s, 8 min, 1 h 30 min. */
+  const shortTime = (ms: number) => {
+    if (ms < 60_000) return `${Math.round(ms / 1000)} s`;
+    const min = Math.round(ms / 60_000);
+    if (min < 60) return `${min} min`;
+    return min % 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min / 60} h`;
+  };
   // The buildings to choose from come up from a floating button, so the village keeps the whole screen (Jonas, 2026-11-19).
   let sheet = $state(false);
   function build(id: BuildingId, topUp = false) {
@@ -154,7 +161,7 @@
       <div class="head">
         <div>
           <h2 id="sheet-title">Bygg</h2>
-          <span class="fine">{constr ? 'Ett bygge i taget. Det som pågår ska bli klart först.' : `Nästa bygge tar ${formatDuration(buildTime(nextNo))}.`}</span>
+          <span class="fine">{constr ? 'Ett bygge i taget. Det som pågår ska bli klart först.' : 'Byggtiden beror på vilken nivå huset byggs till.'}</span>
         </div>
         <button class="close-x ghost" onclick={() => (sheet = false)} aria-label="Stäng bygglistan">✕</button>
       </div>
@@ -173,7 +180,7 @@
           {:else}
           <li>
             <div>
-              <strong>{b.name}</strong> <span class="lvl">{$village.levels[b.id] === 0 ? 'ej byggd' : `nivå ${$village.levels[b.id]} av ${MAX_LEVEL}`}</span>
+              <strong>{b.name}</strong> <span class="lvl">{$village.levels[b.id] === 0 ? 'ej byggd' : `nivå ${$village.levels[b.id]} av ${MAX_LEVEL}`}</span>{#if $village.levels[b.id] < MAX_LEVEL}<span class="lvl">Tar {shortTime(buildTime(nextNo, $village.levels[b.id] + 1))} att bygga</span>{/if}
               <span class="fine">{b.effect}</span>
             </div>
             {#if broken}
