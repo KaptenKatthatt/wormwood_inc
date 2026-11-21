@@ -157,11 +157,14 @@ export function declineRepair(s: DailyState, now: number): DailyState {
 export const TIRED_AFTER = 8;
 export const TIRED_STEP = 0.1;
 export const TIRED_FLOOR = 0.4;
+/** How many wins share each step down. */
+export const TIRED_EVERY = 3;
 
 /** The share of gold for the n-th win of a day (1-based). */
 export function tiredFactor(n: number): number {
   if (n <= TIRED_AFTER) return 1;
-  return Math.max(TIRED_FLOOR, Math.round((1 - TIRED_STEP * (n - TIRED_AFTER)) * 100) / 100);
+  // 10 % less every third win, not every win (Jonas, 2026-11-21): 9-11 give 90 %, 12-14 80 %, and so on.
+  return Math.max(TIRED_FLOOR, Math.round((1 - TIRED_STEP * Math.ceil((n - TIRED_AFTER) / TIRED_EVERY)) * 100) / 100);
 }
 
 /** Counts a win today; returns the new state and which win of the day it was. */

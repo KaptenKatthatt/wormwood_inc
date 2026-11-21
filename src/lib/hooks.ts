@@ -52,7 +52,7 @@ export const HOOKS: { id: HookId; step: number; name: string; what: string }[] =
   { id: 'calendar', step: 0, name: 'Dagskrok: dagliga gåvor', what: 'En kalender med sju gåvor, en per dag. Dag 7 är störst.' },
   { id: 'streak', step: 0, name: 'Dagskrok: svit', what: 'Dagar i rad med minst en vunnen bana ger bonusguld (50 per dag, högst 250). En missad dag nollställer.' },
   { id: 'streakShield', step: 0, name: 'Dagskrok: svitskydd', what: 'Svitskydd köps i förväg för 20 ädelstenar och räddar sviten en missad dag. Utan skydd kan en bruten svit lagas dagen efter för 10 ädelstenar per dag i sviten (högst 80). Lexikonet: Svitskydd.' },
-  { id: 'diminishing', step: 0, name: 'Dagskrok: minskande belöningar', what: 'Efter dagens 8 första vinster blir byborna trötta: varje vinst ger 10 % mindre guld, ner till 40 %. Fullt igen i morgon. Lexikonet: Minskande belöningar.' },
+  { id: 'diminishing', step: 0, name: 'Dagskrok: minskande belöningar', what: 'Efter dagens 8 första vinster blir byborna trötta: var tredje vinst ger 10 % mindre guld, ner till 40 %. Fullt igen i morgon. Lexikonet: Minskande belöningar.' },
   { id: 'dayPush', step: 0, name: 'Dagskrok: notiser', what: 'Notiser när liven är fulla, när dagens gåva väntar och när byn hotas.' },
   { id: 'awayAttack', step: 0, name: 'Dagskrok: anfall när du är borta', what: 'Är spelaren borta i 20 timmar anfalls byn; förlusten visas vid nästa besök.' },
   { id: 'weekend', step: 0, name: 'Dagskrok: helgmarknad', what: 'Fredag 18 till söndag midnatt: dubbelt guld för vunna banor, med nedräkning.' },

@@ -45,8 +45,9 @@ describe('diminishing rewards', () => {
   it('pays full gold for the first eight wins of a day, then less, down to the floor', () => {
     expect(tiredFactor(1)).toBe(1);
     expect(tiredFactor(8)).toBe(1);
-    expect(tiredFactor(9)).toBe(0.9);
-    expect(tiredFactor(12)).toBe(0.6);
+    expect([9, 10, 11].map(tiredFactor)).toEqual([0.9, 0.9, 0.9]);
+    expect([12, 14, 15, 17, 18, 21, 23].map(tiredFactor)).toEqual([0.8, 0.8, 0.7, 0.7, 0.6, 0.5, 0.5]);
+    expect(tiredFactor(24)).toBe(0.4);
     expect(tiredFactor(40)).toBe(TIRED_FLOOR);
   });
 
