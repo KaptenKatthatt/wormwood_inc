@@ -148,6 +148,14 @@ Kostnaden växer långsamt i början och sedan ungefär i kvadrat med antalet by
 
 **Beslut 2026-11-18 (generösare början):** belöningen per utmaning är 150–250 guld. De första 8 byggena tar under en minut. Den första riktiga väggen (bygge på 15–30 min, liven slut) kommer runt minut 20 i stället för minut 6–9. Stöd: Ascarza m.fl. 2025 (B1), där lättare banor gav mer spelande och mer intäkt totalt. Exakta guldpriser sätts i bygget så att väggen hamnar runt minut 20.
 
+**Byggtid efter nivå (Jonas 2026-11-21, ersätter byggtiden per byggnummer ovan):** byggtiden beror bara på nivån som byggnaden byggs till, inte på hur många byggen spelaren gjort. Tidigare tog allt från bygge 13 minst en timme, även ett torn till nivå 2, fast byn var på låg nivå. Ingen byggnad går högre än Stugan, så tiden följer också byns nivå.
+
+| Byggs till nivå | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Tid | 10 s | 1 min | 3 min | 8 min | 15 min | 25 min | 40 min | 1 h | 1 h 30 min | 2 h |
+
+De två första byggena i introduktionen tar fortfarande 5 s. Guldpriset följer byggnumret som förut. Följd: väggen runt minut 20 kom av att bygge 11 tog 15 min; nu kommer den mest av guld och liv (öppen fråga till Jonas).
+
 **Backlogg 2026-11-18 (minispel):** Fiska vid bryggan och Segla mellan skären (ett liv var, ger guld) ligger i backloggen. Jonas gillade dem men vill först få det nuvarande spelet riktigt bra. Mockup: https://claude.ai/artifact/VYPeBranLh1qSLmwJmj3co
 
 ### Djup i pusslet (beslut 2026-11-18)
