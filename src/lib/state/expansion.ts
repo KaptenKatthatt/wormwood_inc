@@ -443,6 +443,15 @@ export function adWatched(): void {
   adReward.set({ reward: a.reward, gold: a.gold ?? 0 });
 }
 
+/**
+ * The player tapped the button in an ad film ("Spela gratis" and the like).
+ * Nothing opens, since the films are made up; the tap is only counted, per
+ * film, kind of ad and step (Jonas, 2026-11-21).
+ */
+export function adClicked(adId: string, between: boolean, second: number): void {
+  log('ad_click', { ad: adId, kind: between ? 'between' : 'rewarded', second: Math.round(second * 10) / 10, weekStep: get(exp).step, adGroup: adGroup() });
+}
+
 /** Closed before the end, without the reward: how far the player got is what the two groups are compared on. */
 export function adClosed(secondsWatched = 0): void {
   const a = get(adOpen);

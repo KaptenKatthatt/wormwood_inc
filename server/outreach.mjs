@@ -27,7 +27,7 @@ import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { CONTACTS_END } from './reach.mjs';
-import { parseLines, tidy, playerRows, dropoutRows, hookRows, eventRows, toCsv } from '../tools/log-report.mjs';
+import { parseLines, tidy, playerRows, dropoutRows, adClickRows, hookRows, eventRows, toCsv } from '../tools/log-report.mjs';
 
 export const AUTOS = /** @type {const} */ (['confirm', 'invite', 'before', 'start', 'quiet', 'day8', 'thanks']);
 /** @typedef {typeof AUTOS[number]} Auto */
@@ -324,9 +324,9 @@ export async function createOutreach(deps) {
       return { status: 200, body: { ...overview(), topup: made.body.code, sent: mail } };
     }
     if (path === '/api/admin/kontor/report') {
-      // { table: 'players' | 'dropouts' | 'hooks' | 'events' | 'answers', csv?: true }
+      // { table: 'players' | 'dropouts' | 'adclicks' | 'hooks' | 'events' | 'answers', csv?: true }
       const events = await logEvents();
-      const make = { players: playerRows, dropouts: (/** @type {any[]} */ ev) => dropoutRows(playerRows(ev)), hooks: hookRows, events: eventRows, answers: answerRows }[/** @type {'players'} */ (body.table)];
+      const make = { players: playerRows, dropouts: (/** @type {any[]} */ ev) => dropoutRows(playerRows(ev)), adclicks: adClickRows, hooks: hookRows, events: eventRows, answers: answerRows }[/** @type {'players'} */ (body.table)];
       if (!make) return bad('okänd tabell');
       const rows = make(events);
       if (body.table === 'players') for (const r of rows) r.code = invites.codeOf(r.player);
