@@ -326,6 +326,7 @@ Varje testperson spelar först ett pass på cirka 20–25 minuter med trappan, o
 | Notiser (Web Push) | När spelet läggs undan: fulla liv, dagens gåva nästa dag 18.00, hot efter 18 h |
 | Anfall när spelaren är borta | Efter 20 h borta; förlusten visas vid återkomsten |
 | Tidsbegränsad händelse | Helgmarknad fredag 18.00 till söndag midnatt med dubbelt guld |
+| Minskande belöningar ("byborna är trötta") | Dagens 8 första vinster ger fullt guld. Sedan sjunker guldet 10 % var tredje vinst: vinst 9–11 90 %, 12–14 80 %, 15–17 70 %, 18–20 60 %, 21–23 50 %, från vinst 24 40 %. Fullt igen vid midnatt. (Jonas 2026-11-21: kvar, men var tredje vinst i stället för varje, eftersom banorna räcker.) |
 
 Dagskrokarna startar dag 2, så att första passet bara har trappan. Besök loggas med datum, testdag och längd.
 
