@@ -239,7 +239,8 @@
   .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
   .head div { display: grid; }
   h2 { margin: 0; font-size: 1.3rem; line-height: 1.1; }
-  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; overflow-y: auto; flex: 1; min-height: 0; }
+  /* The scrollbar lives in the sheet's right padding so it never covers a button or text. */
+  ul { list-style: none; margin: 0 -13px 0 0; padding: 0 13px 0 0; scrollbar-width: thin; display: grid; gap: 6px; overflow-y: auto; flex: 1; min-height: 0; }
   li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; border-bottom: 1px solid var(--line); padding: 6px 0; }
   li div { display: grid; }
   li button { display: grid; justify-items: center; gap: 0; line-height: 1.2; min-width: 96px; padding: 6px 12px; }
