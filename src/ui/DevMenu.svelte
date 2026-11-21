@@ -1,6 +1,6 @@
 <script lang="ts">
   /** Developer menu: only in builds made without VITE_DEV_MENU=false. */
-  import { SPEEDS, clock, daily, dayHooksOn, devAway, devGive, devMissDay, devNewDay, devStep, minutesIn, now, playerId, purse, resetAll, setHook, setSpeed, settings, stairs, toast } from '../lib/state/game';
+  import { SPEEDS, clock, daily, dayHooksOn, devAway, devGive, devMissDay, devNewDay, devStep, minutesIn, now, playerId, purse, resetAll, resetVillage, setHook, setSpeed, settings, stairs, toast } from '../lib/state/game';
   import { STEP_NAMES, type Step } from '../lib/staircase';
   import { HOOKS } from '../lib/hooks';
   import { formatKr } from '../lib/economy/wallet';
@@ -19,6 +19,7 @@
     toast(`Hoppade till utmaning ${n} (${worldOf(n).name})`);
   }
   let pick = $state(1);
+  let villageSure = $state(false);
   import { CHRISTMAS } from '../lib/config/flags';
   import { devAskQuestionnaire, devResetQuestionnaire, devStudyEnd, qState } from '../lib/state/questionnaire';
   import { DUE_DAY, STUDY_END } from '../lib/questionnaire';
@@ -208,6 +209,15 @@
   {/if}
 
   {#if part === 'planbok'}
+  <div class="buttons">
+    {#if villageSure}
+      <button class="ghost" onclick={() => { resetVillage(); villageSure = false; toast('Byn är nollställd'); }}>Ja, nollställ byn</button>
+      <button class="ghost" onclick={() => (villageSure = false)}>Avbryt</button>
+    {:else}
+      <button class="ghost" onclick={() => (villageSure = true)}>Nollställ byn</button>
+    {/if}
+  </div>
+  {#if villageSure}<p>Alla byggnader går till nivå 0, pågående bygge och skador försvinner. Guld, liv och utmaningar är kvar.</p>{/if}
   <button class="ghost" onclick={() => { resetAll(); toast('Allt är nollställt'); }}>Nollställ spelet</button>
 
   <dl>

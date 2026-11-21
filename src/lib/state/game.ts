@@ -490,6 +490,20 @@ export function resetAll(): void {
   tick();
 }
 
+/** Dev menu: the village back to its start (Jonas, 2026-11-21). Every building to level 0, the
+ *  build count and prices back to the start, no build under way and no damaged buildings. The
+ *  worlds reached keep their plots cleared; gold, lives and challenges are untouched. */
+export function resetVillage(): void {
+  const v = get(village);
+  const st = get(stairs);
+  const gone = new Set([v.construction?.timerId, ...st.damaged.map((d) => d.timerId)].filter(Boolean));
+  timers.update((ts) => ts.filter((t) => !gone.has(t.id)));
+  village.set(withAllBuildings({ ...startVillage(), world: v.world }));
+  stairs.set({ ...st, damaged: [] });
+  log('reset_village', {});
+  tick();
+}
+
 // ------------------------------------------------------------------ the hook staircase
 
 export interface StairState {
