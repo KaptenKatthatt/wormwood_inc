@@ -154,7 +154,7 @@ Kostnaden växer långsamt i början och sedan ungefär i kvadrat med antalet by
 |---|---|---|---|---|---|---|---|---|---|---|
 | Tid | 10 s | 1 min | 3 min | 8 min | 15 min | 25 min | 40 min | 1 h | 1 h 30 min | 2 h |
 
-De två första byggena i introduktionen tar fortfarande 5 s. Guldpriset följer byggnumret som förut. Följd: väggen runt minut 20 kom av att bygge 11 tog 15 min; nu kommer den mest av guld och liv (öppen fråga till Jonas).
+De två första byggena i introduktionen tar fortfarande 5 s. Guldpriset följer byggnumret som förut. Följd: väggen runt minut 20 kom av att bygge 11 tog 15 min; nu kommer den mest av guld och liv (öppen fråga till Jonas). Byggets val: ett bygge som redan pågår behåller sin tid; lagning tar fortfarande 25 % av senaste byggtiden; bygglistan visar "Tar X att bygga" per byggnad. Kroken longBuild (bygge på minst 5 min) kommer nu först vid bygge till nivå 4 (8 min), tidigare från bygge 9, så steg 3 i trappan kan komma senare.
 
 **Backlogg 2026-11-18 (minispel):** Fiska vid bryggan och Segla mellan skären (ett liv var, ger guld) ligger i backloggen. Jonas gillade dem men vill först få det nuvarande spelet riktigt bra. Mockup: https://claude.ai/artifact/VYPeBranLh1qSLmwJmj3co
 
