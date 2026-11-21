@@ -98,10 +98,12 @@ export const now = writable(clock.now());
 /** Short messages shown at the top. */
 /** art: a small picture beside the text. 'angle' shows the two shapes that make fireworks. */
 export type ToastArt = 'angle';
-export const toasts = writable<{ id: string; text: string; art?: ToastArt }[]>([]);
+/** level: shown during a challenge; such messages go away when the player leaves it (Jonas, 2026-11-21). */
+export const toasts = writable<{ id: string; text: string; art?: ToastArt; level?: boolean }[]>([]);
+let playing = false;
 export function toast(text: string, ms = 3500, art?: ToastArt): void {
   const id = randomId();
-  toasts.update((t) => [...t, { id, text, art }]);
+  toasts.update((t) => [...t, { id, text, art, level: playing }]);
   setTimeout(() => toasts.update((t) => t.filter((x) => x.id !== id)), ms);
 }
 
@@ -346,6 +348,10 @@ export function levelWon(levelId: number, extra: Record<string, unknown>, stars 
 
 /** True while a challenge is on screen: the main menu is hidden then (Jonas, 2026-11-19). */
 export const inLevel = writable(false);
+inLevel.subscribe((on) => {
+  if (playing && !on) toasts.update((t) => t.filter((x) => !x.level));
+  playing = on;
+});
 /** The menu button in the top bar asks the challenge to open its pause dialog. */
 export const levelMenuAsked = writable(false);
 
