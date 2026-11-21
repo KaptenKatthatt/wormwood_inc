@@ -99,7 +99,7 @@ describe('the fencers', () => {
   it('fence for about eight seconds now and then, and stand with lowered blades in between', async () => {
     const { newFencing, stepFencing, BOUT, FENCE, FENCE_FIRST, FENCE_IDLE } = await import('../src/lib/villageLife');
     const f = newFencing(() => 0);
-    expect([f.a, f.b]).toEqual([FENCE.low, FENCE.low]);
+    expect([f.a, f.b]).toEqual([FENCE.guard, FENCE.guard]);
     const busy: number[] = [];
     for (let t = 0; t < 120; t += 0.01) { stepFencing(f, 0.01, () => 0); if (f.i >= 0) busy.push(t); }
     const long = BOUT.reduce((n, b) => n + b[2], 0);
@@ -116,5 +116,25 @@ describe('the fencers', () => {
       if (a === FENCE.lunge) expect(b).toBe(FENCE.parry);
       if (b === FENCE.lunge) expect(a).toBe(FENCE.parry);
     }
+  });
+});
+
+describe('the fencers between bouts', () => {
+  it('are only in the yard while they fence', async () => {
+    const { newFencing, stepFencing, fencersShown, FENCE_FADE } = await import('../src/lib/villageLife');
+    const f = newFencing(() => 0);
+    expect(fencersShown(f)).toBe(0);
+    let fenced = 0, hidden = 0, half = 0;
+    for (let t = 0; t < 120; t += 0.01) {
+      stepFencing(f, 0.01, () => 0);
+      const v = fencersShown(f);
+      if (f.i >= 0) { fenced++; expect(v).toBe(1); }
+      else if (v === 0) hidden++;
+      else half++;
+    }
+    expect(fenced).toBeGreaterThan(0);
+    // most of the time the yard is empty, and the fades are short
+    expect(hidden).toBeGreaterThan(fenced * 4);
+    expect(half * 0.01).toBeLessThan(5 * FENCE_FADE + 0.1); // two bouts and the start of a third
   });
 });

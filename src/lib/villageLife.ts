@@ -246,9 +246,14 @@ export const BOUT: [number, number, number][] = [
 ];
 export const FENCE_IDLE: [number, number] = [45, 120];
 export const FENCE_FIRST: [number, number] = [8, 25];
-export interface Fencing { a: number; b: number; i: number; t: number }
+/**
+ * They are only in the yard while they fence (Jonas, 2026-11-21: soldiers standing frozen
+ * in front of the barracks will not do): they fade in, fence and fade out again.
+ */
+export const FENCE_FADE = 0.6;
+export interface Fencing { a: number; b: number; i: number; t: number; rest: number }
 export function newFencing(rnd: () => number = Math.random): Fencing {
-  return { a: FENCE.low, b: FENCE.low, i: -1, t: FENCE_FIRST[0] + rnd() * (FENCE_FIRST[1] - FENCE_FIRST[0]) };
+  return { a: FENCE.guard, b: FENCE.guard, i: -1, t: FENCE_FIRST[0] + rnd() * (FENCE_FIRST[1] - FENCE_FIRST[0]), rest: 0 };
 }
 /** Moves the fencers on by dt seconds. */
 export function stepFencing(f: Fencing, dt: number, rnd: () => number = Math.random): void {
@@ -256,9 +261,18 @@ export function stepFencing(f: Fencing, dt: number, rnd: () => number = Math.ran
   if (f.t > 0) return;
   f.i++;
   if (f.i >= BOUT.length) {
-    f.i = -1; f.a = f.b = FENCE.low;
-    f.t = FENCE_IDLE[0] + rnd() * (FENCE_IDLE[1] - FENCE_IDLE[0]);
+    f.i = -1; f.a = f.b = FENCE.guard;
+    f.t = f.rest = FENCE_IDLE[0] + rnd() * (FENCE_IDLE[1] - FENCE_IDLE[0]);
     return;
   }
   [f.a, f.b, f.t] = BOUT[f.i];
+}
+
+/** How much of the fencers shows: 1 while they fence, fading at both ends, 0 in between. */
+export function fencersShown(f: Fencing): number {
+  if (f.i >= 0) return 1;
+  const gone = f.rest - f.t; // seconds since the bout ended
+  const out = gone >= 0 && gone < FENCE_FADE ? 1 - gone / FENCE_FADE : 0;
+  const into = f.t < FENCE_FADE ? 1 - f.t / FENCE_FADE : 0;
+  return Math.min(1, Math.max(out, into));
 }

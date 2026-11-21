@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import ART from './villageArt.json';
-import { cast, FENCE, FENCE_BACK, FENCERS_AT, frameOf, newFencing, newSmith, recast, SMITH_AT, SMITH_SPARK, step, stepFencing, stepSmith, type FigureKind, type Walker } from '../lib/villageLife';
+import { cast, FENCE, FENCE_BACK, FENCERS_AT, fencersShown, frameOf, newFencing, newSmith, recast, SMITH_AT, SMITH_SPARK, step, stepFencing, stepSmith, type FigureKind, type Walker } from '../lib/villageLife';
 import { play as playSound, playBell, warmBell } from '../lib/audio/sound';
 import { BELL, quarterOf, sinceQuarter, strikesAt, strokes } from '../lib/churchBell';
 import { sunIsDown } from '../lib/season';
@@ -123,6 +123,9 @@ export class VillageScene extends Phaser.Scene {
       const x = f.at[0] + (f.left ? -back : back);
       f.pic.setFrame(frame).setPosition(ox + x * s, oy + f.at[1] * s);
       f.shadow.setPosition(ox + (x + 2) * s, oy + (f.at[1] - 0.5) * s);
+      const shown = fencersShown(this.fencing);
+      f.pic.setAlpha(shown).setVisible(shown > 0);
+      f.shadow.setAlpha(0.3 * shown).setVisible(shown > 0);
     }
   }
 
@@ -411,8 +414,8 @@ export class VillageScene extends Phaser.Scene {
           // The fencers stand in the yard, over the picture; the left one is the same sheet mirrored.
           const at = FENCERS_AT[stage];
           for (const left of [true, false]) {
-            const shadow = this.add.ellipse(0, 0, 12 * s, 4.4 * s, 0x14190a, 0.3).setDepth(front + 0.4);
-            const fp = this.add.image(0, 0, 'v-people-fencer', FENCE.low).setFlipX(left)
+            const shadow = this.add.ellipse(0, 0, 12 * s, 4.4 * s, 0x14190a, 1).setDepth(front + 0.4);
+            const fp = this.add.image(0, 0, 'v-people-fencer', FENCE.guard).setFlipX(left)
               .setOrigin((left ? FENCER.w - FENCER.at : FENCER.at) / FENCER.w, CELL.foot / CELL.h).setScale(s / CELL.scale).setDepth(front + 0.5);
             this.fencers.push({ pic: fp, shadow, at: left ? at.a : at.b, left });
           }
