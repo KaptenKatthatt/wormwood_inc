@@ -156,6 +156,14 @@ Kostnaden växer långsamt i början och sedan ungefär i kvadrat med antalet by
 
 De två första byggena i introduktionen tar fortfarande 5 s. Guldpriset följer byggnumret som förut. Följd: väggen runt minut 20 kom av att bygge 11 tog 15 min; nu kommer den mest av guld och liv (öppen fråga till Jonas). Byggets val: ett bygge som redan pågår behåller sin tid; lagning tar fortfarande 25 % av senaste byggtiden; bygglistan visar "Tar X att bygga" per byggnad. Kroken longBuild (bygge på minst 5 min) kommer nu först vid bygge till nivå 4 (8 min), tidigare från bygge 9, så steg 3 i trappan kan komma senare. Ute i 0.34.0 (2026-11-21).
 
+**Pris efter nivå (Jonas 2026-11-21, "Godkänt, släpp"; ersätter priset per byggnummer):** guldpriset beror bara på nivån som byggnaden byggs till, gånger byggnadens faktor och med Marknadens rabatt. Tidigare steg priset med 150 för varje bygge från bygge 13, så att Sjöboden till nivå 2 kostade 1 260.
+
+| Byggs till nivå | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Grundpris | 100 | 200 | 350 | 550 | 800 | 1 100 | 1 500 | 2 000 | 2 600 | 3 300 |
+
+De två första byggena i introduktionen är gratis. Exempel: Sjöboden till nivå 2 240, Vakttornet 160, Stugan 300. Att bygga allt till nivå 10 kostar ungefär 140 000 guld, mot ungefär 50 000–80 000 från alla 200 banor, så väggen kan komma senare än förut; följs i testerna.
+
 **Backlogg 2026-11-18 (minispel):** Fiska vid bryggan och Segla mellan skären (ett liv var, ger guld) ligger i backloggen. Jonas gillade dem men vill först få det nuvarande spelet riktigt bra. Mockup: https://claude.ai/artifact/VYPeBranLh1qSLmwJmj3co
 
 ### Djup i pusslet (beslut 2026-11-18)
