@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ON_HOLD } from '../lib/hooks';
   import { millMoves } from '../lib/economy/village';
   import { effectiveVillage, firstTime, tipOnce } from '../lib/state/game';
   import GameCanvas from '../game/GameCanvas.svelte';
@@ -245,13 +246,13 @@
     start(current);
   }
 
-  /** Back to the map after a win; from step 2 the next challenge starts by itself after 3 s. */
+  /** Back to the map after a win; while the autoNext hook is on (not on hold), the next challenge starts by itself after 3 s from step 2. */
   function toMap(afterWin = false) {
     doubled = false;
     paidDouble = false;
     game = null;
     dialog = null;
-    if (afterWin && hookOn('autoNext') && $stairs.step >= 2 && $tutorial.index === null) startCountdown();
+    if (afterWin && hookOn('autoNext') && !ON_HOLD.includes('autoNext') && $stairs.step >= 2 && $tutorial.index === null) startCountdown();
   }
 
   function buyLife(full: boolean) {
