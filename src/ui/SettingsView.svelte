@@ -1,6 +1,6 @@
 <script lang="ts">
   import { playerId, rescheduleAll, settings, toast } from '../lib/state/game';
-  import { DEV_MENU } from '../lib/config/flags';
+  import { CHRISTMAS, DEV_MENU } from '../lib/config/flags';
   import DevMenu from './DevMenu.svelte';
   import DevTesters from './DevTesters.svelte';
   import { startTutorial } from '../lib/tutorial';
@@ -24,6 +24,28 @@
   async function dropContact() {
     toast((await removeContact()) ? 'Mejladressen är borttagen.' : 'Det gick inte just nu. Försök igen om en stund.');
   }
+
+  /**
+   * The dev build splits the page into sub-menus (Jonas, 2026-11-21: one page was far too long).
+   * The testers' build has no menu and shows every player section on one page, as before.
+   */
+  type Page = 'spel' | 'test' | 'testare' | 'tid' | 'trappor' | 'krokar' | 'studie' | 'jul' | 'planbok';
+  let page = $state<Page | null>(null);
+  const PAGES: { id: Page; title: string; what: string }[] = [
+    { id: 'spel', title: 'Ljud, hjälp och notiser', what: 'Det testpersonerna ser: ljud, introduktionen, installera, notiser' },
+    { id: 'test', title: 'Speltest och meddelanden', what: 'Testdata, testkod, mejladress, frågorna, meddelanden från Jonas' },
+    { id: 'testare', title: 'Testarna', what: 'Adminnyckel, meddelanden, anmälningar och inbjudningar' },
+    { id: 'tid', title: 'Tid och världar', what: 'Klockans hastighet, hoppa i tiden, byt värld och utmaning' },
+    { id: 'trappor', title: 'Trapporna', what: 'Kroktrappan, veckotrappan och dagskrokarna' },
+    { id: 'krokar', title: 'Krokar av och på', what: 'Varje krok för sig' },
+    { id: 'studie', title: 'Frågeformulär och reklam', what: 'Frågeformuläret, reklamfilmer och mellanreklam' },
+    ...(CHRISTMAS ? [{ id: 'jul' as const, title: 'Julen', what: 'Datum, utseende och pepparkakor' }] : []),
+    { id: 'planbok', title: 'Plånbok och nollställning', what: 'Valutor, nollställ spelet, spelar-id och version' },
+  ];
+  /** Whether a player section shows: always in the testers' build, on its own page in the dev build. */
+  const show = (p: Page) => !DEV_MENU || page === p;
+  const DEV_PARTS = ['tid', 'trappor', 'krokar', 'studie', 'jul', 'planbok'] as const;
+  const devPart = $derived(DEV_PARTS.find((d) => d === page));
 
   let pushStatus = $state('');
   let credits = $state(false);
@@ -53,8 +75,23 @@
 </script>
 
 <section class="settings">
-  {#if DEV_MENU}<DevTesters />{/if}
-  {#if messages.length}
+  {#if DEV_MENU && page === null}
+    <h2>Inställningar</h2>
+    <nav class="menu" aria-label="Inställningar">
+      {#each PAGES as m (m.id)}
+        <button class="item" onclick={() => (page = m.id)}>
+          <strong>{m.title}</strong>
+          <small>{m.what}</small>
+          <span class="chev" aria-hidden="true">›</span>
+        </button>
+      {/each}
+    </nav>
+  {:else if DEV_MENU}
+    <button class="ghost back" onclick={() => (page = null)}>‹ Inställningar</button>
+    <h2 class="pagetitle">{PAGES.find((m) => m.id === page)?.title}</h2>
+  {/if}
+  {#if DEV_MENU && page === 'testare'}<DevTesters />{/if}
+  {#if show('test') && messages.length}
     <h2>Meddelanden från Jonas</h2>
     {#each messages as m (m.id)}
       <button class="message" class:unread={!$inbox.read.includes(m.id)} aria-expanded={openMessage === m.id} onclick={() => toggleMessage(m.id)}>
@@ -64,6 +101,7 @@
       </button>
     {/each}
   {/if}
+  {#if show('spel')}
   <h2>Ljud</h2>
   <VolumeRow kind="music" label="Musik" />
   <VolumeRow kind="sfx" label="Ljudeffekter" />
@@ -84,7 +122,9 @@
     <button class="primary" onclick={turnOnPush}>Slå på notiser</button>
   {/if}
   {#if pushStatus}<p class="status" role="status">{pushStatus}</p>{/if}
+  {/if}
 
+  {#if show('test')}
   <h2>Speltest</h2>
   <label class="row">
     <input type="checkbox" checked={$settings.logging === true} onchange={(e) => setLogging(e.currentTarget.checked)} />
@@ -112,10 +152,13 @@
       <button class="primary" onclick={openQuestionnaire}>{$qState.stage === 'part1' && Object.keys($qState.answers).length === 0 ? 'Svara på frågorna' : 'Fortsätt med frågorna'}</button>
     {/if}
   {/if}
+  {/if}
 
-  {#if DEV_MENU}<DevMenu />{/if}
-  <button class="ghost" onclick={() => (credits = true)}>Medverkande</button>
-  <p class="version">Version {__APP_VERSION__}</p>
+  {#if DEV_MENU && devPart}<DevMenu part={devPart} />{/if}
+  {#if !DEV_MENU || page === null}
+    <button class="ghost" onclick={() => (credits = true)}>Medverkande</button>
+    <p class="version">Version {__APP_VERSION__}</p>
+  {/if}
 </section>
 {#if credits}<Credits onClose={() => (credits = false)} />{/if}
 
@@ -127,6 +170,13 @@
   .row { display: flex; gap: 10px; align-items: flex-start; min-height: 48px; }
   .row input { width: 24px; height: 24px; margin-top: 2px; accent-color: var(--falu); flex: none; }
   .status { color: var(--muted); }
+  .menu { display: grid; gap: 8px; }
+  .item { position: relative; display: grid; gap: 2px; text-align: left; background: #fffaf2; border: 2px solid var(--line); color: var(--ink); padding: 10px 40px 10px 14px; font-weight: 400; }
+  .item strong { font-weight: 700; }
+  .item small { color: var(--muted); }
+  .chev { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 1.6rem; font-weight: 700; color: var(--muted); }
+  .back { align-self: flex-start; width: auto !important; margin-inline: 0 auto !important; }
+  .pagetitle { margin-top: 0; }
   .version { margin: 16px 0 0; font-size: .85rem; opacity: .7; text-align: center; }
   .code { font-family: ui-monospace, monospace; font-size: 1.1rem; letter-spacing: .08em; }
   .mail { overflow-wrap: anywhere; }

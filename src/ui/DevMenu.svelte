@@ -30,14 +30,17 @@
   const mins = $derived.by(() => { void $now; return minutesIn(); });
   const dayOn = $derived.by(() => { void $now; void $daily; void $settings; return dayHooksOn(); });
   const speedName = (s: number) => (s === 1 ? 'Verklig tid' : `×${s}`);
+  /** Which part of the menu the settings page shows (Jonas, 2026-11-21: the page was too long). */
+  type DevPart = 'tid' | 'trappor' | 'krokar' | 'studie' | 'jul' | 'planbok';
+  const { part }: { part: DevPart } = $props();
   const speedText = (s: number) => (s === 1 ? '30 minuter tar 30 minuter.' : `30 minuter går på ${Math.round((30 / s) * 60)} sekunder.`);
 </script>
 
-<section class="dev" aria-labelledby="dev-title">
-  <h2 id="dev-title">Utvecklarmeny</h2>
-  <p class="fine">Syns inte i versionen som testpersonerna får.</p>
+<section class="dev">
+  <p class="fine">Utvecklarmeny: syns inte i versionen som testpersonerna får.</p>
 
   {#if EXPANSION}
+    {#if part === 'tid'}
     <fieldset>
       <legend>Världar</legend>
       <p>Nu: utmaning {$challengeNo} i {worldOf($challengeNo).name}. Kartans pilar går till alla fem världarna i den här versionen.</p>
@@ -51,8 +54,10 @@
         <button class="ghost" type="submit">Hoppa dit</button>
       </form>
     </fieldset>
+    {/if}
   {/if}
 
+  {#if part === 'tid'}
   <fieldset>
     <legend>Tid</legend>
     {#each SPEEDS as s}
@@ -62,7 +67,9 @@
       </label>
     {/each}
   </fieldset>
+  {/if}
 
+  {#if part === 'trappor'}
   <fieldset>
     <legend>Kroktrappan</legend>
     <p>Nu: steg {$stairs.step} ({STEP_NAMES[$stairs.step]}), {mins} minuter in. Trivsel {$stairs.mood}.</p>
@@ -76,7 +83,9 @@
       {/each}
     </div>
   </fieldset>
+  {/if}
 
+  {#if part === 'studie'}
   <fieldset>
     <legend>Frågeformuläret (ersätter intervjun)</legend>
     <p>Spelet frågar själv från dag {DUE_DAY}. Berättelsen om studien visas först när testaren är klar eller från {STUDY_END}. Från det datumet måste formuläret besvaras för att spela vidare. Nu: {({ part1: 'del 1', choice: 'valet', waiting: 'spelar vidare', debrief: 'berättelsen', part2: 'sista frågorna', done: 'klart' })[$qState.stage]}, frågat {$qState.asks} gånger. Kräver att testdata skickas.</p>
@@ -86,7 +95,9 @@
       <button class="ghost" onclick={devResetQuestionnaire}>Nollställ formuläret</button>
     </div>
   </fieldset>
+  {/if}
 
+  {#if part === 'trappor'}
   <fieldset>
     <legend>Dagskrokar (hemveckan)</legend>
     <p>Nu {dayOn ? 'på' : 'av'}. Första dagen {$daily.firstDay}, gåvor {$daily.claimed} av 7, svit {$daily.streak}, svitskydd {$daily.shields ?? 0}, vinster i dag {$daily.winsDay === new Date($now).toLocaleDateString('sv-SE') ? $daily.winsToday : 0}.</p>
@@ -102,7 +113,9 @@
       <button class="ghost" onclick={devMissDay}>Missa en dag (sviten bryts)</button>
     </div>
   </fieldset>
+  {/if}
   {#if EXPANSION}
+  {#if part === 'studie'}
   <fieldset>
     <legend>Reklamfilmer</legend>
     <p>Det här spelar-id:t hör till gruppen {adGroupFor(playerId) === 'calm' ? 'lugna' : 'skrikiga'}. Testpersoner får alltid sin grupp.</p>
@@ -114,8 +127,10 @@
     {/each}
   </fieldset>
   {/if}
+  {/if}
 
   {#if CHRISTMAS}
+    {#if part === 'jul'}
     <fieldset>
       <legend>Julen (1-24 december)</legend>
       <p>Nu {xday > 0 ? `på, lucka ${xday}` : 'av'}. Pepparkakor {$xmas.cookies}, öppnade luckor {$xmas.opened.length}, pynt {$xmas.decor.length} av 6. Följer dagskrokarna (från dag 2 eller Alltid på). Syns inte i testversionen än.</p>
@@ -139,9 +154,11 @@
         {/each}
       </div>
     </fieldset>
+    {/if}
   {/if}
 
   {#if EXPANSION}
+    {#if part === 'trappor'}
     <fieldset>
       <legend>Veckotrappan (utbyggnaden)</legend>
       <p>Nu: steg {$exp.step}{$exp.step > 5 ? ` (${WEEK_STEPS.find((d) => d.step === $exp.step)?.name})` : ''}, testdag {tday}, värld {$exp.maxWorld}, utmaning {$challengeNo}.</p>
@@ -163,8 +180,10 @@
         </div>
       {/if}
     </fieldset>
+    {/if}
   {/if}
 
+  {#if part === 'krokar'}
   <fieldset>
     <legend>Krokar</legend>
     {#each HOOKS.filter((h) => EXPANSION || !EXPANSION_HOOKS.includes(h.id)) as h (h.id)}
@@ -174,7 +193,9 @@
       </label>
     {/each}
   </fieldset>
+  {/if}
 
+  {#if part === 'planbok'}
   <fieldset>
     <legend>Plånbok och valutor</legend>
     <p>{formatKr($purse.kronor)} kvar, {formatKr($purse.kronorSpent)} spenderat. 🪙 {$purse.gold}, 💎 {$purse.gems}.</p>
@@ -184,7 +205,9 @@
       <button class="ghost" onclick={() => devGive('gems', 100)}>+100 💎</button>
     </div>
   </fieldset>
+  {/if}
 
+  {#if part === 'planbok'}
   <button class="ghost" onclick={() => { resetAll(); toast('Allt är nollställt'); }}>Nollställ spelet</button>
 
   <dl>
@@ -194,11 +217,11 @@
     <dt>Hastighet</dt><dd>×{clock.speed}</dd>
     <dt>Version</dt><dd>{__APP_VERSION__}</dd>
   </dl>
+  {/if}
 </section>
 
 <style>
   .dev { margin-top: 18px; border: 2px dashed var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 12px; }
-  h2 { font-size: 1.15rem; margin: 0; }
   p { margin: 0; }
   .fine { color: var(--muted); font-size: .9rem; }
   fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; }
