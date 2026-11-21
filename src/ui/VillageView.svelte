@@ -161,7 +161,7 @@
       <div class="head">
         <div>
           <h2 id="sheet-title">Bygg</h2>
-          <span class="fine">{constr ? 'Ett bygge i taget. Det som pågår ska bli klart först.' : 'Byggtiden beror på vilken nivå huset byggs till.'}</span>
+          <span class="fine">{constr ? 'Ett bygge i taget. Det som pågår ska bli klart först.' : 'Pris och byggtid beror på vilken nivå huset byggs till.'}</span>
         </div>
         <button class="close-x ghost" onclick={() => (sheet = false)} aria-label="Stäng bygglistan">✕</button>
       </div>

@@ -549,7 +549,7 @@ export function isDamaged(id: BuildingId): boolean {
 /** What the repair of a building costs: from its last upgrade, or today's price for an older save. */
 export function repairPrice(id: BuildingId): { gold: number; ms: number } {
   const v = get(village);
-  const last = v.last?.[id] ?? { gold: priceFor(Math.max(1, v.builds), v, id), ms: buildTime(Math.max(1, v.builds), Math.max(1, v.levels[id])) };
+  const last = v.last?.[id] ?? { gold: priceFor(Math.max(1, v.builds), v, id, Math.max(1, v.levels[id])), ms: buildTime(Math.max(1, v.builds), Math.max(1, v.levels[id])) };
   return { gold: repairGold(last.gold), ms: repairTime(last.ms) };
 }
 

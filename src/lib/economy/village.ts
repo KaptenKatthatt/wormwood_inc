@@ -3,7 +3,7 @@
  * Eight buildings with ten levels each; Stugan's level is the ceiling for the
  * others. Three of them stand on land that is cleared when Stugan reaches
  * level 3, 5 and 7 (the village grows outward). One building is built at a
- * time. Cost and time follow the number of the build (the first two are free
+ * time. Cost and time follow the level built to (the first two builds are free
  * and take 5 seconds); each building also has its own price factor.
  */
 import { HOUR, MINUTE } from '../time/clock';
@@ -23,7 +23,7 @@ export interface BuildingDef {
   world?: number;
   /**
    * How dear this building is next to the others (Jonas, 2026-11-19: the
-   * buildings do not all cost the same). The price is the build number's cost
+   * buildings do not all cost the same). The price is the level's cost
    * times this; the main house and what earns gold cost more, towers and the
    * chapel less. The average over the first builds stays near 1, so the pace
    * of the start is unchanged.
@@ -71,24 +71,32 @@ export const BASE_BUILDINGS: BuildingDef[] = BUILDINGS.filter((b) => !b.world);
 export const WORLD_BUILDINGS_ON_HOLD = true;
 
 /*
- * A more generous start (Jonas, 2026-11-18). With 150-250 gold a challenge,
- * builds 1-10 cost about what ten challenges pay. Since 2026-11-21 the time
- * of a build follows its level (LEVEL_TIMES), not the build number.
+ * Since 2026-11-21 both the gold and the time of a build follow the level the
+ * building is built to (LEVEL_COSTS, LEVEL_TIMES), not the build number: a
+ * level 1 building is cheap and quick whenever it is built (Jonas). The first
+ * two builds, in the introduction, stay free and take 5 seconds.
  */
-const COSTS = [0, 0, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600];
+const INTRO_BUILDS = 2;
 const INTRO_TIME = 5_000;
 
-/** Gold for build number n (1-based). After the table it grows by 150 a build. */
-export function buildCost(n: number): number {
-  if (n <= COSTS.length) return COSTS[n - 1];
-  return 600 + 150 * (n - COSTS.length);
+/** Gold for taking a building to each level 1-10, before its factor and Marknaden's discount. */
+export const LEVEL_COSTS = [100, 200, 350, 550, 800, 1100, 1500, 2000, 2600, 3300];
+
+/** Base gold for build number n (1-based) that takes a building to level toLevel. */
+export function buildCost(n: number, toLevel: number): number {
+  if (n <= INTRO_BUILDS) return 0;
+  return LEVEL_COSTS[Math.min(LEVEL_COSTS.length, Math.max(1, toLevel)) - 1];
 }
 
-/** The price of building `id` as build number n: its own factor and Marknaden's discount, rounded to 10. */
-export function priceFor(n: number, v: VillageState, id?: BuildingId): number {
+/**
+ * The price of building `id` as build number n, to its next level (or to
+ * toLevel): its own factor and Marknaden's discount, rounded to 10.
+ */
+export function priceFor(n: number, v: VillageState, id?: BuildingId, toLevel?: number): number {
   const discount = Math.min(0.5, 0.05 * (v.levels.marknaden ?? 0));
   const factor = BUILDINGS.find((b) => b.id === id)?.price ?? 1;
-  return Math.round((buildCost(n) * factor * (1 - discount)) / 10) * 10;
+  const level = toLevel ?? (id ? (v.levels[id] ?? 0) + 1 : 1);
+  return Math.round((buildCost(n, level) * factor * (1 - discount)) / 10) * 10;
 }
 
 /**
@@ -100,7 +108,7 @@ export const LEVEL_TIMES = [10_000, MINUTE, 3 * MINUTE, 8 * MINUTE, 15 * MINUTE,
 
 /** Game time for build number n (1-based) that takes a building to level toLevel. */
 export function buildTime(n: number, toLevel: number): number {
-  if (n <= 2) return INTRO_TIME;
+  if (n <= INTRO_BUILDS) return INTRO_TIME;
   return LEVEL_TIMES[Math.min(LEVEL_TIMES.length, Math.max(1, toLevel)) - 1];
 }
 
@@ -114,7 +122,7 @@ export interface Construction { id: BuildingId; toLevel: number; timerId: string
 
 export interface VillageState {
   levels: Record<BuildingId, number>;
-  /** Builds started so far (sets the price of the next one). */
+  /** Builds started so far (the first two, in the introduction, are free). */
   builds: number;
   construction: Construction | null;
   /** The highest world reached (clears the expansion's plots). */

@@ -4,23 +4,23 @@ import { START_VILLAGE, buildBlock, buildCost, buildTime, goldMultiplier, skipGe
 
 describe('village', () => {
   it('follows the cost curve from the design', () => {
-    expect([1, 2].map(buildCost)).toEqual([0, 0]);
-    expect(buildCost(13)).toBeGreaterThan(buildCost(12));
+    expect([buildCost(1, 1), buildCost(2, 3)]).toEqual([0, 0]);
+    // From build 3 the gold follows the level built to (Jonas, 2026-11-21), whatever the build number.
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((l) => buildCost(13, l))).toEqual([100, 200, 350, 550, 800, 1100, 1500, 2000, 2600, 3300]);
+    expect(buildCost(40, 1)).toBe(100);
     expect([buildTime(1, 1), buildTime(2, 1)]).toEqual([5000, 5000]);
     // From build 3 the time follows the level built to (Jonas, 2026-11-21), whatever the build number.
     expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((l) => buildTime(13, l))).toEqual([10_000, MINUTE, 3 * MINUTE, 8 * MINUTE, 15 * MINUTE, 25 * MINUTE, 40 * MINUTE, HOUR, 90 * MINUTE, 2 * HOUR]);
     expect(buildTime(40, 2)).toBe(MINUTE);
-    // builds 1-10 cost about what ten challenges pay (150-250 each)
-    const firstTen = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(buildCost).reduce((a, b) => a + b, 0);
-    expect(firstTen).toBeGreaterThan(1500);
-    expect(firstTen).toBeLessThan(2500);
+    // a level 1 building costs less than one challenge pays (150-250)
+    expect(buildCost(20, 1)).toBeLessThan(150);
   });
 
   it('caps other buildings at the level of Stugan and builds one at a time', () => {
     expect(buildBlock(START_VILLAGE, 'sjoboden', 0)).toBe('cap');
     expect(buildBlock(START_VILLAGE, 'stugan', 0)).toBeNull();
     const v = { ...START_VILLAGE, levels: { ...START_VILLAGE.levels, stugan: 1 }, builds: 2 };
-    // build 3 costs 100; Sjoboden is 20 % dearer than that
+    // Sjoboden to level 1 costs 100, 20 % dearer: 120
     expect(buildBlock(v, 'sjoboden', 110)).toBe('gold');
     expect(buildBlock(v, 'sjoboden', 120)).toBeNull();
     expect(buildBlock({ ...v, construction: { id: 'stugan', toLevel: 2, timerId: 'x' } }, 'sjoboden', 999)).toBe('busy');
@@ -59,14 +59,20 @@ describe('the growing village', () => {
   });
   it('Marknaden lowers prices and Kvarnen gives moves', () => {
     const v = { ...START_VILLAGE, levels: { ...START_VILLAGE.levels, marknaden: 2, kvarnen: 3 } };
-    expect(priceFor(10, v)).toBe(Math.round((buildCost(10) * 0.9) / 10) * 10);
+    expect(priceFor(10, v, 'kasernen')).toBe(90);
+    expect(priceFor(10, v, 'stugan')).toBe(Math.round((buildCost(10, 1) * 1.5 * 0.9) / 10) * 10);
     expect(millMoves(v)).toBe(1);
   });
   it('the buildings do not all cost the same (Jonas, 2026-11-19)', () => {
     const v = START_VILLAGE;
-    expect(priceFor(5, v, 'stugan')).toBe(300);
-    expect(priceFor(5, v, 'kasernen')).toBe(200);
-    expect(priceFor(5, v, 'kapellet')).toBe(140);
+    expect(priceFor(5, v, 'stugan')).toBe(150);
+    expect(priceFor(5, v, 'kasernen')).toBe(100);
+    expect(priceFor(5, v, 'kapellet')).toBe(70);
+    // the price follows the building's next level, not how many builds came before
+    const high = { ...v, levels: { ...v.levels, kasernen: 4 } };
+    expect(priceFor(30, high, 'kasernen')).toBe(800);
+    expect(priceFor(30, high, 'kapellet')).toBe(70);
+    expect(priceFor(30, high, 'kasernen', 4)).toBe(550);
     expect(priceFor(5, v, 'vakttornet')).toBe(priceFor(5, v, 'tornet_s'));
     expect(new Set(BUILDINGS.map((b) => priceFor(8, v, b.id))).size).toBeGreaterThanOrEqual(6);
     // the two free builds of the introduction stay free whatever is built
