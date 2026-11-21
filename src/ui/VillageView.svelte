@@ -218,7 +218,7 @@
   .building { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: rgb(255 248 236 / .96); border: 2px solid var(--frame); border-radius: 12px; padding: 8px 10px; box-shadow: 0 3px 0 var(--deep); }
   .building span { flex: 1 1 180px; font-variant-numeric: tabular-nums; }
   .damaged { border-color: var(--falu); background: #fbe6e1; }
-  .fabs { display: flex; align-items: flex-end; justify-content: space-between; pointer-events: none; min-height: 84px; }
+  .fabs { display: flex; align-items: flex-end; justify-content: flex-end; pointer-events: none; min-height: 84px; }
   .fabs > * { pointer-events: auto; }
   .fab { width: 84px; height: 84px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-content: center; justify-items: center; gap: 0; line-height: 1;
     background: radial-gradient(circle at 40% 35%, #c9473a, #8b2a1e); color: #fff; border: 4px solid #fff; box-shadow: 0 0 0 3px var(--deep), 0 5px 0 3px var(--deep); font-weight: 800; font-size: 1.05rem; }

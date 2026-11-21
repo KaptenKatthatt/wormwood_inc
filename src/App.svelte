@@ -15,7 +15,7 @@
   import { log } from './lib/log/logger';
   import { TUT_STEPS, tutEvent, tutorial } from './lib/tutorial';
   import { EXPANSION } from './lib/config/flags';
-  import { adOpen, adReward, exp, friendNote, hubOpen, interEvent, interOpen, interPending, offerShown, removeAdsOpen, showPendingInter } from './lib/state/expansion';
+  import { adOpen, adReward, exp, friendNote, hubOpen, interOpen, interPending, offerShown, removeAdsOpen, showPendingInter } from './lib/state/expansion';
   import RemoveAds from './ui/RemoveAds.svelte';
   import RewardBurst from './ui/RewardBurst.svelte';
   import { hookOn } from './lib/state/game';
@@ -105,10 +105,8 @@
   });
 
   function go(t: Tab) {
-    const from = tab;
     tab = t;
-    // From step 8, going from the village to the map can bring an ad.
-    if (from === 'byn' && t === 'pussel') interEvent('toMap');
+    // Changing tabs never brings an ad (Jonas, 2026-11-21); the 'toMap' trigger is no longer sent.
     if (t === 'pussel') tutEvent('onMap');
     history.replaceState(null, '', `#${t}`);
     log('view', { tab: t });
