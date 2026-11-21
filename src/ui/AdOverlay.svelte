@@ -6,7 +6,8 @@
    *
    * With `between` it is an ad between challenges instead (Jonas, 2026-11-20):
    * the same films, but no reward, and the cross comes only after a few
-   * seconds; on step 9 it is sometimes small and pale in the corner.
+   * seconds; on step 9 it is sometimes small and pale in the corner. When the film
+ * has played to the end, a Fortsätt button leads on.
    */
   import { adClosed, adGroup, adOpen, adWatched, interClosed, interOpen } from '../lib/state/expansion';
   import { AD_SECONDS, nextAd } from '../lib/expansion/social';
@@ -73,6 +74,11 @@
     {#if !between}<p class="fine" aria-live="polite">{done ? 'Klart!' : `Belöningen kommer om ${left} s`}</p>{/if}
     {#if done && !between}
       <button class="primary get" onclick={adWatched}>Hämta {$adOpen?.reward === 'life' ? 'livet' : 'guldet'}</button>
+    {/if}
+    <!-- When an ad between challenges has played to the end, a plain button leads on (Jonas, 2026-11-21);
+         the cross in the corner stays as it was. -->
+    {#if done && between}
+      <button class="primary get" onclick={() => interClosed(t)}>Fortsätt</button>
     {/if}
   </div>
 </div>
