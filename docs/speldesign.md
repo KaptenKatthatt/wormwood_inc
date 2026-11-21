@@ -162,7 +162,7 @@ De två första byggena i introduktionen tar fortfarande 5 s. Guldpriset följer
 |---|---|---|---|---|---|---|---|---|---|---|
 | Grundpris | 100 | 200 | 350 | 550 | 800 | 1 100 | 1 500 | 2 000 | 2 600 | 3 300 |
 
-De två första byggena i introduktionen är gratis. Exempel: Sjöboden till nivå 2 240, Vakttornet 160, Stugan 300. Att bygga allt till nivå 10 kostar ungefär 140 000 guld, mot ungefär 50 000–80 000 från alla 200 banor, så väggen kan komma senare än förut; följs i testerna.
+De två första byggena i introduktionen är gratis. Exempel: Sjöboden till nivå 2 240, Vakttornet 160, Stugan 300. Att bygga allt till nivå 10 kostar ungefär 140 000 guld, mot ungefär 50 000–80 000 från alla 200 banor, så väggen kan komma senare än förut; följs i testerna. Ute i 0.35.0 (2026-11-21); lagning kostar fortfarande 20 % av senaste uppgraderingen.
 
 **Backlogg 2026-11-18 (minispel):** Fiska vid bryggan och Segla mellan skären (ett liv var, ger guld) ligger i backloggen. Jonas gillade dem men vill först få det nuvarande spelet riktigt bra. Mockup: https://claude.ai/artifact/VYPeBranLh1qSLmwJmj3co
 
