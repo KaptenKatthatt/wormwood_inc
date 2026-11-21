@@ -107,20 +107,28 @@ export function toast(text: string, ms = 3500, art?: ToastArt): void {
 
 /** A tip shown once per player, the first time something matters (instead of a long introduction). */
 /** True the first time it is asked for this id, then never again (shares the tips list). */
+/** A tip shows the first TIP_TIMES times the player meets something new (Jonas, 2026-11-21; it was once). */
+export const TIP_TIMES = 3;
+/** How many times each tip has shown. A tip in the old list of seen tips has shown once. */
+function tipCounts(): Record<string, number> {
+  const counts = load<Record<string, number>>('tipCounts', {});
+  for (const id of load<string[]>('tips', [])) counts[id] ??= 1;
+  return counts;
+}
+/** Times the tip has shown so far. */
+export const tipShown = (id: string): number => tipCounts()[id] ?? 0;
+/** True, and counted, while the tip has shown fewer than TIP_TIMES times. */
 export function firstTime(id: string): boolean {
-  const seen = load<string[]>('tips', []);
-  if (seen.includes(id)) return false;
-  save('tips', [...seen, id]);
-  log('tip', { tip: id });
+  const counts = tipCounts();
+  const n = counts[id] ?? 0;
+  if (n >= TIP_TIMES) return false;
+  save('tipCounts', { ...counts, [id]: n + 1 });
+  log('tip', { tip: id, time: n + 1 });
   return true;
 }
 
 export function tipOnce(id: string, text: string, art?: ToastArt): void {
-  const seen = load<string[]>('tips', []);
-  if (seen.includes(id)) return;
-  save('tips', [...seen, id]);
-  toast(text, art ? 9000 : 6500, art);
-  log('tip', { tip: id });
+  if (firstTime(id)) toast(text, art ? 9000 : 6500, art);
 }
 
 /** The shop overlay; `reason` says why it opened (logged). */
