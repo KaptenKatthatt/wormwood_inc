@@ -37,6 +37,26 @@ describe('obstacles', () => {
     expect(g.board[2][2]).toBe(kind);
   });
 
+  it('a rocket tears a net of two layers off completely, with the tile under it', () => {
+    const g = new Match3({ ...level, goal: { type: 'ice' }, ice: [[3, 4, 2], [3, 2, 1]] }, rng, false, base());
+    g.board[3][0] = POWER; g.special[3][0] = 'right';
+    const r = g.fire({ r: 3, c: 0 });
+    expect(r.valid).toBe(true);
+    expect(g.ice[3][4]).toBe(0);
+    expect(g.ice[3][2]).toBe(0);
+    expect(r.steps[0].cleared).toContainEqual({ r: 3, c: 4 });
+    expect(g.status()).toBe('won');
+  });
+
+  it('fireworks still take one layer of a net of two', () => {
+    const g = new Match3({ ...level, ice: [[2, 2, 2]] }, rng, false, base());
+    g.board[3][3] = POWER; g.special[3][3] = 'area';
+    // the first step is the blast itself; later steps are cascades after the refill
+    const step = g.fire({ r: 3, c: 3 }).steps[0];
+    expect(step.iceBroken).toContainEqual({ r: 2, c: 2, left: 1 });
+    expect(step.cleared).not.toContainEqual({ r: 2, c: 2 });
+  });
+
   it('moss goes when the tile on it is cleared', () => {
     const g = new Match3({ ...level, goal: { type: 'moss' }, moss: [[5, 0], [5, 1]] }, rng, false, base());
     const step = g.smash({ r: 5, c: 0 }).steps[0];
