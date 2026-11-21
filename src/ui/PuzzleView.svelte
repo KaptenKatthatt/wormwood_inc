@@ -7,7 +7,7 @@
   import MapView from './MapView.svelte';
   import { Match3Scene } from '../game/Match3Scene';
   import { Match3, isRocket, type SwapResult } from '../lib/match3/engine';
-  import { OBSTACLE_TIPS, goalText, introLevel, levelAt, regionOf, tileUrl, type Level, type Obstacle } from '../lib/match3/levels';
+  import { OBSTACLE_TIPS, obstaclesIn, goalText, introLevel, levelAt, regionOf, tileUrl, type Level, type Obstacle } from '../lib/match3/levels';
   import { EXPANSION } from '../lib/config/flags';
   import { adReward, adsLeft, askHelp, canAskHelp, gateBlocks, gateOpenDialog, interOpen, interPending, removeAdsOpen, winterOpen, helpersNow, invite, offerAd, skipGate, weekOn } from '../lib/state/expansion';
   import { GATE_SKIP_GEMS, HELPERS_NEEDED } from '../lib/expansion/conquest';
@@ -98,7 +98,8 @@
     const lv = introRun ? introLevel(levelAt(1)) : { ...l, moves: l.moves + millMoves(effectiveVillage()) };
     game = new Match3(lv, makeRng(Math.floor(Math.random() * 2 ** 31)), hookOn('nearWin'));
     startedReal = Date.now();
-    intro = l.intro && firstTime(`obstacle-${l.intro}`) ? l.intro : null;
+    // the first obstacle on this board whose tip has not shown three times yet
+    intro = introRun ? null : (obstaclesIn(l).find((o) => firstTime(`obstacle-${o}`)) ?? null);
     rev++;
     tutEvent('levelStarted');
     // Lets automated screenshot runs find a legal move; not in tester builds.

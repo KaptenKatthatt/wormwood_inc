@@ -107,7 +107,28 @@ export const tileUrl = (region: Region, kind: number): string => `/art/tiles/${r
 export const TILES = REGIONS[0].tiles;
 export const KIND_NAMES = REGIONS[0].names;
 
-/** The sentence shown with the arrow the first time an obstacle appears. */
+/**
+ * The obstacles on a challenge's board, the one it introduces first: the tip
+ * shows on the first three boards that have it (Jonas, 2026-11-21).
+ */
+export function obstaclesIn(l: Level): Obstacle[] {
+  const out: Obstacle[] = l.intro ? [l.intro] : [];
+  const add = (o: Obstacle | undefined, cells: unknown[] | undefined) => { if (o && cells?.length && !out.includes(o)) out.push(o); };
+  const region = regionOf(l.id);
+  const w = worldOf(((l.id - 1) % 200) + 1);
+  const cover: Obstacle = w.id > 1 ? WORLD_OBSTACLES[w.id]?.cover ?? 'is' : region.id === 'fjall' ? 'sno' : 'is';
+  add(cover, l.ice);
+  add('tang', l.tang);
+  add('mossa', l.moss);
+  add('stock', l.stock);
+  add(region.stone ?? 'sten', l.sten);
+  add('malm', l.malm);
+  add('klapper', l.klapper);
+  add('hobal', l.hobal);
+  return out;
+}
+
+/** The sentence shown with the arrow the first times an obstacle appears. */
 export const OBSTACLE_TIPS: Record<Obstacle, string> = {
   is: 'Fisknät! Brickan under sitter fast men går att matcha. Första träffen river nätet, den andra tar bort det.',
   tang: 'Tången växer om du låter den vara. Matcha bredvid den!',
