@@ -610,6 +610,9 @@ export class Match3 {
       return false;
     };
     const queue = [...first];
+    /** Cells a rocket's line reaches: a rocket tears a net (or snow) off completely (Jonas, 2026-11-21). */
+    const rocketLine = new Set<number>();
+    const line = (r: number, c: number) => { rocketLine.add(r * this.cols + c); queue.push({ r, c }); };
     while (queue.length) {
       const { r, c } = queue.shift()!;
       const key = r * this.cols + c;
@@ -618,22 +621,24 @@ export class Match3 {
       const k = this.board[r][c];
       // a log is never broken, only collected at the bottom
       if (k === STOCK && !(collectLogs && r === this.rows - 1)) continue;
-      // a tile under two layers stays; the hit only takes a layer
+      // a tile under two layers stays; the hit only takes a layer, except from a
+      // rocket, which takes the whole net and the tile under it
+      if (this.ice[r][c] > 1 && rocketLine.has(key)) this.ice[r][c] = 1;
       if (this.ice[r][c] > 1) { chip({ r, c }); continue; }
       // a hard block hit by a special loses one hit and stays until the last
       if (BLOCK_HITS[k] && hitBlock(r, c)) continue;
       matched.push({ r, c });
       const sp = this.special[r][c];
-      if (sp === 'right') for (let cc = c + 1; cc < this.cols; cc++) queue.push({ r, c: cc });
-      if (sp === 'left') for (let cc = c - 1; cc >= 0; cc--) queue.push({ r, c: cc });
-      if (sp === 'down') for (let rr = r + 1; rr < this.rows; rr++) queue.push({ r: rr, c });
-      if (sp === 'up') for (let rr = r - 1; rr >= 0; rr--) queue.push({ r: rr, c });
+      if (sp === 'right') for (let cc = c + 1; cc < this.cols; cc++) line(r, cc);
+      if (sp === 'left') for (let cc = c - 1; cc >= 0; cc--) line(r, cc);
+      if (sp === 'down') for (let rr = r + 1; rr < this.rows; rr++) line(rr, c);
+      if (sp === 'up') for (let rr = r - 1; rr >= 0; rr--) line(rr, c);
       if (ROCKET_BOTH_WAYS && isRocket(sp)) {
         // the flame behind it burns the rest of the line
-        if (sp === 'right') for (let cc = c - 1; cc >= 0; cc--) queue.push({ r, c: cc });
-        if (sp === 'left') for (let cc = c + 1; cc < this.cols; cc++) queue.push({ r, c: cc });
-        if (sp === 'down') for (let rr = r - 1; rr >= 0; rr--) queue.push({ r: rr, c });
-        if (sp === 'up') for (let rr = r + 1; rr < this.rows; rr++) queue.push({ r: rr, c });
+        if (sp === 'right') for (let cc = c - 1; cc >= 0; cc--) line(r, cc);
+        if (sp === 'left') for (let cc = c + 1; cc < this.cols; cc++) line(r, cc);
+        if (sp === 'down') for (let rr = r - 1; rr >= 0; rr--) line(rr, c);
+        if (sp === 'up') for (let rr = r + 1; rr < this.rows; rr++) line(rr, c);
       }
       if (sp === 'area') for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) queue.push({ r: r + dr, c: c + dc });
       if (sp === 'all') {

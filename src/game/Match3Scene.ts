@@ -37,6 +37,8 @@ export class Match3Scene extends Phaser.Scene {
   private engine?: Match3;
   private tiles: (Tile | null)[][] = [];
   private iceGfx: (Phaser.GameObjects.Container | null)[][] = [];
+  /** Cells the step being played clears; a rocket's burst hides only these, so a tile it does not take stays in sight. */
+  private clearing = new Set<number>();
   private mossGfx: (Phaser.GameObjects.Image | null)[][] = [];
   private region: Region = REGIONS[0];
   /** The frame colours of this region's board. */
@@ -646,7 +648,7 @@ export class Match3Scene extends Phaser.Scene {
   /** A tile smashed by a rocket (or burnt by its flame): it hides and throws out splinters and a puff. */
   private burst(at: Cell, burnt = false): void {
     const t = this.tiles[at.r]?.[at.c];
-    if (t) t.setVisible(false);
+    if (t && this.clearing.has(at.r * 1000 + at.c)) t.setVisible(false);
     const p = this.pos(at);
     const puff = this.add.circle(p.x, p.y, this.cell * 0.3, burnt ? 0x5a4a40 : 0xfff3c4, burnt ? 0.6 : 0.9).setDepth(5);
     this.tweens.add({ targets: puff, scale: 1.8, alpha: 0, duration: 220, onComplete: () => puff.destroy() });
@@ -841,6 +843,7 @@ export class Match3Scene extends Phaser.Scene {
     // A special tile made or set off counts as two steps up: it should sound bigger.
     playMatch(cascade + (step.made.length || step.blasts.length ? 2 : 0));
     // let the sweep be seen before the tiles go
+    this.clearing = new Set(step.cleared.map(({ r, c }) => r * 1000 + c));
     const wait = this.flash(step);
     if (wait) await new Promise((done) => this.time.delayedCall(wait * 0.8, done));
     for (const { r, c, left } of step.iceBroken) {

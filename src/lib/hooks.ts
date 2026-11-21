@@ -34,6 +34,9 @@ export const ON_HOLD: readonly string[] = [
   // playing a mobile game), and the guilt letter came with it. Drop-outs are read from the
   // server instead: the last time a tester played, and the step reached.
   'guilt',
+  // The countdown to the next challenge after a win went on 2026-11-21 (Jonas): Spela vidare
+  // leads to the map, and the player stays there until they press Spela.
+  'autoNext',
 ];
 
 export const HOOKS: { id: HookId; step: number; name: string; what: string }[] = [

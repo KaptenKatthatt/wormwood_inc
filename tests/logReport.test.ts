@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DROPOUT_DAYS, dropoutRows, eventRows, hookRows, parseLines, playerRows, tidy, toCsv } from '../tools/log-report.mjs';
+import { DROPOUT_DAYS, adClickRows, dropoutRows, eventRows, hookRows, parseLines, playerRows, tidy, toCsv } from '../tools/log-report.mjs';
 
 const T = Date.UTC(2026, 10, 19, 18, 0, 0);
 const ev = (seq: number | null, name: string, data: Record<string, unknown> = {}, extra: Record<string, unknown> = {}) =>
@@ -49,6 +49,20 @@ describe('the log report', () => {
     const steps = dropoutRows(players);
     expect(steps[2]).toMatchObject({ step: 3, reached: 3, dropped_out_here: 1, playing_here: 1 });
     expect(steps[6]).toMatchObject({ step: 7, reached: 1, dropped_out_here: 1, share_dropped_here: '100 %' });
+  });
+
+  it('counts the taps on the button in the ad films, per film and kind of ad', () => {
+    const events = tidy([
+      ev(1, 'hook', { hook: 'interstitial', response: 'shown', ad: 'kungar' }),
+      ev(2, 'ad_click', { ad: 'kungar', kind: 'between', second: 8.2, weekStep: 7 }),
+      ev(3, 'hook', { hook: 'interstitial', response: 'shown', ad: 'kungar' }),
+      ev(4, 'ad_shown', { ad: 'fulltraff' }),
+      ev(5, 'ad_click', { ad: 'kungar', kind: 'between', weekStep: 7 }, { playerId: 'p2' }),
+    ]);
+    const rows = adClickRows(events);
+    expect(rows[0]).toMatchObject({ ad: 'kungar', kind: 'between', shown: 2, clicks: 2, click_rate: '100 %', testers_shown: 1, testers_clicked: 2, steps_clicked: '7' });
+    expect(rows[1]).toMatchObject({ ad: 'fulltraff', kind: 'rewarded', shown: 1, clicks: 0, click_rate: '0 %' });
+    expect(playerRows(events).find((p: { player: string }) => p.player === 'p1')).toMatchObject({ ad_clicks: 1 });
   });
 
   it('writes flat rows as CSV with semicolons', () => {

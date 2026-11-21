@@ -6,9 +6,10 @@
    *
    * With `between` it is an ad between challenges instead (Jonas, 2026-11-20):
    * the same films, but no reward, and the cross comes only after a few
-   * seconds; on step 9 it is sometimes small and pale in the corner.
+   * seconds; on step 9 it is sometimes small and pale in the corner. When the film
+ * has played to the end, a Fortsätt button leads on.
    */
-  import { adClosed, adGroup, adOpen, adWatched, interClosed, interOpen } from '../lib/state/expansion';
+  import { adClicked, adClosed, adGroup, adOpen, adWatched, interClosed, interOpen } from '../lib/state/expansion';
   import { AD_SECONDS, nextAd } from '../lib/expansion/social';
   import { get } from 'svelte/store';
   import { untrack } from 'svelte';
@@ -68,11 +69,17 @@
     {#key scene}<p class="line">{ad.scenes[scene]}</p>{/key}
   </div>
   <div class="foot">
-    {#if scene === 2}<span class="cta" aria-hidden="true">{ad.cta}</span>{/if}
+    <!-- Tapping the button opens nothing (the films are made up), but the tap is counted (Jonas, 2026-11-21). -->
+    {#if scene === 2}<button class="cta" data-no-click-sound onclick={() => adClicked(ad.id, between, t)}>{ad.cta}</button>{/if}
     {#if ad.legal}<p class="legal">{ad.legal}</p>{/if}
     {#if !between}<p class="fine" aria-live="polite">{done ? 'Klart!' : `Belöningen kommer om ${left} s`}</p>{/if}
     {#if done && !between}
       <button class="primary get" onclick={adWatched}>Hämta {$adOpen?.reward === 'life' ? 'livet' : 'guldet'}</button>
+    {/if}
+    <!-- When an ad between challenges has played to the end, a plain button leads on (Jonas, 2026-11-21);
+         the cross in the corner stays as it was. -->
+    {#if done && between}
+      <button class="primary get" onclick={() => interClosed(t)}>Fortsätt</button>
     {/if}
   </div>
 </div>
@@ -101,7 +108,7 @@
   .line { margin: 6px 0 0; font-size: 1.55rem; font-weight: 800; line-height: 1.2; max-width: 20ch; text-shadow: 0 2px 10px rgb(0 0 0 / .7); animation: rise .45s ease-out both; }
   .serif .line { font-family: Georgia, 'Times New Roman', serif; font-weight: 600; }
   @keyframes rise { from { transform: translateY(14px); opacity: 0; } }
-  .cta { background: var(--accent); color: var(--ink); border: 2px solid rgb(255 255 255 / .85); border-radius: 999px; padding: 8px 22px; font-weight: 800; font-size: 1.1rem; animation: pulse 1s ease-in-out infinite alternate; }
+  .cta { font: inherit; cursor: pointer; background: var(--accent); color: var(--ink); border: 2px solid rgb(255 255 255 / .85); border-radius: 999px; padding: 8px 22px; font-weight: 800; font-size: 1.1rem; animation: pulse 1s ease-in-out infinite alternate; }
   @keyframes pulse { to { transform: scale(1.07); } }
   /* The loud ads: the name shakes, the lines slam in and the button flashes. */
   .loud .brand { font-size: clamp(2rem, 11vw, 3.2rem); max-width: 94vw; text-transform: uppercase; font-style: italic; color: var(--accent); text-shadow: 0 3px 0 #000, 0 0 22px var(--accent); animation: shake .5s linear infinite; }
