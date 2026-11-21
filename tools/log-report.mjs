@@ -63,7 +63,7 @@ export function playerRows(events, now = Date.now()) {
     if (!p) {
       p = { player: e.playerId, code: '', site: e.site ?? (e.data?.build === 'test' ? 'test' : ''), first: e.t ?? e.received, last: e.t ?? e.received, days: new Set(), sessions: new Set(), versions: new Set(),
         visits: 0, seconds: 0, started: 0, won: 0, lost: 0, left: 0, highest: 0, events: 0,
-        hooksShown: 0, hooksYes: 0, hooksNo: 0, cannotAfford: 0, gems: 0, kronor: 0, purchases: 0, ads: 0, quit: 0, step: 0, testDay: 0,
+        hooksShown: 0, hooksYes: 0, hooksNo: 0, cannotAfford: 0, gems: 0, kronor: 0, purchases: 0, ads: 0, adClicks: 0, quit: 0, step: 0, testDay: 0,
         lastHook: '', lastEvent: '', questionnaire: '', withdrawn: false, missing: 0, maxSeq: 0, seqs: 0 };
       by.set(e.playerId, p);
     }
@@ -90,6 +90,7 @@ export function playerRows(events, now = Date.now()) {
       case 'quit_pressed': p.quit += 1; break; // the button that went on 2026-11-20
       case 'week_step': p.step = Math.max(p.step, d.step ?? 0); break;
       case 'ad_watched': p.ads += 1; break;
+      case 'ad_click': p.adClicks += 1; break;
       case 'purchase': p.purchases += 1; p.kronor += d.kronor ?? 0; break;
       case 'data_withdrawn': p.withdrawn = true; break;
       case 'questionnaire_part1': p.questionnaire = p.questionnaire || 'part 1'; break;
@@ -111,7 +112,7 @@ export function playerRows(events, now = Date.now()) {
     days_played: p.days.size, test_day: p.testDay, sessions: p.sessions.size, visits: p.visits, minutes_played: Math.round(p.seconds / 6) / 10,
     levels_started: p.started, levels_won: p.won, levels_lost: p.lost, levels_left: p.left, highest_level_won: p.highest,
     hook_step: p.step, hooks_shown: p.hooksShown, hooks_yes: p.hooksYes, hooks_no: p.hooksNo, hooks_cannot_afford: p.cannotAfford,
-    gems_spent: p.gems, purchases: p.purchases, pretend_kronor: p.kronor, ads_watched: p.ads,
+    gems_spent: p.gems, purchases: p.purchases, pretend_kronor: p.kronor, ads_watched: p.ads, ad_clicks: p.adClicks,
     last_hook: p.lastHook, last_event: p.lastEvent, questionnaire: p.questionnaire, withdrawn: p.withdrawn ? 'yes' : '',
     versions: [...p.versions].join(' '), events: p.events,
     // Events the server never got: holes in the player's own numbering.
@@ -129,6 +130,36 @@ export function dropoutRows(players) {
     rows.push({ step, reached, dropped_out_here: dropped, playing_here: here.length - dropped, share_dropped_here: reached ? `${Math.round((dropped / reached) * 100)} %` : '' });
   }
   return rows;
+}
+
+/**
+ * The buttons in the ad films (Jonas, 2026-11-21): one row per film and kind
+ * of ad (between challenges, or watched for a reward), with how often it was
+ * shown, how often its button was tapped and by how many testers.
+ */
+export function adClickRows(events) {
+  const by = new Map();
+  const row = (ad, kind) => {
+    const key = `${ad}|${kind}`;
+    if (!by.has(key)) by.set(key, { ad, kind, shown: 0, clicks: 0, testers_shown: new Set(), testers_clicked: new Set(), steps: new Set() });
+    return by.get(key);
+  };
+  for (const e of events) {
+    const d = e.data ?? {};
+    if (e.name === 'hook' && d.hook === 'interstitial' && d.response === 'shown' && d.ad) { const r = row(d.ad, 'between'); r.shown += 1; r.testers_shown.add(e.playerId); }
+    else if (e.name === 'ad_shown' && d.ad) { const r = row(d.ad, 'rewarded'); r.shown += 1; r.testers_shown.add(e.playerId); }
+    else if (e.name === 'ad_click' && d.ad) {
+      const r = row(d.ad, d.kind === 'between' ? 'between' : 'rewarded');
+      r.clicks += 1; r.testers_clicked.add(e.playerId);
+      r.steps.add(Math.max(e.ctx?.step ?? 0, d.weekStep ?? 0));
+    }
+  }
+  return [...by.values()].sort((a, b) => b.clicks - a.clicks || a.ad.localeCompare(b.ad)).map((r) => ({
+    ad: r.ad, kind: r.kind, shown: r.shown, clicks: r.clicks,
+    click_rate: r.shown ? `${Math.round((r.clicks / r.shown) * 100)} %` : '',
+    testers_shown: r.testers_shown.size, testers_clicked: r.testers_clicked.size,
+    steps_clicked: [...r.steps].sort((a, b) => a - b).join(' '),
+  }));
 }
 
 /** One row per player and hook. */
